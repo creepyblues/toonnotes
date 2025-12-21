@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToonNotes Design Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       COMIC/WEBTOON BORDER TEMPLATES (12)
+       ======================================== */
+
+    /* ---- PANEL STYLES (Classic Comic/Manga) ---- */
+
+    /* 1. panel - Classic manga panel frame */
+    .border-panel {
+      border: 3px solid #1a1a1a;
+      border-radius: 0;
+    }
+    .border-panel.thickness-thin { border-width: 2px; }
+    .border-panel.thickness-medium { border-width: 3px; }
+    .border-panel.thickness-thick { border-width: 5px; }
+
+    /* 2. webtoon - Modern webtoon style (clean, minimal) */
+    .border-webtoon {
+      border: 1px solid rgba(0,0,0,0.15);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .border-webtoon.thickness-thin {
+      border-width: 1px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .border-webtoon.thickness-medium {
+      border-width: 1px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .border-webtoon.thickness-thick {
+      border-width: 2px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    /* 3. sketch - Rough pencil sketch border */
+    .border-sketch {
+      border: 2px solid;
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+      position: relative;
+    }
+    .border-sketch::before {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border: 1px solid;
+      border-radius: 225px 12px 200px 12px/12px 200px 12px 225px;
+      opacity: 0.3;
+    }
+    .border-sketch.thickness-thin { border-width: 1px; }
+    .border-sketch.thickness-medium { border-width: 2px; }
+    .border-sketch.thickness-thick { border-width: 3px; }
+
+    /* ---- SHOUJO/ROMANCE STYLES ---- */
+
+    /* 4. shoujo - Soft dreamy with sparkle decorations */
+    .border-shoujo {
+      border: 2px solid;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(255,182,193,0.4);
+      position: relative;
+    }
+    .border-shoujo::before,
+    .border-shoujo::after {
+      position: absolute;
+      font-size: 16px;
+      opacity: 0.7;
+    }
+    .border-shoujo::before {
+      content: '✿';
+      top: -8px;
+      left: 12px;
+    }
+    .border-shoujo::after {
+      content: '✧';
+      bottom: -6px;
+      right: 12px;
+    }
+
+    /* 5. vintage_manga - Retro manga with halftone feel */
+    .border-vintage_manga {
+      border: 3px solid #2a2a2a;
+      border-radius: 2px;
+      position: relative;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+    }
+    .border-vintage_manga::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      border: 1px dashed rgba(0,0,0,0.2);
+    }
+    .border-vintage_manga.thickness-thin { border-width: 2px; }
+    .border-vintage_manga.thickness-medium { border-width: 3px; }
+    .border-vintage_manga.thickness-thick { border-width: 4px; }
+
+    /* 6. watercolor - Soft watercolor bleed edge */
+    .border-watercolor {
+      border: none;
+      border-radius: 8px;
+      position: relative;
+      box-shadow:
+        inset 0 0 30px rgba(255,255,255,0.5),
+        0 0 15px rgba(0,0,0,0.05);
+    }
+    .border-watercolor::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+      background: inherit;
+      filter: blur(4px);
+      opacity: 0.6;
+      z-index: -1;
+    }
+
+    /* ---- CHIBI/FUN STYLES ---- */
+
+    /* 7. speech_bubble - Comic speech bubble */
+    .border-speech_bubble {
+      border: 3px solid #1a1a1a;
+      border-radius: 24px;
+      position: relative;
+    }
+    .border-speech_bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      left: 24px;
+      width: 20px;
+      height: 20px;
+      background: inherit;
+      border: 3px solid #1a1a1a;
+      border-top: none;
+      border-right: none;
+      transform: rotate(-45deg);
+      clip-path: polygon(0 0, 0 100%, 100% 100%);
+    }
+    .border-speech_bubble.thickness-thin { border-width: 2px; }
+    .border-speech_bubble.thickness-thin::after { border-width: 2px; }
+    .border-speech_bubble.thickness-medium { border-width: 3px; }
+    .border-speech_bubble.thickness-medium::after { border-width: 3px; }
+    .border-speech_bubble.thickness-thick { border-width: 4px; }
+    .border-speech_bubble.thickness-thick::after { border-width: 4px; }
+
+    /* 8. pop - Pop art / halftone dot pattern */
+    .border-pop {
+      border: 4px solid #1a1a1a;
+      border-radius: 8px;
+      position: relative;
+      box-shadow: 6px 6px 0 #1a1a1a;
+    }
+    .border-pop::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px);
+      background-size: 8px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    .border-pop.thickness-thin {
+      border-width: 3px;
+      box-shadow: 4px 4px 0 #1a1a1a;
+    }
+    .border-pop.thickness-medium {
+      border-width: 4px;
+      box-shadow: 6px 6px 0 #1a1a1a;
+    }
+    .border-pop.thickness-thick {
+      border-width: 5px;
+      box-shadow: 8px 8px 0 #1a1a1a;
+    }
+
+    /* 9. sticker - Die-cut sticker look */
+    .border-sticker {
+      border: 4px solid #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .border-sticker.thickness-thin {
+      border-width: 3px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    }
+    .border-sticker.thickness-medium {
+      border-width: 4px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    }
+    .border-sticker.thickness-thick {
+      border-width: 6px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
+    /* ---- ACTION/SHONEN STYLES ---- */
+
+    /* 10. speed_lines - Action speed lines effect */
+    .border-speed_lines {
+      border: 3px solid;
+      border-radius: 4px;
+      position: relative;
+      overflow: visible;
+    }
+    .border-speed_lines::before,
+    .border-speed_lines::after {
+      content: '';
+      position: absolute;
+      background: linear-gradient(90deg, currentColor 0%, transparent 100%);
+      height: 2px;
+    }
+    .border-speed_lines::before {
+      top: 20%;
+      right: -20px;
+      width: 30px;
+    }
+    .border-speed_lines::after {
+      bottom: 30%;
+      right: -25px;
+      width: 40px;
+    }
+    .border-speed_lines.thickness-thin { border-width: 2px; }
+    .border-speed_lines.thickness-medium { border-width: 3px; }
+    .border-speed_lines.thickness-thick { border-width: 4px; }
+
+    /* 11. impact - Jagged explosive impact frame */
+    .border-impact {
+      border: 4px solid;
+      clip-path: polygon(
+        0% 5%, 5% 0%, 15% 3%, 25% 0%, 35% 4%, 45% 0%, 55% 3%, 65% 0%, 75% 4%, 85% 0%, 95% 3%, 100% 5%,
+        97% 15%, 100% 25%, 96% 35%, 100% 45%, 97% 55%, 100% 65%, 96% 75%, 100% 85%, 97% 95%,
+        100% 95%, 95% 100%, 85% 97%, 75% 100%, 65% 96%, 55% 100%, 45% 97%, 35% 100%, 25% 96%, 15% 100%, 5% 97%, 0% 95%,
+        3% 85%, 0% 75%, 4% 65%, 0% 55%, 3% 45%, 0% 35%, 4% 25%, 0% 15%, 3% 5%
+      );
+    }
+    .border-impact.thickness-thin { border-width: 3px; }
+    .border-impact.thickness-medium { border-width: 4px; }
+    .border-impact.thickness-thick { border-width: 6px; }
+
+    /* 12. ink_splash - Brush stroke / ink splash border */
+    .border-ink_splash {
+      border: none;
+      border-radius: 4px;
+      position: relative;
+      box-shadow:
+        -3px -3px 0 2px currentColor,
+        3px 3px 0 2px currentColor,
+        -2px 2px 0 1px currentColor,
+        2px -2px 0 1px currentColor;
+    }
+    .border-ink_splash::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 20px;
+      width: 8px;
+      height: 8px;
+      background: currentColor;
+      border-radius: 50%;
+      opacity: 0.6;
+    }
+    .border-ink_splash::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 30px;
+      width: 5px;
+      height: 5px;
+      background: currentColor;
+      border-radius: 50%;
+      opacity: 0.4;
+    }
+
+    /* ========================================
+       BORDER GALLERY STYLES
+       ======================================== */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #3a3a5c;
+      padding-bottom: 16px;
+    }
+
+    .tab-btn {
+      background: #3a3a5c;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: #4a4a6c;
+    }
+
+    .tab-btn.active {
+      background: #6366f1;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .border-gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .border-category {
+      margin-bottom: 32px;
+    }
+
+    .border-category h3 {
+      font-size: 14px;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #3a3a5c;
+    }
+
+    .border-card {
+      background: #252542;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .border-demo {
+      width: 100%;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      color: #2C2C2C;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .border-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .border-desc {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.4;
+    }
+
+    .thickness-toggle {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .thickness-btn {
+      flex: 1;
+      padding: 6px 8px;
+      background: #1a1a2e;
+      border: 1px solid #3a3a5c;
+      border-radius: 4px;
+      color: #888;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .thickness-btn:hover {
+      border-color: #6366f1;
+      color: #fff;
+    }
+
+    .thickness-btn.active {
+      background: #6366f1;
+      border-color: #6366f1;
+      color: #fff;
+    }
+
+    @media (max-width: 1200px) {
+      .border-gallery {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .border-gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #1a1a2e;
+      min-height: 100vh;
+      padding: 40px;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .subtitle {
+      color: #888;
+      margin-bottom: 32px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    .input-section {
+      background: #252542;
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .input-section h2 {
+      font-size: 16px;
+      color: #aaa;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 500px;
+      background: #1a1a2e;
+      border: 1px solid #3a3a5c;
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      padding: 16px;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+
+    .btn {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #5254cc;
+    }
+
+    .preview-section {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .preview-section h2 {
+      font-size: 16px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .preview-card {
+      background: #252542;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .preview-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-label span {
+      background: #3a3a5c;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+
+    /* Note Styles */
+    .note {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .note-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .note-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .note-body {
+      line-height: 1.6;
+    }
+
+    .note-character {
+      position: absolute;
+      z-index: 3;
+      font-size: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: #333;
+      max-width: 80px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .note-character.top-right {
+      top: 8px;
+      right: 8px;
+    }
+
+    .note-character.top-left {
+      top: 8px;
+      left: 8px;
+    }
+
+    .note-character.bottom-right {
+      bottom: 8px;
+      right: 8px;
+    }
+
+    .note-character.bottom-left {
+      bottom: 8px;
+      left: 8px;
+    }
+
+    /* Grid Thumbnail */
+    .note-grid {
+      width: 150px;
+      height: 150px;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .note-grid .note-title {
+      font-size: 12px;
+    }
+
+    .note-grid .note-body {
+      font-size: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* List View */
+    .note-list {
+      width: 100%;
+      height: 80px;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .note-list .note-title {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .note-list .note-body {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Full Detail */
+    .note-detail {
+      width: 100%;
+      min-height: 300px;
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .note-detail .note-title {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .note-detail .note-body {
+      font-size: 16px;
+    }
+
+    /* Share Export */
+    .note-share {
+      width: 280px;
+      height: 280px;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .note-share .note-title {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .note-share .note-body {
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .note-share .note-footer {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 16px;
+      text-align: right;
+    }
+
+    /* Color Palette */
+    .color-palette {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .color-swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .color-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid #3a3a5c;
+    }
+
+    .color-label {
+      font-size: 10px;
+      color: #888;
+    }
+
+    .color-hex {
+      font-size: 10px;
+      font-family: monospace;
+      color: #aaa;
+    }
+
+    /* Design Info */
+    .design-info {
+      background: #252542;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .design-info h3 {
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .info-item {
+      background: #1a1a2e;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .info-label {
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #3a3a5c;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-top: 4px;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* Error State */
+    .error {
+      background: #ff4757;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1000px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Filter for torn edge effect -->
+  <svg style="position: absolute; width: 0; height: 0;">
+    <defs>
+      <filter id="torn-edge-filter">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="container">
+    <h1>ToonNotes Design Preview</h1>
+    <p class="subtitle">Visual tools for designing and testing note styles</p>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="showTab('borders')">Border Templates</button>
+      <button class="tab-btn" onclick="showTab('preview')">JSON Preview</button>
+    </div>
+
+    <!-- BORDER TEMPLATES TAB -->
+    <div id="tab-borders" class="tab-content active">
+      <div class="border-category">
+        <h3>Panel Styles (Classic Comic/Manga)</h3>
+        <div class="border-gallery">
+          <div class="border-card">
+            <div class="border-demo border-panel thickness-medium" style="background: #FFFFFF;">
+              <span>Classic manga panel frame</span>
+            </div>
+            <div class="border-name">panel</div>
+            <div class="border-desc">Bold black border, sharp corners. The classic manga/comic panel look.</div>
+            <div class="thickness-toggle" data-border="panel">
+              <button class="thickness-btn" onclick="setThickness(this, 'panel', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'panel', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'panel', 'thick')">Thick</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-webtoon thickness-medium" style="background: #FFFFFF;">
+              <span>Modern webtoon style</span>
+            </div>
+            <div class="border-name">webtoon</div>
+            <div class="border-desc">Clean and minimal. Modern vertical-scroll webtoon aesthetic.</div>
+            <div class="thickness-toggle" data-border="webtoon">
+              <button class="thickness-btn" onclick="setThickness(this, 'webtoon', 'thin')">Light</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'webtoon', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'webtoon', 'thick')">Strong</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-sketch thickness-medium" style="background: #FFF9F0; border-color: #4a4a4a; color: #4a4a4a;">
+              <span>Rough pencil sketch</span>
+            </div>
+            <div class="border-name">sketch</div>
+            <div class="border-desc">Hand-drawn storyboard feel. Perfect for draft/WIP vibes.</div>
+            <div class="thickness-toggle" data-border="sketch">
+              <button class="thickness-btn" onclick="setThickness(this, 'sketch', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'sketch', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'sketch', 'thick')">Thick</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-category">
+        <h3>Shoujo / Romance</h3>
+        <div class="border-gallery">
+          <div class="border-card">
+            <div class="border-demo border-shoujo" style="background: #FFF5F8; border-color: #E91E8C; color: #E91E8C;">
+              <span>Dreamy shoujo manga style</span>
+            </div>
+            <div class="border-name">shoujo</div>
+            <div class="border-desc">Soft glow with flower & sparkle accents. For romance and drama.</div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-vintage_manga thickness-medium" style="background: #F5F0E6;">
+              <span>Retro manga aesthetic</span>
+            </div>
+            <div class="border-name">vintage_manga</div>
+            <div class="border-desc">Classic 80s/90s manga style with offset shadow and inset frame.</div>
+            <div class="thickness-toggle" data-border="vintage_manga">
+              <button class="thickness-btn" onclick="setThickness(this, 'vintage_manga', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'vintage_manga', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'vintage_manga', 'thick')">Thick</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-watercolor" style="background: linear-gradient(135deg, #E8F4F8 0%, #F0E6F6 100%);">
+              <span>Soft watercolor edges</span>
+            </div>
+            <div class="border-name">watercolor</div>
+            <div class="border-desc">Dreamy bleed effect. Ethereal and artistic, like a painted panel.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-category">
+        <h3>Chibi / Fun</h3>
+        <div class="border-gallery">
+          <div class="border-card">
+            <div class="border-demo border-speech_bubble thickness-medium" style="background: #FFFFFF; margin-bottom: 16px;">
+              <span>Comic speech bubble!</span>
+            </div>
+            <div class="border-name">speech_bubble</div>
+            <div class="border-desc">Classic comic dialogue bubble with tail. Great for quotes!</div>
+            <div class="thickness-toggle" data-border="speech_bubble">
+              <button class="thickness-btn" onclick="setThickness(this, 'speech_bubble', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'speech_bubble', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'speech_bubble', 'thick')">Thick</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-pop thickness-medium" style="background: #FFE135;">
+              <span>POW! Pop art style</span>
+            </div>
+            <div class="border-name">pop</div>
+            <div class="border-desc">Bold offset shadow + halftone dots. Retro American comics vibe.</div>
+            <div class="thickness-toggle" data-border="pop">
+              <button class="thickness-btn" onclick="setThickness(this, 'pop', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'pop', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'pop', 'thick')">Thick</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-sticker thickness-medium" style="background: #FFE0EC;">
+              <span>Die-cut sticker look</span>
+            </div>
+            <div class="border-name">sticker</div>
+            <div class="border-desc">White outline + drop shadow. Perfect for chibi characters!</div>
+            <div class="thickness-toggle" data-border="sticker">
+              <button class="thickness-btn" onclick="setThickness(this, 'sticker', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'sticker', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'sticker', 'thick')">Thick</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-category">
+        <h3>Action / Shonen</h3>
+        <div class="border-gallery">
+          <div class="border-card">
+            <div class="border-demo border-speed_lines thickness-medium" style="background: #FFFFFF; border-color: #1a1a1a; color: #1a1a1a; margin-right: 30px;">
+              <span>Speed lines effect!</span>
+            </div>
+            <div class="border-name">speed_lines</div>
+            <div class="border-desc">Motion lines shooting off the edge. For intense action moments.</div>
+            <div class="thickness-toggle" data-border="speed_lines">
+              <button class="thickness-btn" onclick="setThickness(this, 'speed_lines', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'speed_lines', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'speed_lines', 'thick')">Thick</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-impact thickness-medium" style="background: #2C2C2C; border-color: #FF5722; color: #fff;">
+              <span>IMPACT!</span>
+            </div>
+            <div class="border-name">impact</div>
+            <div class="border-desc">Jagged explosive frame. For dramatic shonen moments!</div>
+            <div class="thickness-toggle" data-border="impact">
+              <button class="thickness-btn" onclick="setThickness(this, 'impact', 'thin')">Thin</button>
+              <button class="thickness-btn active" onclick="setThickness(this, 'impact', 'medium')">Medium</button>
+              <button class="thickness-btn" onclick="setThickness(this, 'impact', 'thick')">Thick</button>
+            </div>
+          </div>
+
+          <div class="border-card">
+            <div class="border-demo border-ink_splash" style="background: #FFFFFF; color: #1a1a1a;">
+              <span>Ink splash border</span>
+            </div>
+            <div class="border-name">ink_splash</div>
+            <div class="border-desc">Brush stroke with ink splatters. Raw manga artist energy.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JSON PREVIEW TAB -->
+    <div id="tab-preview" class="tab-content">
+      <div class="layout">
+      <div class="input-section">
+        <h2>Gemini JSON Output</h2>
+        <textarea id="jsonInput">{
+  "background": {
+    "primary_color": "#F9F7F2",
+    "secondary_color": "#E3EEF2",
+    "style": "gradient",
+    "texture_description": "A subtle gradient fading from warm cream (top) to a cool, watery pale blue (bottom), imitating the transition from the angel wings to the water surface."
+  },
+  "colors": {
+    "title_text": "#1A2E45",
+    "body_text": "#2C2C2C",
+    "accent": "#A83A32",
+    "border": "#A4Aab0"
+  },
+  "border": {
+    "style": "decorative",
+    "thickness": "medium",
+    "corner_radius": "large",
+    "decorative_description": "A metallic silver frame reminiscent of armor, intertwined with small, delicate vines and tiny wildflowers in the corners."
+  },
+  "characters": [
+    {
+      "description": "Chibi version of the red-haired woman with flower crown peeking over the edge",
+      "suggested_position": "top-right",
+      "scale": "medium"
+    },
+    {
+      "description": "Sword hilt and white feathers resting on the frame",
+      "suggested_position": "bottom-left",
+      "scale": "small"
+    }
+  ],
+  "mood": {
+    "tone": "elegant",
+    "theme": "romance"
+  },
+  "typography_suggestion": {
+    "title_style": "serif",
+    "vibe": "classic"
+  },
+  "design_summary": "This design combines the ethereal softness of fantasy romance through creamy whites and floral accents, grounded by the strong, protective navy and silver tones of medieval armor."
+}</textarea>
+        <button class="btn" onclick="renderPreview()">Render Preview</button>
+        <div id="error"></div>
+      </div>
+
+      <div class="preview-section">
+        <h2>Preview</h2>
+        
+        <div class="preview-grid">
+          <div class="preview-card">
+            <div class="preview-label">Grid View <span>150×150</span></div>
+            <div id="preview-grid"></div>
+          </div>
+
+          <div class="preview-card">
+            <div class="preview-label">Share Export <span>1080×1080</span></div>
+            <div id="preview-share"></div>
+          </div>
+
+          <div class="preview-card full-width">
+            <div class="preview-label">List View <span>Full width × 80</span></div>
+            <div id="preview-list"></div>
+          </div>
+
+          <div class="preview-card full-width">
+            <div class="preview-label">Full Detail <span>Full screen</span></div>
+            <div id="preview-detail"></div>
+          </div>
+        </div>
+
+        <div class="design-info">
+          <h3>Extracted Design System</h3>
+          <div class="color-palette" id="color-palette"></div>
+          <div class="info-grid" id="info-grid"></div>
+        </div>
+      </div>
+    </div>
+    </div><!-- close tab-preview -->
+  </div>
+
+  <script>
+    // Tab switching
+    function showTab(tabName) {
+      // Update buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Update content
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    // Thickness toggle for border demos
+    function setThickness(btn, borderName, thickness) {
+      const card = btn.closest('.border-card');
+      const demo = card.querySelector('.border-demo');
+
+      // Update button states
+      card.querySelectorAll('.thickness-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update demo classes
+      demo.classList.remove('thickness-thin', 'thickness-medium', 'thickness-thick');
+      demo.classList.add('thickness-' + thickness);
+    }
+    const sampleTitle = "Under the Oak Tree";
+    const sampleBody = "Maximilian looked at her with an intensity that made her breath catch. The morning light filtered through the leaves above them, casting dancing shadows across his face. She had waited three years for this moment.";
+    const sampleBodyShort = "Maximilian looked at her with an intensity that made her breath catch...";
+
+    function getBorderStyles(border) {
+      const thickness = { thin: '1px', medium: '3px', thick: '5px' }[border.thickness] || '2px';
+      const radius = { small: '8px', medium: '12px', large: '20px', pill: '999px' }[border.corner_radius] || '12px';
+      
+      let borderStyle = `${thickness} solid`;
+      
+      if (border.style === 'decorative') {
+        // For decorative, we'll use a double border effect
+        return {
+          border: `${thickness} double`,
+          borderRadius: radius,
+          boxShadow: `inset 0 0 0 ${thickness} rgba(255,255,255,0.3), 0 4px 20px rgba(0,0,0,0.1)`
+        };
+      }
+      
+      return {
+        border: border.style === 'none' ? 'none' : borderStyle,
+        borderRadius: radius
+      };
+    }
+
+    function getBackgroundStyle(bg) {
+      if (bg.style === 'gradient' && bg.secondary_color) {
+        return `linear-gradient(180deg, ${bg.primary_color} 0%, ${bg.secondary_color} 100%)`;
+      }
+      return bg.primary_color;
+    }
+
+    function getFontFamily(typography) {
+      if (!typography) return "'Inter', sans-serif";
+      
+      const fonts = {
+        'serif': "'Playfair Display', serif",
+        'sans-serif': "'Inter', sans-serif",
+        'handwritten': "'Caveat', cursive",
+        'bold': "'Inter', sans-serif",
+        'light': "'Inter', sans-serif"
+      };
+      
+      return fonts[typography.title_style] || "'Inter', sans-serif";
+    }
+
+    function renderNote(container, design, size, showCharacters = true) {
+      const borderStyles = getBorderStyles(design.border);
+      const fontFamily = getFontFamily(design.typography_suggestion);
+      
+      let html = `
+        <div class="note note-${size}" style="
+          background: ${getBackgroundStyle(design.background)};
+          border-color: ${design.colors.border};
+          ${Object.entries(borderStyles).map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`).join('; ')}
+        ">
+          <div class="note-content">
+            <div class="note-title" style="color: ${design.colors.title_text}; font-family: ${fontFamily}">
+              ${sampleTitle}
+            </div>
+            <div class="note-body" style="color: ${design.colors.body_text}">
+              ${size === 'grid' || size === 'list' ? sampleBodyShort : sampleBody}
+            </div>
+            ${size === 'share' ? `<div class="note-footer" style="color: ${design.colors.body_text}">ToonNotes</div>` : ''}
+          </div>
+      `;
+
+      // Add character stickers based on size
+      if (showCharacters && design.characters && design.characters.length > 0) {
+        const showCount = size === 'grid' ? 0 : size === 'list' ? 1 : design.characters.length;
+        
+        design.characters.slice(0, showCount).forEach(char => {
+          html += `
+            <div class="note-character ${char.suggested_position}" title="${char.description}">
+              ${char.scale === 'small' ? '🎴' : char.scale === 'medium' ? '👤' : '🧑‍🎨'}
+              <div style="font-size: 8px; margin-top: 2px;">${char.description.split(' ').slice(0, 3).join(' ')}...</div>
+            </div>
+          `;
+        });
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function renderColorPalette(design) {
+      const palette = document.getElementById('color-palette');
+      const colors = [
+        { label: 'Background', hex: design.background.primary_color },
+        { label: 'Secondary', hex: design.background.secondary_color },
+        { label: 'Title', hex: design.colors.title_text },
+        { label: 'Body', hex: design.colors.body_text },
+        { label: 'Accent', hex: design.colors.accent },
+        { label: 'Border', hex: design.colors.border }
+      ].filter(c => c.hex);
+
+      palette.innerHTML = colors.map(c => `
+        <div class="color-swatch">
+          <div class="color-circle" style="background: ${c.hex}"></div>
+          <div class="color-label">${c.label}</div>
+          <div class="color-hex">${c.hex}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderDesignInfo(design) {
+      const grid = document.getElementById('info-grid');
+      
+      let html = `
+        <div class="info-item">
+          <div class="info-label">Mood</div>
+          <div class="info-value">
+            <span class="tag">${design.mood.tone}</span>
+            <span class="tag">${design.mood.theme}</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Typography</div>
+          <div class="info-value">
+            <span class="tag">${design.typography_suggestion?.title_style || 'default'}</span>
+            <span class="tag">${design.typography_suggestion?.vibe || 'modern'}</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Border</div>
+          <div class="info-value">
+            <span class="tag">${design.border.style}</span>
+            <span class="tag">${design.border.thickness}</span>
+            <span class="tag">${design.border.corner_radius} radius</span>
+          </div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Background</div>
+          <div class="info-value">
+            <span class="tag">${design.background.style}</span>
+          </div>
+        </div>
+      `;
+
+      if (design.characters && design.characters.length > 0) {
+        html += `
+          <div class="info-item full-width">
+            <div class="info-label">Characters (${design.characters.length})</div>
+            <div class="info-value">
+              ${design.characters.map(c => `
+                <span class="tag">${c.suggested_position}: ${c.description.substring(0, 30)}...</span>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (design.design_summary) {
+        html += `
+          <div class="info-item full-width">
+            <div class="info-label">Design Summary</div>
+            <div class="info-value" style="font-size: 13px; line-height: 1.5;">${design.design_summary}</div>
+          </div>
+        `;
+      }
+
+      if (design.border.decorative_description) {
+        html += `
+          <div class="info-item full-width">
+            <div class="info-label">Decorative Border Description</div>
+            <div class="info-value" style="font-size: 13px; line-height: 1.5;">${design.border.decorative_description}</div>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = html;
+    }
+
+    function renderPreview() {
+      const input = document.getElementById('jsonInput').value;
+      const errorDiv = document.getElementById('error');
+      errorDiv.innerHTML = '';
+
+      try {
+        const design = JSON.parse(input);
+        
+        renderNote(document.getElementById('preview-grid'), design, 'grid', false);
+        renderNote(document.getElementById('preview-list'), design, 'list', true);
+        renderNote(document.getElementById('preview-detail'), design, 'detail', true);
+        renderNote(document.getElementById('preview-share'), design, 'share', true);
+        
+        renderColorPalette(design);
+        renderDesignInfo(design);
+        
+      } catch (e) {
+        errorDiv.innerHTML = `<div class="error">Invalid JSON: ${e.message}</div>`;
+      }
+    }
+
+    // Initial render
+    renderPreview();
+  </script>
+</body>
+</html>
