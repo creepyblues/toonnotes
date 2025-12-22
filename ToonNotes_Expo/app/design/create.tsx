@@ -20,7 +20,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Image,
@@ -33,7 +33,8 @@ import {
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { useUserStore, useDesignStore } from '@/stores';
+import { useUserStore, useDesignStore, useNoteStore } from '@/stores';
+import { NoteColor } from '@/types';
 import { generateDesign, generateLuckyDesign, generateThemedDesign } from '@/services/geminiService';
 import { ThemePicker, CompactThemePicker } from '@/components/ThemePicker';
 import { AccentLayer } from '@/components/AccentLayer';
@@ -48,8 +49,10 @@ type CreationStep = 'theme' | 'image' | 'preview';
 
 export default function CreateDesignScreen() {
   const router = useRouter();
+  const { returnTo, noteId } = useLocalSearchParams<{ returnTo?: string; noteId?: string }>();
   const { user, getDesignCost, canAffordDesign, spendCoin } = useUserStore();
   const { addDesign } = useDesignStore();
+  const { addNote, updateNote } = useNoteStore();
 
   // Flow state
   const [step, setStep] = useState<CreationStep>('theme');
@@ -90,10 +93,6 @@ export default function CreateDesignScreen() {
     }
   };
 
-  const handleSkipImage = () => {
-    setStep('preview');
-  };
-
   const handleSelectImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -122,6 +121,36 @@ export default function CreateDesignScreen() {
     setSelectedImage(null);
   };
 
+  // Helper to navigate after design creation based on origin
+  const navigateAfterCreation = (designId: string, designName: string) => {
+    if (returnTo === 'note' && noteId) {
+      // Came from note editor - apply design to note and go back
+      updateNote(noteId, { designId });
+      Alert.alert(
+        'Design Applied!',
+        `"${designName}" has been applied to your note.`,
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } else {
+      // Came from My Designs or unknown - create new note with design
+      const newNote = addNote({
+        title: '',
+        content: '',
+        color: NoteColor.White,
+        labels: [],
+        isPinned: false,
+        isArchived: false,
+        isDeleted: false,
+        designId,
+      });
+      Alert.alert(
+        'Design Created!',
+        `"${designName}" has been saved. Opening a new note with this design.`,
+        [{ text: 'OK', onPress: () => router.replace(`/note/${newNote.id}`) }]
+      );
+    }
+  };
+
   const handleGenerateDesign = async () => {
     if (!selectedTheme || !canAfford) return;
 
@@ -140,16 +169,8 @@ export default function CreateDesignScreen() {
       // Save the design
       addDesign(design);
 
-      Alert.alert(
-        'Design Created!',
-        `"${design.name}" has been saved to your library.`,
-        [
-          {
-            text: 'View Designs',
-            onPress: () => router.replace('/(tabs)/designs'),
-          },
-        ]
-      );
+      // Navigate based on origin
+      navigateAfterCreation(design.id, design.name);
     } catch (error: any) {
       console.error('Design generation failed:', error);
       Alert.alert(
@@ -178,16 +199,8 @@ export default function CreateDesignScreen() {
 
       addDesign(design);
 
-      Alert.alert(
-        '🎲 Lucky Design Created!',
-        `"${design.name}" - ${design.vibe || 'chaotic'} energy!\n\nThis one's definitely... unique.`,
-        [
-          {
-            text: 'See What We Got',
-            onPress: () => router.replace('/(tabs)/designs'),
-          },
-        ]
-      );
+      // Navigate based on origin
+      navigateAfterCreation(design.id, design.name);
     } catch (error: any) {
       console.error('Lucky design generation failed:', error);
       Alert.alert(
@@ -290,27 +303,16 @@ export default function CreateDesignScreen() {
         </>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Button */}
       <View className="w-full">
         <TouchableOpacity
-          onPress={selectedImage ? () => setStep('preview') : handleSelectImage}
-          className="bg-sky-500 py-4 rounded-xl items-center mb-3"
+          onPress={() => setStep('preview')}
+          className="bg-sky-500 py-4 rounded-xl items-center"
         >
           <Text className="text-white font-semibold text-lg">
-            {selectedImage ? 'Continue to Preview' : 'Select Image'}
+            Continue to Preview
           </Text>
         </TouchableOpacity>
-
-        {!selectedImage && (
-          <TouchableOpacity
-            onPress={handleSkipImage}
-            className="py-3 items-center"
-          >
-            <Text className="text-gray-500 font-medium">
-              Skip - Use Default Theme Colors
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );

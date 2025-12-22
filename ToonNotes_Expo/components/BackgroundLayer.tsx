@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { View, Image, ImageBackground, StyleSheet, ViewStyle } from 'react-native';
+import { View, ImageBackground, StyleSheet, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { ComposedStyle, DesignViewContext } from '@/types';
 import { PATTERN_ASSETS } from '@/constants/patterns';
 
@@ -40,7 +41,6 @@ export function BackgroundLayer({
   const baseStyle: ViewStyle = {
     flex: 1,
     backgroundColor: style.backgroundColor,
-    overflow: 'hidden',
   };
 
   // If no special background, just render with solid color
@@ -56,16 +56,15 @@ export function BackgroundLayer({
   if (hasBackgroundImage) {
     return (
       <View style={[baseStyle, containerStyle]}>
-        {/* Background image layer with blur and opacity */}
-        <ImageBackground
+        {/* Background image - absolutely positioned to fill entire container */}
+        <Image
           source={{ uri: style.backgroundImageUri }}
-          style={StyleSheet.absoluteFill}
-          imageStyle={{
-            opacity: style.backgroundOpacity,
-            resizeMode: 'cover',
-          }}
-          blurRadius={3} // Blur for readability
+          style={[StyleSheet.absoluteFill, { opacity: style.backgroundOpacity }]}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          blurRadius={3}
         />
+        {/* Children render on top of the image */}
         {children}
       </View>
     );

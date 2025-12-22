@@ -9,7 +9,8 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Note, NoteColor } from '@/types';
 import { useDesignStore } from '@/stores';
 import { composeStyle } from '@/services/designEngine';
@@ -140,7 +141,8 @@ export function StickyNote({
               height: size * 0.5,
             },
           ]}
-          resizeMode="contain"
+          contentFit="contain"
+          cachePolicy="memory-disk"
         />
       )}
 

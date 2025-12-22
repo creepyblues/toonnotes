@@ -93,8 +93,8 @@ const BORDER_CONFIGS: Record<BorderTemplate, BorderConfig> = {
     decorationType: 'vintage',
   },
   watercolor: {
-    borderWidth: { thin: 0, medium: 0, thick: 0 },
-    borderRadius: 8,
+    borderWidth: { thin: 1, medium: 2, thick: 3 },
+    borderRadius: 12,
     borderStyle: 'solid',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: { thin: 0.05, medium: 0.08, thick: 0.1 },

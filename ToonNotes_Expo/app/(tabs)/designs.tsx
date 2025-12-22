@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, Sparkles } from 'lucide-react-native';
 
 import { useDesignStore, useUserStore, useNoteStore } from '@/stores';
 import { NoteDesign, NoteColor } from '@/types';
+import { DesignCard } from '@/components/designs/DesignCard';
 
 export default function DesignsScreen() {
   const router = useRouter();
@@ -15,7 +16,10 @@ export default function DesignsScreen() {
   const isDark = settings.darkMode;
 
   const handleCreateDesign = () => {
-    router.push('/design/create');
+    router.push({
+      pathname: '/design/create',
+      params: { returnTo: 'designs' },
+    });
   };
 
   const handleDesignPress = (design: NoteDesign) => {
@@ -34,35 +38,14 @@ export default function DesignsScreen() {
   };
 
   const renderDesignCard = ({ item }: { item: NoteDesign }) => (
-    <TouchableOpacity
-      onPress={() => handleDesignPress(item)}
-      className="flex-1 m-1 rounded-xl overflow-hidden"
-      style={{
-        backgroundColor: item.background.primaryColor,
-        minHeight: 150,
-      }}
-      activeOpacity={0.7}
-    >
-      {/* Source image thumbnail */}
-      {item.sourceImageUri && (
-        <Image
-          source={{ uri: item.sourceImageUri }}
-          className="absolute top-2 right-2 w-10 h-10 rounded-lg"
-          resizeMode="cover"
-        />
-      )}
-
-      {/* Design name */}
-      <View className="absolute bottom-0 left-0 right-0 p-3 bg-black/20">
-        <Text
-          className="font-semibold text-sm"
-          style={{ color: item.colors.titleText }}
-          numberOfLines={1}
-        >
-          {item.name}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    <View className="flex-1 m-1">
+      <DesignCard
+        design={item}
+        onPress={() => handleDesignPress(item)}
+        isDark={isDark}
+        size="normal"
+      />
+    </View>
   );
 
   const renderEmpty = () => (

@@ -6,10 +6,12 @@
  * - Wavy/sketchy SVG border (hand-drawn look)
  * - Straight alignment (no tilt)
  * - Applied to all notes regardless of design
+ * - Memoized to prevent unnecessary re-renders
  */
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, LayoutChangeEvent } from 'react-native';
+import React, { useState, memo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { Image } from 'expo-image';
 import { Pin } from 'lucide-react-native';
 import { Note, NoteDesign, DesignViewContext } from '@/types';
 import { composeStyle } from '@/services/designEngine';
@@ -23,8 +25,44 @@ interface NoteCardProps {
   context?: DesignViewContext;
 }
 
+/**
+ * Custom comparison function for React.memo
+ * Only re-render if relevant props have changed
+ */
+function arePropsEqual(
+  prevProps: NoteCardProps,
+  nextProps: NoteCardProps
+): boolean {
+  // Check primitive props
+  if (prevProps.isDark !== nextProps.isDark) return false;
+  if (prevProps.context !== nextProps.context) return false;
 
-export function NoteCard({
+  // Check note changes (comparing relevant fields only)
+  const prevNote = prevProps.note;
+  const nextNote = nextProps.note;
+  if (prevNote.id !== nextNote.id) return false;
+  if (prevNote.title !== nextNote.title) return false;
+  if (prevNote.content !== nextNote.content) return false;
+  if (prevNote.color !== nextNote.color) return false;
+  if (prevNote.isPinned !== nextNote.isPinned) return false;
+  if (prevNote.designId !== nextNote.designId) return false;
+  if (prevNote.updatedAt !== nextNote.updatedAt) return false;
+
+  // Check labels (shallow array comparison)
+  if (prevNote.labels.length !== nextNote.labels.length) return false;
+  for (let i = 0; i < prevNote.labels.length; i++) {
+    if (prevNote.labels[i] !== nextNote.labels[i]) return false;
+  }
+
+  // Check design changes
+  if (prevProps.design?.id !== nextProps.design?.id) return false;
+  if (prevProps.design?.createdAt !== nextProps.design?.createdAt) return false;
+
+  // Props are equal, skip re-render
+  return true;
+}
+
+function NoteCardComponent({
   note,
   design = null,
   onPress,
@@ -167,7 +205,8 @@ export function NoteCard({
                 height: 60 * style.stickerScale,
               },
             ]}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
           />
         )}
 
@@ -265,3 +304,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 });
+
+// Export memoized component
+export const NoteCard = memo(NoteCardComponent, arePropsEqual);

@@ -1,8 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note, NoteColor, Label } from '@/types';
 import { generateUUID } from '@/utils/uuid';
+import {
+  validateNoteTitle,
+  validateNoteContent,
+  validateLabelName,
+} from '@/utils/validation';
+import { debouncedStorage } from './debouncedStorage';
 
 interface NoteState {
   notes: Note[];
@@ -42,8 +47,15 @@ export const useNoteStore = create<NoteState>()(
       // Note actions
       addNote: (noteData) => {
         const now = Date.now();
+
+        // Validate and sanitize inputs
+        const { sanitized: sanitizedTitle } = validateNoteTitle(noteData.title);
+        const { sanitized: sanitizedContent } = validateNoteContent(noteData.content);
+
         const newNote: Note = {
           ...noteData,
+          title: sanitizedTitle,
+          content: sanitizedContent,
           id: generateUUID(),
           createdAt: now,
           updatedAt: now,
@@ -57,10 +69,21 @@ export const useNoteStore = create<NoteState>()(
       },
 
       updateNote: (id, updates) => {
+        // Validate and sanitize inputs if provided
+        const sanitizedUpdates = { ...updates };
+        if (updates.title !== undefined) {
+          const { sanitized } = validateNoteTitle(updates.title);
+          sanitizedUpdates.title = sanitized;
+        }
+        if (updates.content !== undefined) {
+          const { sanitized } = validateNoteContent(updates.content);
+          sanitizedUpdates.content = sanitized;
+        }
+
         set((state) => ({
           notes: state.notes.map((note) =>
             note.id === id
-              ? { ...note, ...updates, updatedAt: Date.now() }
+              ? { ...note, ...sanitizedUpdates, updatedAt: Date.now() }
               : note
           ),
         }));
@@ -128,7 +151,17 @@ export const useNoteStore = create<NoteState>()(
 
       // Label actions
       addLabel: (name) => {
-        const normalizedName = name.toLowerCase().trim();
+        // Validate and sanitize the label name
+        const { isValid, sanitized } = validateLabelName(name);
+        if (!isValid || !sanitized) {
+          // Return a dummy label if validation fails
+          const existing = get().labels.find(
+            (l) => l.name.toLowerCase() === name.toLowerCase().trim()
+          );
+          if (existing) return existing;
+        }
+
+        const normalizedName = sanitized.toLowerCase();
         const existing = get().labels.find(
           (l) => l.name.toLowerCase() === normalizedName
         );
@@ -209,7 +242,7 @@ export const useNoteStore = create<NoteState>()(
     }),
     {
       name: 'toonnotes-notes',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => debouncedStorage),
     }
   )
 );

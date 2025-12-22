@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NoteDesign } from '@/types';
+import { debouncedStorage } from './debouncedStorage';
 
 interface DesignState {
   designs: NoteDesign[];
@@ -44,7 +44,7 @@ export const useDesignStore = create<DesignState>()(
     }),
     {
       name: 'toonnotes-designs',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => debouncedStorage),
     }
   )
 );

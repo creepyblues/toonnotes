@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Switch, Alert, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -18,11 +18,30 @@ import { NoteColor } from '@/types';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { settings, toggleDarkMode, user, addCoins, setGeminiApiKey } = useUserStore();
+  const {
+    settings,
+    toggleDarkMode,
+    user,
+    addCoins,
+    apiKeyLoaded,
+    apiKeyMasked,
+    loadApiKey,
+    saveGeminiApiKey,
+    clearGeminiApiKey,
+    hasApiKey,
+  } = useUserStore();
   const { getArchivedNotes, getDeletedNotes } = useNoteStore();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(settings.geminiApiKey || '');
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const isDark = settings.darkMode;
+
+  // Load API key from secure storage on mount
+  useEffect(() => {
+    if (!apiKeyLoaded) {
+      loadApiKey();
+    }
+  }, [apiKeyLoaded, loadApiKey]);
 
   const archivedCount = getArchivedNotes().length;
   const deletedCount = getDeletedNotes().length;
@@ -40,14 +59,48 @@ export default function SettingsScreen() {
     Alert.alert('Coming Soon', 'In-app purchases will be available soon!');
   };
 
-  const handleSaveApiKey = () => {
-    setGeminiApiKey(apiKeyInput);
-    setShowApiKeyModal(false);
-    Alert.alert('Success', 'API key saved successfully!');
+  const handleSaveApiKey = async () => {
+    setIsSaving(true);
+    try {
+      const success = await saveGeminiApiKey(apiKeyInput);
+      if (success) {
+        setShowApiKeyModal(false);
+        setApiKeyInput('');
+        Alert.alert('Success', 'API key saved securely!');
+      } else {
+        Alert.alert(
+          'Invalid API Key',
+          'Please enter a valid Gemini API key. It should start with "AIza" and contain only alphanumeric characters.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save API key. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClearApiKey = async () => {
+    Alert.alert(
+      'Clear API Key',
+      'Are you sure you want to remove your API key?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await clearGeminiApiKey();
+            setShowApiKeyModal(false);
+            Alert.alert('Success', 'API key removed.');
+          },
+        },
+      ]
+    );
   };
 
   const handleOpenApiKeyModal = () => {
-    setApiKeyInput(settings.geminiApiKey || '');
+    setApiKeyInput(''); // Don't pre-fill for security
     setShowApiKeyModal(true);
   };
 
@@ -114,7 +167,7 @@ export default function SettingsScreen() {
               </View>
               <View className="flex-row items-center">
                 <Text className="mr-2" style={{ color: isDark ? '#9CA3AF' : '#4B5563' }}>
-                  {settings.geminiApiKey ? '••••••••' : 'Not set'}
+                  {!apiKeyLoaded ? 'Loading...' : apiKeyMasked || 'Not set'}
                 </Text>
                 <ChevronRight size={20} color="#9CA3AF" />
               </View>
@@ -255,9 +308,15 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text className="mb-4" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
+            <Text className="mb-2" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
               Enter your Gemini API key to enable AI-powered design generation.
             </Text>
+
+            {hasApiKey() && (
+              <Text className="mb-2 text-xs" style={{ color: '#10B981' }}>
+                Current key: {apiKeyMasked}
+              </Text>
+            )}
 
             <TextInput
               className="rounded-lg px-4 py-3 mb-4"
@@ -265,13 +324,14 @@ export default function SettingsScreen() {
                 backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6',
                 color: isDark ? '#FFFFFF' : '#1F2937',
               }}
-              placeholder="AIza..."
+              placeholder={hasApiKey() ? 'Enter new API key...' : 'AIza...'}
               placeholderTextColor="#9CA3AF"
               value={apiKeyInput}
               onChangeText={setApiKeyInput}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
+              editable={!isSaving}
             />
 
             <View className="flex-row gap-3">
@@ -279,16 +339,33 @@ export default function SettingsScreen() {
                 onPress={() => setShowApiKeyModal(false)}
                 className="flex-1 py-3 rounded-lg items-center"
                 style={{ backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6' }}
+                disabled={isSaving}
               >
                 <Text style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSaveApiKey}
                 className="flex-1 py-3 rounded-lg items-center bg-primary-500"
+                disabled={isSaving || !apiKeyInput.trim()}
+                style={{ opacity: isSaving || !apiKeyInput.trim() ? 0.5 : 1 }}
               >
-                <Text className="text-white font-semibold">Save</Text>
+                {isSaving ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text className="text-white font-semibold">Save</Text>
+                )}
               </TouchableOpacity>
             </View>
+
+            {hasApiKey() && (
+              <TouchableOpacity
+                onPress={handleClearApiKey}
+                className="mt-3 py-2 items-center"
+                disabled={isSaving}
+              >
+                <Text style={{ color: '#EF4444', fontSize: 14 }}>Remove API Key</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </Modal>

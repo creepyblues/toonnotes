@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,16 +16,36 @@ import { useNoteStore, useUserStore, useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note, NoteColor } from '@/types';
 
+// Calculate item dimensions for getItemLayout
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const ITEM_PADDING = 12; // contentContainerStyle padding
+const GAP = 8; // gap between columns
+const ITEM_WIDTH = (SCREEN_WIDTH - ITEM_PADDING * 2 - GAP) / 2;
+const ITEM_HEIGHT = ITEM_WIDTH + 12; // Square aspect ratio + margin bottom
+
 export default function NotesScreen() {
   const router = useRouter();
   const { notes, getActiveNotes, searchNotes, addNote } = useNoteStore();
   const { settings } = useUserStore();
-  const { getDesignById } = useDesignStore();
+  const { designs } = useDesignStore();
   const isDark = settings.darkMode;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Create a design lookup map for O(1) access
+  const designMap = useMemo(() => {
+    const map = new Map<string, typeof designs[0]>();
+    designs.forEach((d) => map.set(d.id, d));
+    return map;
+  }, [designs]);
+
+  // Get design by id using the memoized map
+  const getDesign = useCallback((designId?: string) => {
+    if (!designId) return null;
+    return designMap.get(designId) || null;
+  }, [designMap]);
 
   // Get filtered notes
   const filteredNotes = useMemo(() => {
@@ -38,7 +59,7 @@ export default function NotesScreen() {
   const pinnedNotes = filteredNotes.filter((n) => n.isPinned);
   const unpinnedNotes = filteredNotes.filter((n) => !n.isPinned);
 
-  const handleCreateNote = () => {
+  const handleCreateNote = useCallback(() => {
     const newNote = addNote({
       title: '',
       content: '',
@@ -49,18 +70,34 @@ export default function NotesScreen() {
       isDeleted: false,
     });
     router.push(`/note/${newNote.id}`);
-  };
+  }, [addNote, router]);
 
-  const handleNotePress = (note: Note) => {
-    router.push(`/note/${note.id}`);
-  };
+  const handleNotePress = useCallback((noteId: string) => {
+    router.push(`/note/${noteId}`);
+  }, [router]);
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 500);
-  };
+  }, []);
 
-  const renderHeader = () => (
+  // Memoized keyExtractor
+  const keyExtractor = useCallback((item: Note) => item.id, []);
+
+  // Memoized renderItem
+  const renderItem = useCallback(({ item }: { item: Note }) => (
+    <View className="flex-1 mb-3 px-1">
+      <NoteCard
+        note={item}
+        design={getDesign(item.designId)}
+        onPress={() => handleNotePress(item.id)}
+        isDark={isDark}
+        context="grid"
+      />
+    </View>
+  ), [getDesign, handleNotePress, isDark]);
+
+  const renderHeader = useCallback(() => (
     <View className="mb-4">
       {/* Pinned Section */}
       {pinnedNotes.length > 0 && (
@@ -76,8 +113,8 @@ export default function NotesScreen() {
               <View key={note.id} className="w-1/2 p-1 px-2 mb-2">
                 <NoteCard
                   note={note}
-                  design={note.designId ? getDesignById(note.designId) : null}
-                  onPress={() => handleNotePress(note)}
+                  design={getDesign(note.designId)}
+                  onPress={() => handleNotePress(note.id)}
                   isDark={isDark}
                   context="grid"
                 />
@@ -96,7 +133,7 @@ export default function NotesScreen() {
         </View>
       )}
     </View>
-  );
+  ), [pinnedNotes, unpinnedNotes, getDesign, handleNotePress, isDark]);
 
   const renderEmpty = () => (
     <View className="flex-1 items-center justify-center py-20">
@@ -174,7 +211,7 @@ export default function NotesScreen() {
       ) : (
         <FlatList
           data={unpinnedNotes}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           numColumns={2}
           contentContainerStyle={{ padding: 12 }}
           columnWrapperStyle={{ gap: 8 }}
@@ -182,17 +219,19 @@ export default function NotesScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          renderItem={({ item }) => (
-            <View className="flex-1 mb-3 px-1">
-              <NoteCard
-                note={item}
-                design={item.designId ? getDesignById(item.designId) : null}
-                onPress={() => handleNotePress(item)}
-                isDark={isDark}
-                context="grid"
-              />
-            </View>
-          )}
+          renderItem={renderItem}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={5}
+          initialNumToRender={8}
+          // Improve scroll performance
+          getItemLayout={(_, index) => ({
+            length: ITEM_HEIGHT,
+            offset: ITEM_HEIGHT * Math.floor(index / 2),
+            index,
+          })}
         />
       )}
 

@@ -38,6 +38,7 @@ import { composeStyle } from '@/services/designEngine';
 import { createStoryStyle, generateWebtoonSketch, saveWebtoonSketch, WEBTOON_STYLES } from '@/services/geminiService';
 import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { BackgroundPicker } from '@/components/BackgroundPicker';
+import { DesignCard } from '@/components/designs/DesignCard';
 import { getPatternById } from '@/constants/patterns';
 
 const NOTE_COLORS = [
@@ -1000,7 +1001,10 @@ export default function NoteEditorScreen() {
             <TouchableOpacity
               onPress={() => {
                 setShowDesignPicker(false);
-                router.push('/design/create');
+                router.push({
+                  pathname: '/design/create',
+                  params: { returnTo: 'note', noteId: id },
+                });
               }}
               style={{
                 flexDirection: 'row',
@@ -1100,44 +1104,15 @@ export default function NoteEditorScreen() {
                 numColumns={2}
                 contentContainerStyle={{ paddingBottom: 20 }}
                 renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => handleApplyDesign(item)}
-                    className="flex-1 m-1 rounded-xl overflow-hidden"
-                    style={{
-                      backgroundColor: item.background.primaryColor,
-                      minHeight: 100,
-                      borderWidth: designId === item.id ? 3 : 0,
-                      borderColor: '#F59E0B',
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    {/* Source image thumbnail */}
-                    {item.sourceImageUri && (
-                      <Image
-                        source={{ uri: item.sourceImageUri }}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-lg"
-                        resizeMode="cover"
-                      />
-                    )}
-
-                    {/* Design name */}
-                    <View className="absolute bottom-0 left-0 right-0 p-2 bg-black/20">
-                      <Text
-                        className="font-medium text-xs"
-                        style={{ color: item.colors.titleText }}
-                        numberOfLines={1}
-                      >
-                        {item.name}
-                      </Text>
-                    </View>
-
-                    {/* Selected indicator */}
-                    {designId === item.id && (
-                      <View className="absolute top-2 left-2 w-6 h-6 bg-amber-500 rounded-full items-center justify-center">
-                        <Text className="text-white text-xs font-bold">✓</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
+                  <View className="flex-1 m-1">
+                    <DesignCard
+                      design={item}
+                      onPress={() => handleApplyDesign(item)}
+                      isDark={isDark}
+                      isSelected={designId === item.id}
+                      size="compact"
+                    />
+                  </View>
                 )}
               />
             )}
