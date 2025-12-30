@@ -12,6 +12,10 @@ interface BoardState {
   updateBoardStyle: (hashtag: string, style: BoardStyle) => void;
   clearBoardStyle: (hashtag: string) => void;
   getBoardByHashtag: (hashtag: string) => Board | undefined;
+
+  // Board design actions
+  applyDesign: (hashtag: string, designId: string) => void;
+  clearDesign: (hashtag: string) => void;
 }
 
 export const useBoardStore = create<BoardState>()(
@@ -61,6 +65,44 @@ export const useBoardStore = create<BoardState>()(
         get().boards.find(
           (b) => b.hashtag.toLowerCase() === hashtag.toLowerCase()
         ),
+
+      applyDesign: (hashtag, designId) => {
+        const existing = get().boards.find(
+          (b) => b.hashtag.toLowerCase() === hashtag.toLowerCase()
+        );
+
+        if (existing) {
+          // Update existing board with design
+          set((state) => ({
+            boards: state.boards.map((b) =>
+              b.hashtag.toLowerCase() === hashtag.toLowerCase()
+                ? { ...b, boardDesignId: designId, updatedAt: Date.now() }
+                : b
+            ),
+          }));
+        } else {
+          // Create new board entry with design
+          const now = Date.now();
+          const newBoard: Board = {
+            id: generateUUID(),
+            hashtag: hashtag.toLowerCase(),
+            boardDesignId: designId,
+            createdAt: now,
+            updatedAt: now,
+          };
+          set((state) => ({ boards: [...state.boards, newBoard] }));
+        }
+      },
+
+      clearDesign: (hashtag) => {
+        set((state) => ({
+          boards: state.boards.map((b) =>
+            b.hashtag.toLowerCase() === hashtag.toLowerCase()
+              ? { ...b, boardDesignId: undefined, updatedAt: Date.now() }
+              : b
+          ),
+        }));
+      },
     }),
     {
       name: 'toonnotes-boards',
@@ -74,12 +116,11 @@ export const useBoardStore = create<BoardState>()(
 // ============================================
 
 /**
- * Compute BoardData from notes and labels
- * This is a pure function that derives board data from notes
+ * Compute BoardData from notes
+ * This is a pure function that derives board data from notes by their labels
  */
 export function computeBoardsFromNotes(
   notes: Note[],
-  labels: string[],
   boardCustomizations: Board[]
 ): BoardData[] {
   // Get active notes only
@@ -132,7 +173,7 @@ export function computeBoardsFromNotes(
  */
 export function deriveGradientFromColors(colors: string[]): string[] {
   if (colors.length === 0) {
-    return [NoteColor.White, NoteColor.Blue];
+    return [NoteColor.White, NoteColor.Sky];
   }
   if (colors.length === 1) {
     return [colors[0], adjustColorBrightness(colors[0], -20)];

@@ -1,37 +1,35 @@
 /**
- * Boards Screen - Single column corkboard layout
+ * Boards Screen - Single column layout with note previews
  *
  * Displays all boards in a vertical scroll, one board per row.
- * Each board shows as a corkboard with sticky notes.
+ * Each board shows actual note content/design previews.
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Hash } from 'lucide-react-native';
+import { Hash } from 'phosphor-react-native';
 
 import {
   useNoteStore,
-  useUserStore,
   useBoardStore,
   computeBoardsFromNotes,
 } from '@/stores';
 import { BoardCard } from '@/components/boards/BoardCard';
 import { BoardData } from '@/types';
+import { useTheme } from '@/src/theme';
 
 export default function BoardsScreen() {
   const router = useRouter();
-  const { notes, labels } = useNoteStore();
+  const { notes } = useNoteStore();
   const { boards: boardCustomizations } = useBoardStore();
-  const { settings } = useUserStore();
-  const isDark = settings.darkMode;
+  const { colors, isDark } = useTheme();
 
   // Compute boards from notes (sorted by most recent activity)
   const allBoards = useMemo((): BoardData[] => {
-    const labelNames = labels.map((l) => l.name);
-    return computeBoardsFromNotes(notes, labelNames, boardCustomizations);
-  }, [notes, labels, boardCustomizations]);
+    return computeBoardsFromNotes(notes, boardCustomizations);
+  }, [notes, boardCustomizations]);
 
   const handleBoardPress = (hashtag: string) => {
     router.push(`/board/${encodeURIComponent(hashtag)}`);
@@ -42,23 +40,14 @@ export default function BoardsScreen() {
   };
 
   const renderEmpty = () => (
-    <View className="flex-1 items-center justify-center py-20">
-      <View
-        className="w-20 h-20 rounded-full items-center justify-center mb-4"
-        style={{ backgroundColor: isDark ? '#1E1E1E' : '#F3F4F6' }}
-      >
-        <Hash size={40} color={isDark ? '#6B7280' : '#9CA3AF'} />
+    <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIcon, { backgroundColor: `${colors.accent}15` }]}>
+        <Hash size={40} color={colors.textSecondary} weight="regular" />
       </View>
-      <Text
-        className="text-xl font-semibold mb-2"
-        style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
-      >
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
         No boards yet
       </Text>
-      <Text
-        className="text-center px-8"
-        style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
-      >
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Add hashtags to your notes using # to organize them into boards
       </Text>
     </View>
@@ -68,28 +57,14 @@ export default function BoardsScreen() {
   if (allBoards.length === 0) {
     return (
       <SafeAreaView
-        className="flex-1"
-        style={{ backgroundColor: isDark ? '#121212' : '#F5F0EB' }}
+        style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}
         edges={['top']}
       >
-        {/* Header */}
-        <View
-          className="px-4 py-3 border-b"
-          style={{
-            backgroundColor: isDark ? '#121212' : '#F5F0EB',
-            borderBottomColor: isDark ? '#2D2D2D' : '#E5DDD5',
-          }}
-        >
-          <Text
-            className="text-2xl font-bold"
-            style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
-          >
+        <View style={[styles.header, { backgroundColor: colors.backgroundSecondary }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
             Boards
           </Text>
-          <Text
-            className="text-sm mt-1"
-            style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
-          >
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Organize notes with hashtags
           </Text>
         </View>
@@ -100,35 +75,22 @@ export default function BoardsScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: isDark ? '#121212' : '#F5F0EB' }}
+      style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}
       edges={['top']}
     >
       {/* Header */}
-      <View
-        className="px-4 py-3 border-b"
-        style={{
-          backgroundColor: isDark ? '#121212' : '#F5F0EB',
-          borderBottomColor: isDark ? '#2D2D2D' : '#E5DDD5',
-        }}
-      >
-        <Text
-          className="text-2xl font-bold"
-          style={{ color: isDark ? '#FFFFFF' : '#3D2914' }}
-        >
+      <View style={[styles.header, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
           Boards
         </Text>
-        <Text
-          className="text-sm mt-1"
-          style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
-        >
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {allBoards.length} {allBoards.length === 1 ? 'board' : 'boards'}
         </Text>
       </View>
 
       {/* Single Column Board List */}
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {allBoards.map((board) => (
@@ -144,3 +106,49 @@ export default function BoardsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+});

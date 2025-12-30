@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ToonNotes_Expo",
+    "name": "ToonNotes",
     "slug": "ToonNotes_Expo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.ToonNotes-Expo",
+      "bundleIdentifier": "com.toonnotes.app",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
@@ -38,10 +38,11 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -56,10 +57,18 @@
         {
           "photosPermission": "ToonNotes needs access to your photos to create custom note designs from your images."
         }
-      ]
+      ],
+      "react-native-purchases"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ba0e8d8b-bbf2-4690-9701-ba675bcd4bc9"
+      }
+    },
+    "owner": "creepyblues"
   }
 }

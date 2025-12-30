@@ -1,8 +1,17 @@
 /**
  * Design Theme Presets for ToonNotes
  *
- * 7 anime/manga-inspired themes for creating beautiful, shareable notes.
- * Each theme defines colors, borders, accents, and AI generation hints.
+ * @deprecated This file contains legacy theme presets (7 anime themes).
+ * New features should use Label Presets from `constants/labelPresets.ts`
+ * which provides 20 label-based design presets.
+ *
+ * These themes are kept for backward compatibility with existing designs
+ * and the SYSTEM_DEFAULT_DESIGNS array used in the design picker.
+ *
+ * Migration path:
+ * - ThemePicker → LabelPresetPicker (in components/ThemePicker.tsx)
+ * - generateThemedDesign → generateLabelPresetDesign (in geminiService.ts)
+ * - composeThemeStyle → composeLabelPresetStyle (in designEngine.ts)
  */
 
 import { DesignTheme, ThemeId } from '@/types';
@@ -27,23 +36,11 @@ const GHIBLI: DesignTheme = {
     title: '#5C4033',          // Warm brown
     body: '#6B5B4F',           // Muted brown
     accent: '#7BA3B5',         // Sky blue
-    border: '#D4C4B0',         // Soft tan
   },
 
   background: {
-    style: 'pattern',
-    patternId: 'watercolor-wash',
-    defaultOpacity: 0.25,
-    gradient: {
-      direction: 'vertical',
-      colors: ['#E8F4F8', '#F5E6D3'], // Sky to cream
-    },
-  },
-
-  border: {
-    template: 'watercolor',
-    thickness: 'thin',
-    customRadius: 16,
+    style: 'solid',
+    defaultOpacity: 0.15,
   },
 
   typography: {
@@ -88,18 +85,11 @@ const MANGA: DesignTheme = {
     title: '#1A1A1A',          // Near black
     body: '#333333',           // Dark gray
     accent: '#FF4444',         // Manga red
-    border: '#000000',         // Pure black
   },
 
   background: {
-    style: 'pattern',
-    patternId: 'screentone-light',
-    defaultOpacity: 0.12,
-  },
-
-  border: {
-    template: 'panel',
-    thickness: 'thick',
+    style: 'solid',
+    defaultOpacity: 0.15,
   },
 
   typography: {
@@ -144,18 +134,11 @@ const WEBTOON: DesignTheme = {
     title: '#2D3436',          // Dark slate
     body: '#636E72',           // Medium gray
     accent: '#00B894',         // Mint green
-    border: '#DFE6E9',         // Light gray
   },
 
   background: {
     style: 'solid',
     defaultOpacity: 0,
-  },
-
-  border: {
-    template: 'webtoon',
-    thickness: 'thin',
-    customRadius: 12,
   },
 
   typography: {
@@ -200,23 +183,11 @@ const SHOUJO: DesignTheme = {
     title: '#9B4DCA',          // Purple
     body: '#7B6B8D',           // Muted purple
     accent: '#FF69B4',         // Hot pink
-    border: '#FFB6C1',         // Light pink
   },
 
   background: {
-    style: 'gradient',
-    patternId: 'paper-subtle',
+    style: 'solid',
     defaultOpacity: 0.15,
-    gradient: {
-      direction: 'diagonal',
-      colors: ['#FFE4EC', '#E8D5F5'], // Pink to lavender
-    },
-  },
-
-  border: {
-    template: 'shoujo',
-    thickness: 'medium',
-    customRadius: 24,
   },
 
   typography: {
@@ -262,22 +233,11 @@ const SHONEN: DesignTheme = {
     title: '#FFFFFF',          // White
     body: '#E8E8E8',           // Light gray
     accent: '#FF6B35',         // Fiery orange
-    border: '#4A00E0',         // Electric purple
   },
 
   background: {
-    style: 'gradient',
-    patternId: 'halftone',
+    style: 'solid',
     defaultOpacity: 0.15,
-    gradient: {
-      direction: 'diagonal',
-      colors: ['#0F0C29', '#302B63', '#24243E'], // Dark gradient
-    },
-  },
-
-  border: {
-    template: 'impact',
-    thickness: 'thick',
   },
 
   typography: {
@@ -323,19 +283,11 @@ const KAWAII: DesignTheme = {
     title: '#FF6B9D',          // Kawaii pink
     body: '#666666',           // Medium gray
     accent: '#FFB347',         // Peach
-    border: '#FFD1DC',         // Light pink
   },
 
   background: {
-    style: 'pattern',
-    patternId: 'dots-small',
+    style: 'solid',
     defaultOpacity: 0.15,
-  },
-
-  border: {
-    template: 'sticker',
-    thickness: 'medium',
-    customRadius: 20,
   },
 
   typography: {
@@ -381,22 +333,11 @@ const VINTAGE: DesignTheme = {
     title: '#FFE66D',          // Retro yellow
     body: '#C9B1FF',           // Light purple
     accent: '#FF6B9D',         // 90s pink
-    border: '#4A3B5C',         // Muted purple
   },
 
   background: {
-    style: 'pattern',
-    patternId: 'noise',
-    defaultOpacity: 0.2,
-    gradient: {
-      direction: 'vertical',
-      colors: ['#2C2137', '#1A1423'],
-    },
-  },
-
-  border: {
-    template: 'vintage_manga',
-    thickness: 'medium',
+    style: 'solid',
+    defaultOpacity: 0.15,
   },
 
   typography: {
@@ -486,3 +427,53 @@ export function mergeThemeWithAIColors(
     ...aiColors,
   };
 }
+
+/**
+ * Convert a DesignTheme to a NoteDesign object for system presets.
+ * These are built-in designs that users can apply without creating custom ones.
+ * System presets use solid color backgrounds only (no patterns or blurred images).
+ */
+export function themeToSystemDesign(theme: DesignTheme): import('@/types').NoteDesign {
+  return {
+    id: `system-${theme.id}`,
+    name: theme.name,
+    sourceImageUri: '', // System presets don't have source images
+    createdAt: 0, // System presets have no creation time
+
+    background: {
+      primaryColor: theme.colors.background,
+      secondaryColor: theme.colors.backgroundSecondary,
+      style: 'solid' as import('@/types').BackgroundStyle, // Always solid for system presets
+    },
+
+    colors: {
+      titleText: theme.colors.title,
+      bodyText: theme.colors.body,
+      accent: theme.colors.accent,
+    },
+
+    typography: {
+      titleStyle: theme.typography.titleStyle as import('@/types').TypographyStyle,
+      vibe: theme.typography.vibe as import('@/types').TypographyVibe,
+    },
+
+    sticker: {
+      id: `system-${theme.id}`,
+      imageUri: '', // System presets don't have sticker images
+      description: `${theme.name} themed sticker`,
+      suggestedPosition: theme.stickerHint.defaultPosition,
+      scale: theme.stickerHint.defaultScale,
+    },
+
+    designSummary: theme.description,
+
+    // Mark as system default
+    isSystemDefault: true,
+    themeId: theme.id,
+  };
+}
+
+/**
+ * Get all system default designs (7 theme presets)
+ */
+export const SYSTEM_DEFAULT_DESIGNS: import('@/types').NoteDesign[] = THEME_LIST.map(themeToSystemDesign);

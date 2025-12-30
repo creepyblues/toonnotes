@@ -1,99 +1,74 @@
 /**
- * Design Creation Flow - Theme-First Approach
+ * Design Creation Flow - Image-based customization
  *
- * New flow:
- * 1. Choose a theme (style-first)
- * 2. Optionally upload an image for AI color matching
- * 3. Preview the design live
- * 4. Generate and save
+ * Flow:
+ * 1. Select an image
+ * 2. Generate character sticker (background removal)
+ * 3. Ask user which elements to apply (sticker, background, or both)
+ * 4. Apply selected elements while keeping label preset design (fonts, colors, icons)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  Image as RNImage,
   ActivityIndicator,
   Alert,
+  Image as RNImage,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Image,
-  Sparkles,
-  X,
-  Check,
-  Dice6,
-  ChevronRight,
-  Palette,
-} from 'lucide-react-native';
+  Sparkle,
+  User,
+  ImageSquare,
+  CheckCircle,
+} from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useUserStore, useDesignStore, useNoteStore } from '@/stores';
-import { NoteColor } from '@/types';
-import { generateDesign, generateLuckyDesign, generateThemedDesign } from '@/services/geminiService';
-import { ThemePicker, CompactThemePicker } from '@/components/ThemePicker';
-import { AccentLayer } from '@/components/AccentLayer';
-import { BackgroundLayer } from '@/components/BackgroundLayer';
-import { DesignTheme, ThemeId } from '@/types';
-import { THEME_LIST, getThemeById, getRandomTheme } from '@/constants/themes';
-import { composeThemeStyle, getThemeAccents } from '@/services/designEngine';
+import { NoteDesign } from '@/types';
+import { generateStickerFromImage } from '@/services/geminiService';
+import { useTheme } from '@/src/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-type CreationStep = 'theme' | 'image' | 'preview';
+type ApplyOption = 'sticker' | 'background' | 'both';
 
 export default function CreateDesignScreen() {
   const router = useRouter();
   const { returnTo, noteId } = useLocalSearchParams<{ returnTo?: string; noteId?: string }>();
-  const { user, getDesignCost, canAffordDesign, spendCoin } = useUserStore();
-  const { addDesign } = useDesignStore();
-  const { addNote, updateNote } = useNoteStore();
+  const { getDesignCost, canAffordDesign, spendCoin } = useUserStore();
+  const { addDesign, getDesignById } = useDesignStore();
+  const { getNoteById, updateNote } = useNoteStore();
+  const { colors, isDark } = useTheme();
 
-  // Flow state
-  const [step, setStep] = useState<CreationStep>('theme');
-  const [selectedTheme, setSelectedTheme] = useState<DesignTheme | null>(null);
+  // State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [generatedStickerUri, setGeneratedStickerUri] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<ApplyOption>('both');
+  const [step, setStep] = useState<'select' | 'options'>('select');
 
   const cost = getDesignCost();
   const canAfford = canAffordDesign();
 
-  // Compose preview style
-  const previewStyle = useMemo(() => {
-    if (!selectedTheme) return null;
-    return composeThemeStyle(selectedTheme, 'detail');
-  }, [selectedTheme]);
-
-  const accentConfig = useMemo(() => {
-    if (!selectedTheme) return null;
-    return getThemeAccents(selectedTheme, 'detail');
-  }, [selectedTheme]);
+  // Get current note's design to preserve label preset elements
+  const currentNote = noteId ? getNoteById(noteId) : null;
+  const currentDesign = currentNote?.designId ? getDesignById(currentNote.designId) : null;
 
   // ============================================
   // Event Handlers
   // ============================================
 
-  const handleSelectTheme = (theme: DesignTheme) => {
-    setSelectedTheme(theme);
-  };
-
-  const handleSurpriseMe = () => {
-    const randomTheme = getRandomTheme();
-    setSelectedTheme(randomTheme);
-  };
-
-  const handleContinueToImage = () => {
-    if (selectedTheme) {
-      setStep('image');
-    }
-  };
-
   const handleSelectImage = async () => {
+    if (!canAfford) {
+      Alert.alert('Not Enough Coins', 'You need more coins to create a design. Purchase more in Settings.');
+      return;
+    }
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== 'granted') {
@@ -112,411 +87,485 @@ export default function CreateDesignScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setSelectedImage(result.assets[0].uri);
-      setStep('preview');
+      const imageUri = result.assets[0].uri;
+      setSelectedImage(imageUri);
+      // Generate sticker immediately
+      await generateSticker(imageUri);
     }
   };
 
-  const handleClearImage = () => {
-    setSelectedImage(null);
+  const generateSticker = async (imageUri: string) => {
+    setIsGenerating(true);
+    try {
+      const stickerUri = await generateStickerFromImage(imageUri);
+      setGeneratedStickerUri(stickerUri);
+      setStep('options');
+    } catch (error: any) {
+      console.error('Sticker generation failed:', error);
+      // Even if sticker generation fails, allow using image as background
+      setStep('options');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  // Helper to navigate after design creation based on origin
-  const navigateAfterCreation = (designId: string, designName: string) => {
+  const handleApplyDesign = async () => {
+    if (!selectedImage) return;
+
+    // Create design based on selected options
+    const design = createCustomDesign();
+
+    // Save the design first, then deduct cost (prevents coin loss on failure)
+    addDesign(design);
+    spendCoin();
+
+    // Navigate based on origin
     if (returnTo === 'note' && noteId) {
-      // Came from note editor - apply design to note and go back
-      updateNote(noteId, { designId });
+      updateNote(noteId, { designId: design.id });
       Alert.alert(
         'Design Applied!',
-        `"${designName}" has been applied to your note.`,
+        getApplyMessage(),
         [{ text: 'OK', onPress: () => router.back() }]
       );
     } else {
-      // Came from My Designs or unknown - create new note with design
-      const newNote = addNote({
-        title: '',
-        content: '',
-        color: NoteColor.White,
-        labels: [],
-        isPinned: false,
-        isArchived: false,
-        isDeleted: false,
-        designId,
-      });
       Alert.alert(
         'Design Created!',
-        `"${designName}" has been saved. Opening a new note with this design.`,
-        [{ text: 'OK', onPress: () => router.replace(`/note/${newNote.id}`) }]
+        getApplyMessage(),
+        [{ text: 'OK', onPress: () => router.back() }]
       );
     }
   };
 
-  const handleGenerateDesign = async () => {
-    if (!selectedTheme || !canAfford) return;
-
-    setIsGenerating(true);
-
-    try {
-      // Deduct cost first
-      spendCoin();
-
-      // Generate design with theme
-      const design = await generateThemedDesign(
-        selectedTheme,
-        selectedImage || undefined
-      );
-
-      // Save the design
-      addDesign(design);
-
-      // Navigate based on origin
-      navigateAfterCreation(design.id, design.name);
-    } catch (error: any) {
-      console.error('Design generation failed:', error);
-      Alert.alert(
-        'Generation Failed',
-        error.message || 'Failed to generate design. Please try again.'
-      );
-    } finally {
-      setIsGenerating(false);
+  const getApplyMessage = () => {
+    switch (selectedOption) {
+      case 'sticker':
+        return 'Character sticker has been added to your note.';
+      case 'background':
+        return 'Background image has been applied to your note.';
+      case 'both':
+        return 'Sticker and background have been applied to your note.';
     }
   };
 
-  const handleFeelingLucky = async () => {
-    if (!canAfford) return;
+  const createCustomDesign = (): NoteDesign => {
+    const now = Date.now();
+    const id = `custom-${now}`;
 
-    setIsGenerating(true);
+    // Start with current design's properties or defaults
+    const baseDesign = currentDesign || {
+      background: {
+        primaryColor: '#FFFFFF',
+        style: 'solid' as const,
+      },
+      colors: {
+        titleText: '#1F2937',
+        bodyText: '#4B5563',
+        accent: '#7C3AED',
+      },
+      typography: {
+        titleStyle: 'sans-serif' as const,
+        vibe: 'modern' as const,
+      },
+    };
 
-    try {
-      spendCoin();
+    // Build design based on selected options
+    const design: NoteDesign = {
+      id,
+      name: 'Custom Design',
+      sourceImageUri: selectedImage!,
+      createdAt: now,
 
-      // Random theme + chaotic sticker
-      const randomTheme = getRandomTheme();
-      const design = await generateLuckyDesign(
-        selectedImage || '',
-        randomTheme
-      );
+      // Keep label preset colors
+      colors: {
+        titleText: baseDesign.colors.titleText,
+        bodyText: baseDesign.colors.bodyText,
+        accent: baseDesign.colors.accent,
+      },
 
-      addDesign(design);
+      // Keep label preset typography
+      typography: {
+        titleStyle: baseDesign.typography.titleStyle,
+        vibe: baseDesign.typography.vibe,
+      },
 
-      // Navigate based on origin
-      navigateAfterCreation(design.id, design.name);
-    } catch (error: any) {
-      console.error('Lucky design generation failed:', error);
-      Alert.alert(
-        'Generation Failed',
-        error.message || 'The chaos was too much. Please try again.'
-      );
-    } finally {
-      setIsGenerating(false);
-    }
+      // Background - only set image if selected
+      background: selectedOption === 'background' || selectedOption === 'both'
+        ? {
+            primaryColor: baseDesign.background.primaryColor,
+            style: 'image',
+            imageUri: selectedImage!,
+            opacity: 0.2,
+          }
+        : {
+            ...baseDesign.background,
+          },
+
+      // Sticker - only set if selected and available
+      sticker: (selectedOption === 'sticker' || selectedOption === 'both') && generatedStickerUri
+        ? {
+            id: `sticker-${now}`,
+            imageUri: generatedStickerUri,
+            description: 'Custom character sticker',
+            suggestedPosition: 'bottom-right',
+            scale: 'medium',
+          }
+        : currentDesign?.sticker || {
+            id: '',
+            imageUri: '',
+            description: '',
+            suggestedPosition: 'bottom-right',
+            scale: 'medium',
+          },
+
+      designSummary: `Custom design with ${selectedOption === 'both' ? 'sticker and background' : selectedOption}`,
+
+      // Preserve label preset reference if exists
+      labelPresetId: currentDesign?.labelPresetId,
+      isLabelPreset: false, // This is now a custom design
+    };
+
+    return design;
   };
 
   const handleBack = () => {
-    if (step === 'image') {
-      setStep('theme');
-    } else if (step === 'preview') {
-      setStep('image');
+    if (step === 'options') {
+      setStep('select');
+      setSelectedImage(null);
+      setGeneratedStickerUri(null);
     } else {
       router.back();
     }
   };
 
   // ============================================
-  // Render Functions
-  // ============================================
-
-  const renderThemeStep = () => (
-    <View className="flex-1">
-      <ThemePicker
-        selectedTheme={selectedTheme?.id || null}
-        onSelectTheme={handleSelectTheme}
-        onSurpriseMe={handleSurpriseMe}
-        isDark={false}
-      />
-
-      {/* Continue Button */}
-      {selectedTheme && (
-        <View className="px-4 py-4 border-t border-gray-100 bg-white">
-          <TouchableOpacity
-            onPress={handleContinueToImage}
-            className="flex-row items-center justify-center bg-sky-500 py-4 rounded-xl"
-          >
-            <Text className="text-white font-semibold text-lg">
-              Continue with {selectedTheme.emoji} {selectedTheme.name}
-            </Text>
-            <ChevronRight size={20} color="#FFFFFF" className="ml-2" />
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
-
-  const renderImageStep = () => (
-    <View className="flex-1 px-6 justify-center items-center">
-      {/* Theme indicator */}
-      <View className="flex-row items-center px-4 py-2 rounded-full bg-gray-100 mb-8">
-        <Text style={{ fontSize: 20 }}>{selectedTheme?.emoji}</Text>
-        <Text className="text-gray-700 font-medium ml-2">
-          {selectedTheme?.name}
-        </Text>
-      </View>
-
-      {selectedImage ? (
-        <View className="items-center">
-          <View className="relative mb-6">
-            <RNImage
-              source={{ uri: selectedImage }}
-              className="w-48 h-48 rounded-2xl"
-              resizeMode="cover"
-            />
-            <TouchableOpacity
-              onPress={handleClearImage}
-              className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full items-center justify-center"
-            >
-              <X size={18} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-          <Text className="text-lg font-semibold text-gray-900 mb-2">
-            Image Selected
-          </Text>
-          <Text className="text-gray-500 text-center mb-6">
-            AI will extract colors to customize your theme
-          </Text>
-        </View>
-      ) : (
-        <>
-          <TouchableOpacity
-            onPress={handleSelectImage}
-            className="w-40 h-40 bg-gray-100 rounded-2xl items-center justify-center mb-6 border-2 border-dashed border-gray-300"
-          >
-            <Image size={48} color="#9CA3AF" />
-            <Text className="text-gray-500 mt-2">Add Image</Text>
-          </TouchableOpacity>
-
-          <Text className="text-lg font-semibold text-gray-900 mb-2 text-center">
-            Add Your Reference Image
-          </Text>
-          <Text className="text-gray-500 text-center mb-8 px-4">
-            Upload anime art, webtoon panel, or any image to personalize colors
-          </Text>
-        </>
-      )}
-
-      {/* Action Button */}
-      <View className="w-full">
-        <TouchableOpacity
-          onPress={() => setStep('preview')}
-          className="bg-sky-500 py-4 rounded-xl items-center"
-        >
-          <Text className="text-white font-semibold text-lg">
-            Continue to Preview
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderPreviewStep = () => (
-    <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
-      {/* Theme Switcher */}
-      <View className="py-4">
-        <Text className="text-sm text-gray-500 font-medium mb-2 px-4">
-          SELECTED THEME
-        </Text>
-        <CompactThemePicker
-          selectedTheme={selectedTheme?.id || null}
-          onSelectTheme={handleSelectTheme}
-          isDark={false}
-        />
-      </View>
-
-      {/* Live Preview */}
-      <View className="px-4 mb-6">
-        <Text className="text-sm text-gray-500 font-medium mb-3">PREVIEW</Text>
-        <View
-          className="rounded-2xl overflow-hidden"
-          style={{
-            height: 280,
-            backgroundColor: previewStyle?.backgroundColor || '#FFFFFF',
-            borderWidth: previewStyle?.borderWidth || 0,
-            borderColor: previewStyle?.borderColor || '#000',
-            borderRadius: previewStyle?.borderRadius || 16,
-            shadowColor: previewStyle?.shadowColor || '#000',
-            shadowOffset: previewStyle?.shadowOffset || { width: 0, height: 2 },
-            shadowOpacity: previewStyle?.shadowOpacity || 0.1,
-            shadowRadius: previewStyle?.shadowRadius || 4,
-            elevation: previewStyle?.elevation || 2,
-          }}
-        >
-          {/* Background Layer */}
-          {previewStyle && (
-            <BackgroundLayer
-              style={previewStyle}
-              context="detail"
-            >
-              <View className="flex-1 p-4">
-                {/* Sample Content */}
-                <Text
-                  style={{
-                    color: previewStyle.titleColor,
-                    fontSize: 20,
-                    fontWeight: '600',
-                    marginBottom: 8,
-                  }}
-                >
-                  Sample Note Title
-                </Text>
-                <Text
-                  style={{
-                    color: previewStyle.bodyColor,
-                    fontSize: 14,
-                    lineHeight: 20,
-                  }}
-                >
-                  This is how your notes will look with the {selectedTheme?.name} theme. The colors, borders, and decorations are all customized to match this aesthetic.
-                </Text>
-
-                {/* Source Image Indicator */}
-                {selectedImage && (
-                  <View className="absolute bottom-4 left-4 flex-row items-center px-3 py-1.5 rounded-full bg-black/30">
-                    <Palette size={14} color="#FFFFFF" />
-                    <Text className="text-white text-xs ml-1.5">
-                      Colors from your image
-                    </Text>
-                  </View>
-                )}
-
-                {/* Sticker Placeholder */}
-                <View
-                  className="absolute bottom-4 right-4 w-16 h-16 rounded-xl items-center justify-center"
-                  style={{
-                    backgroundColor: previewStyle.accentColor + '40',
-                    borderWidth: 2,
-                    borderColor: previewStyle.accentColor,
-                    borderStyle: 'dashed',
-                  }}
-                >
-                  <Sparkles size={24} color={previewStyle.accentColor} />
-                </View>
-              </View>
-
-              {/* Accent Layer */}
-              {accentConfig && (
-                <AccentLayer
-                  accentType={accentConfig.type}
-                  color={accentConfig.color}
-                  positions={accentConfig.positions}
-                  animated={false}
-                />
-              )}
-            </BackgroundLayer>
-          )}
-        </View>
-      </View>
-
-      {/* Cost Indicator */}
-      <View className="items-center mb-6">
-        <View className="flex-row items-center bg-sky-50 px-4 py-2 rounded-full">
-          <Sparkles size={18} color="#0ea5e9" />
-          <Text className="text-sky-600 font-semibold ml-2">
-            {cost === 0 ? 'Free!' : `${cost} coin`}
-          </Text>
-        </View>
-      </View>
-
-      {/* Action Buttons */}
-      <View className="px-4 pb-8">
-        <TouchableOpacity
-          onPress={handleGenerateDesign}
-          disabled={!canAfford || isGenerating}
-          className={`flex-row items-center justify-center py-4 rounded-xl mb-3 ${
-            canAfford && !isGenerating ? 'bg-sky-500' : 'bg-gray-300'
-          }`}
-        >
-          {isGenerating ? (
-            <>
-              <ActivityIndicator color="#FFFFFF" size="small" />
-              <Text className="text-white font-semibold text-lg ml-2">
-                Creating Design...
-              </Text>
-            </>
-          ) : (
-            <>
-              <Check size={20} color="#FFFFFF" />
-              <Text className="text-white font-semibold text-lg ml-2">
-                Create Design
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleFeelingLucky}
-          disabled={!canAfford || isGenerating}
-          className={`flex-row items-center justify-center py-4 rounded-xl ${
-            canAfford && !isGenerating ? 'bg-amber-500' : 'bg-gray-300'
-          }`}
-        >
-          <Dice6 size={20} color="#FFFFFF" />
-          <Text className="text-white font-semibold text-lg ml-2">
-            Feeling Lucky
-          </Text>
-        </TouchableOpacity>
-
-        <Text className="text-gray-400 text-xs text-center mt-3">
-          "Feeling Lucky" generates a wild, quirky design with transformed sticker!
-        </Text>
-
-        {!canAfford && (
-          <Text className="text-red-500 text-sm text-center mt-4">
-            Not enough coins. Purchase more in Settings.
-          </Text>
-        )}
-      </View>
-    </ScrollView>
-  );
-
-  // ============================================
-  // Main Render
+  // Render
   // ============================================
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.backgroundSecondary }}
+      edges={['top', 'bottom']}
+    >
       {/* Header */}
-      <View className="flex-row items-center px-2 py-2 border-b border-gray-100">
-        <TouchableOpacity onPress={handleBack} className="p-2">
-          <ArrowLeft size={24} color="#1F2937" />
+      <View
+        className="flex-row items-center px-2 py-2 border-b"
+        style={{ borderBottomColor: colors.separator }}
+      >
+        <TouchableOpacity onPress={handleBack} className="p-2" disabled={isGenerating}>
+          <ArrowLeft size={24} color={isGenerating ? colors.textTertiary : colors.textPrimary} />
         </TouchableOpacity>
-        <Text className="text-lg font-semibold text-gray-900 ml-2">
-          {step === 'theme'
-            ? 'Choose Style'
-            : step === 'image'
-            ? 'Add Reference'
-            : 'Preview Design'}
+        <Text
+          className="text-lg font-semibold ml-2"
+          style={{ color: colors.textPrimary }}
+        >
+          {step === 'select' ? 'Add Custom Element' : 'Choose What to Apply'}
         </Text>
-
-        {/* Step Indicator */}
-        <View className="flex-1 flex-row justify-end items-center pr-2">
-          {['theme', 'image', 'preview'].map((s, i) => (
-            <View
-              key={s}
-              className={`w-2 h-2 rounded-full mx-1 ${
-                step === s
-                  ? 'bg-sky-500'
-                  : i < ['theme', 'image', 'preview'].indexOf(step)
-                  ? 'bg-sky-300'
-                  : 'bg-gray-200'
-              }`}
-            />
-          ))}
-        </View>
       </View>
 
-      {/* Content */}
-      {step === 'theme' && renderThemeStep()}
-      {step === 'image' && renderImageStep()}
-      {step === 'preview' && renderPreviewStep()}
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
+        {step === 'select' ? (
+          // Step 1: Select Image
+          <View className="flex-1 px-4 pt-8">
+            {/* Instructions */}
+            <View className="items-center mb-8">
+              <Sparkle size={48} color={colors.accent} weight="duotone" />
+              <Text
+                className="text-xl font-bold mt-4 text-center"
+                style={{ color: colors.textPrimary }}
+              >
+                Add Your Image
+              </Text>
+              <Text
+                className="text-center mt-2 px-8"
+                style={{ color: colors.textSecondary }}
+              >
+                Select an image to create a character sticker or use as background
+              </Text>
+            </View>
+
+            {/* Image Selection */}
+            {isGenerating ? (
+              <View
+                className="h-64 rounded-2xl items-center justify-center overflow-hidden"
+                style={{ backgroundColor: colors.surfaceCard }}
+              >
+                {selectedImage && (
+                  <RNImage
+                    source={{ uri: selectedImage }}
+                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.3 }}
+                    resizeMode="cover"
+                  />
+                )}
+                <ActivityIndicator size="large" color={colors.accent} />
+                <Text
+                  className="mt-4 font-medium"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Creating sticker...
+                </Text>
+                <Text
+                  className="text-sm mt-1"
+                  style={{ color: colors.textTertiary }}
+                >
+                  Removing background from image
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={handleSelectImage}
+                className="h-64 rounded-2xl items-center justify-center border-2 border-dashed"
+                style={{
+                  backgroundColor: isDark ? `${colors.accent}15` : '#F5F3FF',
+                  borderColor: colors.accent,
+                }}
+              >
+                <Image size={56} color={colors.accent} weight="duotone" />
+                <Text
+                  className="mt-4 font-semibold text-lg"
+                  style={{ color: colors.accent }}
+                >
+                  Tap to Select Image
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Cost Indicator */}
+            <View className="items-center mt-8">
+              <View
+                className="flex-row items-center px-5 py-3 rounded-full"
+                style={{ backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }}
+              >
+                <Sparkle size={20} color={colors.accent} />
+                <Text
+                  className="font-semibold ml-2 text-base"
+                  style={{ color: colors.accent }}
+                >
+                  {cost === 0 ? 'Free!' : `${cost} coin`}
+                </Text>
+              </View>
+              {!canAfford && (
+                <Text className="text-sm mt-3" style={{ color: '#EF4444' }}>
+                  Not enough coins.
+                </Text>
+              )}
+            </View>
+          </View>
+        ) : (
+          // Step 2: Choose Options
+          <View className="flex-1 px-4 pt-6">
+            {/* Preview Row */}
+            <View className="flex-row mb-6">
+              {/* Original Image */}
+              <View className="flex-1 mr-2">
+                <Text
+                  className="text-xs mb-2 text-center"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Original
+                </Text>
+                <View
+                  className="aspect-square rounded-xl overflow-hidden"
+                  style={{ backgroundColor: colors.surfaceCard }}
+                >
+                  {selectedImage && (
+                    <RNImage
+                      source={{ uri: selectedImage }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  )}
+                </View>
+              </View>
+
+              {/* Sticker Preview */}
+              <View className="flex-1 ml-2">
+                <Text
+                  className="text-xs mb-2 text-center"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Sticker
+                </Text>
+                <View
+                  className="aspect-square rounded-xl overflow-hidden items-center justify-center"
+                  style={{ backgroundColor: colors.surfaceCard }}
+                >
+                  {generatedStickerUri ? (
+                    <RNImage
+                      source={{ uri: generatedStickerUri }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text
+                      className="text-xs text-center px-2"
+                      style={{ color: colors.textTertiary }}
+                    >
+                      Sticker unavailable
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Options */}
+            <Text
+              className="text-sm font-semibold mb-3"
+              style={{ color: colors.textSecondary }}
+            >
+              What would you like to apply?
+            </Text>
+
+            {/* Option: Sticker Only */}
+            <TouchableOpacity
+              onPress={() => setSelectedOption('sticker')}
+              disabled={!generatedStickerUri}
+              className="flex-row items-center p-4 rounded-xl mb-3 border-2"
+              style={{
+                borderColor: selectedOption === 'sticker' ? colors.accent : colors.border,
+                backgroundColor: selectedOption === 'sticker'
+                  ? (isDark ? `${colors.accent}15` : '#F5F3FF')
+                  : colors.surfaceCard,
+                opacity: !generatedStickerUri ? 0.5 : 1,
+              }}
+            >
+              <View
+                className="w-10 h-10 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: selectedOption === 'sticker'
+                    ? colors.accent
+                    : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
+                }}
+              >
+                <User size={20} color={selectedOption === 'sticker' ? '#FFFFFF' : colors.textSecondary} />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text
+                  className="font-semibold"
+                  style={{ color: selectedOption === 'sticker' ? colors.accent : colors.textPrimary }}
+                >
+                  Character Sticker Only
+                </Text>
+                <Text
+                  className="text-sm"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Add sticker to your note, keep current background
+                </Text>
+              </View>
+              {selectedOption === 'sticker' && (
+                <CheckCircle size={24} color={colors.accent} weight="fill" />
+              )}
+            </TouchableOpacity>
+
+            {/* Option: Background Only */}
+            <TouchableOpacity
+              onPress={() => setSelectedOption('background')}
+              className="flex-row items-center p-4 rounded-xl mb-3 border-2"
+              style={{
+                borderColor: selectedOption === 'background' ? colors.accent : colors.border,
+                backgroundColor: selectedOption === 'background'
+                  ? (isDark ? `${colors.accent}15` : '#F5F3FF')
+                  : colors.surfaceCard,
+              }}
+            >
+              <View
+                className="w-10 h-10 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: selectedOption === 'background'
+                    ? colors.accent
+                    : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
+                }}
+              >
+                <ImageSquare size={20} color={selectedOption === 'background' ? '#FFFFFF' : colors.textSecondary} />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text
+                  className="font-semibold"
+                  style={{ color: selectedOption === 'background' ? colors.accent : colors.textPrimary }}
+                >
+                  Background Image Only
+                </Text>
+                <Text
+                  className="text-sm"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Use image as background, keep current sticker
+                </Text>
+              </View>
+              {selectedOption === 'background' && (
+                <CheckCircle size={24} color={colors.accent} weight="fill" />
+              )}
+            </TouchableOpacity>
+
+            {/* Option: Both */}
+            <TouchableOpacity
+              onPress={() => setSelectedOption('both')}
+              disabled={!generatedStickerUri}
+              className="flex-row items-center p-4 rounded-xl mb-3 border-2"
+              style={{
+                borderColor: selectedOption === 'both' ? colors.accent : colors.border,
+                backgroundColor: selectedOption === 'both'
+                  ? (isDark ? `${colors.accent}15` : '#F5F3FF')
+                  : colors.surfaceCard,
+                opacity: !generatedStickerUri ? 0.5 : 1,
+              }}
+            >
+              <View
+                className="w-10 h-10 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: selectedOption === 'both'
+                    ? colors.accent
+                    : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
+                }}
+              >
+                <Sparkle size={20} color={selectedOption === 'both' ? '#FFFFFF' : colors.textSecondary} />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text
+                  className="font-semibold"
+                  style={{ color: selectedOption === 'both' ? colors.accent : colors.textPrimary }}
+                >
+                  Both Sticker & Background
+                </Text>
+                <Text
+                  className="text-sm"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Apply sticker and use image as background
+                </Text>
+              </View>
+              {selectedOption === 'both' && (
+                <CheckCircle size={24} color={colors.accent} weight="fill" />
+              )}
+            </TouchableOpacity>
+
+            {/* Info about preserving design */}
+            <View
+              className="rounded-xl p-4 mt-2"
+              style={{ backgroundColor: isDark ? colors.backgroundTertiary : '#F9FAFB' }}
+            >
+              <Text
+                className="text-sm"
+                style={{ color: colors.textSecondary }}
+              >
+                Your current design's fonts, colors, and icons will be preserved.
+              </Text>
+            </View>
+
+            {/* Apply Button */}
+            <TouchableOpacity
+              onPress={handleApplyDesign}
+              className="py-4 rounded-xl mt-6 items-center"
+              style={{ backgroundColor: colors.accent }}
+            >
+              <Text className="font-semibold text-lg" style={{ color: '#FFFFFF' }}>
+                Apply to Note
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }

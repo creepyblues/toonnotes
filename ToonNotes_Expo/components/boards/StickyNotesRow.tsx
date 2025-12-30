@@ -18,7 +18,7 @@ interface StickyNotesRowProps {
   maxVisible?: number; // Max notes to show before "and X more"
 }
 
-const NOTE_SIZE = 80;
+const NOTE_SIZE = 104; // 30% larger than original 80
 const NOTE_SPACING = 16;
 
 export function StickyNotesRow({

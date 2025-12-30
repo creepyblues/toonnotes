@@ -3,21 +3,24 @@ import { View, Text, TouchableOpacity, Switch, Alert, TextInput, Modal, Activity
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
-  Trash2,
+  Trash,
   Archive,
-  Coins,
+  Coin,
   Info,
-  ChevronRight,
+  CaretRight,
   Key,
   X,
-} from 'lucide-react-native';
+  Palette,
+} from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 
-import { useUserStore, useNoteStore } from '@/stores';
-import { NoteColor } from '@/types';
+import { useUserStore, useNoteStore, useDesignStore } from '@/stores';
+import { useTheme } from '@/src/theme';
+import { CoinShop } from '@/components/shop/CoinShop';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const {
     settings,
     toggleDarkMode,
@@ -29,12 +32,15 @@ export default function SettingsScreen() {
     saveGeminiApiKey,
     clearGeminiApiKey,
     hasApiKey,
+    isPurchaseSheetOpen,
+    openPurchaseSheet,
+    closePurchaseSheet,
   } = useUserStore();
-  const { getArchivedNotes, getDeletedNotes } = useNoteStore();
+  const { getArchivedNotes, getDeletedNotes, clearUnpinnedNotes, getActiveNotes } = useNoteStore();
+  const { designs, clearAllDesigns } = useDesignStore();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const isDark = settings.darkMode;
 
   // Load API key from secure storage on mount
   useEffect(() => {
@@ -55,8 +61,7 @@ export default function SettingsScreen() {
   };
 
   const handleBuyCoins = () => {
-    // TODO: Open coin shop
-    Alert.alert('Coming Soon', 'In-app purchases will be available soon!');
+    openPurchaseSheet();
   };
 
   const handleSaveApiKey = async () => {
@@ -104,48 +109,104 @@ export default function SettingsScreen() {
     setShowApiKeyModal(true);
   };
 
+  const handleClearAllDesigns = () => {
+    const designCount = designs.length;
+
+    if (designCount === 0) {
+      Alert.alert('No Designs to Delete', 'There are no custom designs to delete.');
+      return;
+    }
+
+    Alert.alert(
+      'Clear All Designs',
+      `This will permanently delete ${designCount} custom design${designCount === 1 ? '' : 's'}. Label presets will not be affected.\n\nThis action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: () => {
+            clearAllDesigns();
+            Alert.alert('Done', `Deleted ${designCount} design${designCount === 1 ? '' : 's'}.`);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearUnpinnedNotes = () => {
+    const activeNotes = getActiveNotes();
+    const unpinnedCount = activeNotes.filter(n => !n.isPinned).length;
+    const pinnedCount = activeNotes.filter(n => n.isPinned).length;
+
+    if (unpinnedCount === 0) {
+      Alert.alert('No Notes to Delete', 'There are no unpinned notes to delete.');
+      return;
+    }
+
+    Alert.alert(
+      'Clear Unpinned Notes',
+      `This will permanently delete ${unpinnedCount} unpinned note${unpinnedCount === 1 ? '' : 's'}. ${pinnedCount} pinned note${pinnedCount === 1 ? '' : 's'} will be kept.\n\nThis action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All',
+          style: 'destructive',
+          onPress: () => {
+            clearUnpinnedNotes();
+            Alert.alert('Done', `Deleted ${unpinnedCount} note${unpinnedCount === 1 ? '' : 's'}. ${pinnedCount} pinned note${pinnedCount === 1 ? '' : 's'} kept.`);
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView
       className="flex-1"
-      style={{ backgroundColor: isDark ? '#121212' : '#F9FAFB' }}
+      style={{ backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
       <View
-        className="px-4 py-3 border-b"
-        style={{
-          backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-          borderBottomColor: isDark ? '#2D2D2D' : '#F3F4F6'
-        }}
+        className="px-4 py-3"
+        style={{ backgroundColor: colors.backgroundSecondary }}
       >
         <Text
-          className="text-2xl font-bold"
-          style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+          style={{
+            fontSize: 34,
+            fontWeight: '700',
+            color: colors.textPrimary,
+          }}
         >
           Settings
         </Text>
       </View>
 
       {/* Settings List */}
-      <View className="flex-1">
+      <View className="flex-1 px-4">
         {/* Account Section */}
         <View className="mt-6">
-          <Text className="text-xs uppercase tracking-wider px-4 mb-2" style={{ color: '#9CA3AF' }}>
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
             Account
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}>
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
             <TouchableOpacity
               onPress={handleBuyCoins}
-              className="flex-row items-center justify-between px-4 py-4 border-b"
-              style={{ borderBottomColor: isDark ? '#2D2D2D' : '#F3F4F6' }}
+              className="flex-row items-center justify-between px-4 py-3"
             >
               <View className="flex-row items-center">
-                <Coins size={20} color="#F59E0B" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Coins</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(251, 191, 36, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Coin size={20} color="#FBBF24" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Coins</Text>
               </View>
               <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: isDark ? '#9CA3AF' : '#4B5563' }}>{user.coinBalance}</Text>
-                <ChevronRight size={20} color="#9CA3AF" />
+                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 17 }}>{user.coinBalance}</Text>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
               </View>
             </TouchableOpacity>
           </View>
@@ -153,23 +214,28 @@ export default function SettingsScreen() {
 
         {/* API Section */}
         <View className="mt-6">
-          <Text className="text-xs uppercase tracking-wider px-4 mb-2" style={{ color: '#9CA3AF' }}>
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
             AI Configuration
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}>
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
             <TouchableOpacity
               onPress={handleOpenApiKeyModal}
-              className="flex-row items-center justify-between px-4 py-4"
+              className="flex-row items-center justify-between px-4 py-3"
             >
               <View className="flex-row items-center">
-                <Key size={20} color="#0ea5e9" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Gemini API Key</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Key size={20} color={colors.accent} weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Gemini API Key</Text>
               </View>
               <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: isDark ? '#9CA3AF' : '#4B5563' }}>
+                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 15 }}>
                   {!apiKeyLoaded ? 'Loading...' : apiKeyMasked || 'Not set'}
                 </Text>
-                <ChevronRight size={20} color="#9CA3AF" />
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
               </View>
             </TouchableOpacity>
           </View>
@@ -177,19 +243,24 @@ export default function SettingsScreen() {
 
         {/* Appearance Section */}
         <View className="mt-6">
-          <Text className="text-xs uppercase tracking-wider px-4 mb-2" style={{ color: '#9CA3AF' }}>
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
             Appearance
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}>
-            <View className="flex-row items-center justify-between px-4 py-4">
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
+            <View className="flex-row items-center justify-between px-4 py-3">
               <View className="flex-row items-center">
-                <Moon size={20} color="#6366F1" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Dark Mode</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Moon size={20} color={colors.accent} weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Dark Mode</Text>
               </View>
               <Switch
                 value={settings.darkMode}
                 onValueChange={toggleDarkMode}
-                trackColor={{ false: '#E5E7EB', true: '#6366F1' }}
+                trackColor={{ false: colors.border, true: colors.accent }}
                 thumbColor="#FFFFFF"
               />
             </View>
@@ -198,36 +269,43 @@ export default function SettingsScreen() {
 
         {/* Notes Section */}
         <View className="mt-6">
-          <Text className="text-xs uppercase tracking-wider px-4 mb-2" style={{ color: '#9CA3AF' }}>
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
             Notes
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}>
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
             <TouchableOpacity
               onPress={handleViewArchive}
-              className="flex-row items-center justify-between px-4 py-4 border-b"
-              style={{ borderBottomColor: isDark ? '#2D2D2D' : '#F3F4F6' }}
+              className="flex-row items-center justify-between px-4 py-3"
+              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
             >
               <View className="flex-row items-center">
-                <Archive size={20} color="#10B981" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Archive</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52, 199, 89, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Archive size={20} color="#34C759" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Archive</Text>
               </View>
               <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: isDark ? '#9CA3AF' : '#4B5563' }}>{archivedCount}</Text>
-                <ChevronRight size={20} color="#9CA3AF" />
+                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 17 }}>{archivedCount}</Text>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handleViewTrash}
-              className="flex-row items-center justify-between px-4 py-4"
+              className="flex-row items-center justify-between px-4 py-3"
             >
               <View className="flex-row items-center">
-                <Trash2 size={20} color="#EF4444" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Trash</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash size={20} color="#FF3B30" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Trash</Text>
               </View>
               <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: isDark ? '#9CA3AF' : '#4B5563' }}>{deletedCount}</Text>
-                <ChevronRight size={20} color="#9CA3AF" />
+                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 17 }}>{deletedCount}</Text>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
               </View>
             </TouchableOpacity>
           </View>
@@ -235,16 +313,21 @@ export default function SettingsScreen() {
 
         {/* About Section */}
         <View className="mt-6">
-          <Text className="text-xs uppercase tracking-wider px-4 mb-2" style={{ color: '#9CA3AF' }}>
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
             About
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}>
-            <View className="flex-row items-center justify-between px-4 py-4">
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
+            <View className="flex-row items-center justify-between px-4 py-3">
               <View className="flex-row items-center">
-                <Info size={20} color="#6B7280" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Version</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${colors.textSecondary}20`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Info size={20} color={colors.textSecondary} weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Version</Text>
               </View>
-              <Text style={{ color: '#9CA3AF' }}>1.0.0</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 17 }}>1.0.0</Text>
             </View>
           </View>
         </View>
@@ -252,36 +335,69 @@ export default function SettingsScreen() {
         {/* Free design indicator */}
         {!user.freeDesignUsed && (
           <View
-            className="mt-6 mx-4 p-4 rounded-xl"
-            style={{ backgroundColor: isDark ? '#0c4a6e' : '#f0f9ff' }}
+            className="mt-6 p-4 rounded-2xl"
+            style={{ backgroundColor: `${colors.accent}15` }}
           >
-            <Text style={{ color: isDark ? '#7dd3fc' : '#0369a1', fontWeight: '600' }}>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>
               Free Design Available
             </Text>
-            <Text style={{ color: isDark ? '#38bdf8' : '#0284c7', fontSize: 14, marginTop: 4 }}>
+            <Text style={{ color: colors.accentLight, fontSize: 14, marginTop: 4 }}>
               Create your first custom design for free!
             </Text>
           </View>
         )}
 
         {/* Debug Section */}
-        <View className="mt-6">
-          <Text className="text-xs uppercase tracking-wider px-4 mb-2" style={{ color: '#9CA3AF' }}>
+        <View className="mt-6 mb-8">
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
             Debug
           </Text>
-          <View style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}>
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
             <TouchableOpacity
               onPress={() => {
                 addCoins(100);
                 Alert.alert('Success', 'Added 100 coins!');
               }}
-              className="flex-row items-center justify-between px-4 py-4"
+              className="flex-row items-center justify-between px-4 py-3"
+              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
             >
               <View className="flex-row items-center">
-                <Coins size={20} color="#10B981" />
-                <Text className="ml-3" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Add 100 Coins</Text>
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52, 199, 89, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Coin size={20} color="#34C759" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Add 100 Coins</Text>
               </View>
-              <ChevronRight size={20} color="#9CA3AF" />
+              <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleClearUnpinnedNotes}
+              className="flex-row items-center justify-between px-4 py-3"
+              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
+            >
+              <View className="flex-row items-center">
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash size={20} color="#FF3B30" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear Unpinned Notes</Text>
+              </View>
+              <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleClearAllDesigns}
+              className="flex-row items-center justify-between px-4 py-3"
+            >
+              <View className="flex-row items-center">
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 149, 0, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Palette size={20} color="#FF9500" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear All Designs</Text>
+              </View>
+              <CaretRight size={16} color={colors.textTertiary} weight="regular" />
             </TouchableOpacity>
           </View>
         </View>
@@ -294,38 +410,43 @@ export default function SettingsScreen() {
         animationType="fade"
         onRequestClose={() => setShowApiKeyModal(false)}
       >
-        <View className="flex-1 items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.overlayDark }}>
           <View
             className="w-[90%] max-w-[400px] rounded-2xl p-6"
-            style={{ backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }}
+            style={{ backgroundColor: colors.surfaceElevated }}
           >
             <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-semibold" style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>
+              <Text className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
                 Gemini API Key
               </Text>
-              <TouchableOpacity onPress={() => setShowApiKeyModal(false)}>
-                <X size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
+              <TouchableOpacity
+                onPress={() => setShowApiKeyModal(false)}
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={18} color={colors.textSecondary} weight="regular" />
               </TouchableOpacity>
             </View>
 
-            <Text className="mb-2" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
+            <Text className="mb-3" style={{ color: colors.textSecondary }}>
               Enter your Gemini API key to enable AI-powered design generation.
             </Text>
 
             {hasApiKey() && (
-              <Text className="mb-2 text-xs" style={{ color: '#10B981' }}>
+              <Text className="mb-3 text-xs" style={{ color: '#34C759' }}>
                 Current key: {apiKeyMasked}
               </Text>
             )}
 
             <TextInput
-              className="rounded-lg px-4 py-3 mb-4"
+              className="rounded-xl px-4 py-3 mb-4"
               style={{
-                backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6',
-                color: isDark ? '#FFFFFF' : '#1F2937',
+                backgroundColor: colors.backgroundSecondary,
+                color: colors.textPrimary,
+                borderWidth: 1,
+                borderColor: colors.border,
               }}
               placeholder={hasApiKey() ? 'Enter new API key...' : 'AIza...'}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
               value={apiKeyInput}
               onChangeText={setApiKeyInput}
               secureTextEntry
@@ -337,17 +458,17 @@ export default function SettingsScreen() {
             <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={() => setShowApiKeyModal(false)}
-                className="flex-1 py-3 rounded-lg items-center"
-                style={{ backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6' }}
+                className="flex-1 py-3 rounded-xl items-center"
+                style={{ backgroundColor: colors.buttonSecondary }}
                 disabled={isSaving}
               >
-                <Text style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}>Cancel</Text>
+                <Text className="font-medium" style={{ color: colors.textPrimary }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSaveApiKey}
-                className="flex-1 py-3 rounded-lg items-center bg-primary-500"
+                className="flex-1 py-3 rounded-xl items-center"
                 disabled={isSaving || !apiKeyInput.trim()}
-                style={{ opacity: isSaving || !apiKeyInput.trim() ? 0.5 : 1 }}
+                style={{ backgroundColor: colors.buttonPrimary, opacity: isSaving || !apiKeyInput.trim() ? 0.5 : 1 }}
               >
                 {isSaving ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
@@ -360,15 +481,21 @@ export default function SettingsScreen() {
             {hasApiKey() && (
               <TouchableOpacity
                 onPress={handleClearApiKey}
-                className="mt-3 py-2 items-center"
+                className="mt-4 py-2 items-center"
                 disabled={isSaving}
               >
-                <Text style={{ color: '#EF4444', fontSize: 14 }}>Remove API Key</Text>
+                <Text style={{ color: '#FF3B30', fontSize: 14, fontWeight: '500' }}>Remove API Key</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
       </Modal>
+
+      {/* Coin Shop */}
+      <CoinShop
+        visible={isPurchaseSheetOpen}
+        onClose={closePurchaseSheet}
+      />
     </SafeAreaView>
   );
 }

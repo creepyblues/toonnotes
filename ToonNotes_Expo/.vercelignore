@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+
+# Expo
+.expo
+dist
+web-build
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+ios
+android
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+*.log
+
+# Test
+coverage
+__tests__
+
+# Development
+.env.local
+.env.development
+
+# Assets we don't need for API
+assets/images
+assets/fonts
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Other
+.git
+.github
+.playwright-mcp
+src

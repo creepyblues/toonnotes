@@ -10,42 +10,35 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Plus, Search, X, Pin } from 'lucide-react-native';
+import { Plus, MagnifyingGlass, X, PushPin } from 'phosphor-react-native';
 
 import { useNoteStore, useUserStore, useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note, NoteColor } from '@/types';
+import { useTheme } from '@/src/theme';
 
-// Calculate item dimensions for getItemLayout
+// Calculate item dimensions for consistent 2-column grid
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const ITEM_PADDING = 12; // contentContainerStyle padding
-const GAP = 8; // gap between columns
-const ITEM_WIDTH = (SCREEN_WIDTH - ITEM_PADDING * 2 - GAP) / 2;
+const GRID_PADDING = 12;
+const GRID_GAP = 10;
+const ITEM_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 const ITEM_HEIGHT = ITEM_WIDTH + 12; // Square aspect ratio + margin bottom
 
 export default function NotesScreen() {
   const router = useRouter();
   const { notes, getActiveNotes, searchNotes, addNote } = useNoteStore();
-  const { settings } = useUserStore();
-  const { designs } = useDesignStore();
-  const isDark = settings.darkMode;
+  const { colors, isDark } = useTheme();
+  const { getDesignById } = useDesignStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Create a design lookup map for O(1) access
-  const designMap = useMemo(() => {
-    const map = new Map<string, typeof designs[0]>();
-    designs.forEach((d) => map.set(d.id, d));
-    return map;
-  }, [designs]);
-
-  // Get design by id using the memoized map
+  // Get design by id using the store's method (handles user designs + label presets)
   const getDesign = useCallback((designId?: string) => {
     if (!designId) return null;
-    return designMap.get(designId) || null;
-  }, [designMap]);
+    return getDesignById(designId) || null;
+  }, [getDesignById]);
 
   // Get filtered notes
   const filteredNotes = useMemo(() => {
@@ -84,9 +77,9 @@ export default function NotesScreen() {
   // Memoized keyExtractor
   const keyExtractor = useCallback((item: Note) => item.id, []);
 
-  // Memoized renderItem
+  // Memoized renderItem - fixed width to prevent stretching on odd items
   const renderItem = useCallback(({ item }: { item: Note }) => (
-    <View className="flex-1 mb-3 px-1">
+    <View style={{ width: ITEM_WIDTH, marginBottom: 10 }}>
       <NoteCard
         note={item}
         design={getDesign(item.designId)}
@@ -103,14 +96,14 @@ export default function NotesScreen() {
       {pinnedNotes.length > 0 && (
         <View className="mb-6">
           <View className="flex-row items-center mb-3 px-1">
-            <Pin size={14} color="#9CA3AF" />
-            <Text className="text-xs ml-1 uppercase tracking-wider" style={{ color: '#9CA3AF' }}>
+            <PushPin size={14} color={colors.accent} weight="fill" />
+            <Text className="text-xs ml-1 uppercase tracking-wider font-medium" style={{ color: colors.accent }}>
               Pinned
             </Text>
           </View>
-          <View className="flex-row flex-wrap" style={{ marginHorizontal: -4 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP }}>
             {pinnedNotes.map((note) => (
-              <View key={note.id} className="w-1/2 p-1 px-2 mb-2">
+              <View key={note.id} style={{ width: ITEM_WIDTH, marginBottom: 10 }}>
                 <NoteCard
                   note={note}
                   design={getDesign(note.designId)}
@@ -127,26 +120,38 @@ export default function NotesScreen() {
       {/* Others Section Header */}
       {unpinnedNotes.length > 0 && pinnedNotes.length > 0 && (
         <View className="flex-row items-center mb-3 px-1">
-          <Text className="text-xs uppercase tracking-wider" style={{ color: '#9CA3AF' }}>
-            Others
+          <Text className="text-xs uppercase tracking-wider font-medium" style={{ color: colors.textSecondary }}>
+            Recent
           </Text>
         </View>
       )}
     </View>
-  ), [pinnedNotes, unpinnedNotes, getDesign, handleNotePress, isDark]);
+  ), [pinnedNotes, unpinnedNotes, getDesign, handleNotePress, isDark, colors]);
 
   const renderEmpty = () => (
     <View className="flex-1 items-center justify-center py-20">
-      <Text className="text-6xl mb-4">📝</Text>
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${colors.accent}15`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <Text className="text-4xl">📝</Text>
+      </View>
       <Text
         className="text-xl font-semibold mb-2"
-        style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+        style={{ color: colors.textPrimary }}
       >
         No notes yet
       </Text>
       <Text
         className="text-center px-8"
-        style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
+        style={{ color: colors.textSecondary }}
       >
         Tap the + button to create your first note
       </Text>
@@ -156,32 +161,35 @@ export default function NotesScreen() {
   return (
     <SafeAreaView
       className="flex-1"
-      style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}
+      style={{ backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
       <View
-        className="px-4 py-3 border-b"
-        style={{
-          backgroundColor: isDark ? '#121212' : '#FFFFFF',
-          borderBottomColor: isDark ? '#2D2D2D' : '#F3F4F6'
-        }}
+        className="px-4 py-3"
+        style={{ backgroundColor: colors.backgroundSecondary }}
       >
         <View className="flex-row items-center justify-between">
           <Text
-            className="text-2xl font-bold"
-            style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+            style={{
+              fontSize: 34,
+              fontWeight: '700',
+              color: colors.textPrimary,
+            }}
           >
             ToonNotes
           </Text>
           <TouchableOpacity
             onPress={() => setIsSearching(!isSearching)}
-            className="p-2"
+            className="p-2 rounded-full"
+            style={{
+              backgroundColor: isSearching ? `${colors.accent}15` : 'transparent'
+            }}
           >
             {isSearching ? (
-              <X size={24} color={isDark ? '#9CA3AF' : '#4B5563'} />
+              <X size={24} color={colors.accent} weight="regular" />
             ) : (
-              <Search size={24} color={isDark ? '#9CA3AF' : '#4B5563'} />
+              <MagnifyingGlass size={24} color={colors.textSecondary} weight="regular" />
             )}
           </TouchableOpacity>
         </View>
@@ -190,13 +198,15 @@ export default function NotesScreen() {
         {isSearching && (
           <View className="mt-3">
             <TextInput
-              className="rounded-lg px-4 py-3"
+              className="rounded-xl px-4 py-3"
               style={{
-                backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6',
-                color: isDark ? '#FFFFFF' : '#1F2937',
+                backgroundColor: colors.surfaceCard,
+                color: colors.textPrimary,
+                borderWidth: 1,
+                borderColor: colors.border,
               }}
               placeholder="Search notes..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
@@ -213,8 +223,8 @@ export default function NotesScreen() {
           data={unpinnedNotes}
           keyExtractor={keyExtractor}
           numColumns={2}
-          contentContainerStyle={{ padding: 12 }}
-          columnWrapperStyle={{ gap: 8 }}
+          contentContainerStyle={{ padding: GRID_PADDING }}
+          columnWrapperStyle={{ gap: GRID_GAP }}
           ListHeaderComponent={renderHeader}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -238,16 +248,17 @@ export default function NotesScreen() {
       {/* FAB */}
       <TouchableOpacity
         onPress={handleCreateNote}
-        className="absolute bottom-6 right-6 w-14 h-14 bg-primary-500 rounded-full items-center justify-center shadow-lg"
+        className="absolute bottom-6 right-6 w-14 h-14 rounded-full items-center justify-center"
         style={{
-          shadowColor: '#0ea5e9',
+          backgroundColor: colors.accent,
+          shadowColor: colors.accent,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          shadowOpacity: 0.35,
+          shadowRadius: 12,
           elevation: 8,
         }}
       >
-        <Plus size={28} color="#FFFFFF" />
+        <Plus size={28} color="#FFFFFF" weight="bold" />
       </TouchableOpacity>
     </SafeAreaView>
   );

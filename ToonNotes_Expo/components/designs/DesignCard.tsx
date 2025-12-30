@@ -1,9 +1,9 @@
 /**
- * DesignCard - Renders a design template with NoteCard-like styling
+ * DesignCard - Renders a design template with iOS-style styling
  *
  * Features:
  * - Square aspect ratio (matches NoteCard)
- * - Hand-drawn SVG border
+ * - Clean iOS-style border and shadow
  * - Design name at TOP
  * - Sample text to preview title/body colors
  * - Sticker overlay
@@ -11,12 +11,10 @@
  * - Selection state support
  */
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { Image } from 'expo-image';
-import { NoteDesign, NoteColor, DesignViewContext } from '@/types';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { NoteDesign, NoteColor } from '@/types';
 import { composeStyle } from '@/services/designEngine';
-import { HandDrawnBorder } from '@/components/notes/HandDrawnBorder';
 
 interface DesignCardProps {
   design: NoteDesign;
@@ -33,20 +31,8 @@ export function DesignCard({
   isSelected = false,
   size = 'normal',
 }: DesignCardProps) {
-  const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
-
-  const handleLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    if (width !== cardSize.width || height !== cardSize.height) {
-      setCardSize({ width, height });
-    }
-  };
-
   // Compose style using DesignEngine
   const style = composeStyle(design, NoteColor.White, 'grid', isDark);
-
-  // Border color for hand-drawn border
-  const borderColor = style.showBorder ? style.borderColor : (isDark ? '#4B5563' : '#D1D5DB');
 
   // Get decoration emoji for shoujo style
   const getDecorations = () => {
@@ -67,51 +53,54 @@ export function DesignCard({
   return (
     <View style={styles.wrapper}>
       {/* Design name above card */}
-      <Text
-        style={[
-          styles.designName,
-          { color: isDark ? '#FFFFFF' : '#1F2937', fontSize: isCompact ? 11 : 13 },
-        ]}
-        numberOfLines={1}
-      >
-        {design.name}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+        <Text
+          style={[
+            styles.designName,
+            { color: isDark ? '#FFFFFF' : '#1F2937', fontSize: isCompact ? 11 : 13, marginBottom: 0 },
+          ]}
+          numberOfLines={1}
+        >
+          {design.name}
+        </Text>
+        {design.isSystemDefault && (
+          <View
+            style={{
+              marginLeft: 6,
+              paddingHorizontal: 4,
+              paddingVertical: 1,
+              borderRadius: 3,
+              backgroundColor: isDark ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.15)',
+            }}
+          >
+            <Text style={{ fontSize: 8, color: '#F59E0B', fontWeight: '600' }}>
+              ★
+            </Text>
+          </View>
+        )}
+      </View>
 
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
-        onLayout={handleLayout}
         style={[
           styles.container,
           {
             backgroundColor: style.backgroundColor,
-            borderRadius: style.borderRadius,
+            borderRadius: 16,
             minHeight,
-            // Shadow
-            shadowColor: style.shadowColor,
-            shadowOffset: style.shadowOffset,
-            shadowOpacity: style.shadowOpacity,
-            shadowRadius: style.shadowRadius,
-            elevation: style.elevation,
-            // Selection border
-            borderWidth: isSelected ? 3 : 0,
-            borderColor: isSelected ? '#F59E0B' : 'transparent',
+            // iOS-style shadow
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 2,
+            // Clean border
+            borderWidth: isSelected ? 2 : 1,
+            borderColor: isSelected ? '#F59E0B' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
           },
         ]}
       >
-        {/* Hand-drawn border overlay */}
-        {cardSize.width > 0 && !isSelected && (
-          <View style={styles.borderOverlay}>
-            <HandDrawnBorder
-              width={cardSize.width}
-              height={cardSize.height}
-              color={borderColor}
-              strokeWidth={1.5}
-              seed={design.id}
-              wobble={2.5}
-            />
-          </View>
-        )}
 
         {/* Decorations */}
         {getDecorations()}
@@ -149,8 +138,7 @@ export function DesignCard({
                 height: (isCompact ? 40 : 60) * style.stickerScale,
               },
             ]}
-            contentFit="contain"
-            cachePolicy="memory-disk"
+            resizeMode="contain"
           />
         )}
 
@@ -180,15 +168,6 @@ const styles = StyleSheet.create({
     padding: 12,
     position: 'relative',
     overflow: 'hidden',
-  },
-  borderOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-    pointerEvents: 'none',
   },
   designName: {
     fontWeight: '600',

@@ -3,27 +3,6 @@
 // Based on PRD.md specifications
 // ============================================
 
-// Border template types (comic/webtoon inspired)
-export type BorderTemplate =
-  // Panel Styles (Classic Comic/Manga)
-  | 'panel'           // Bold black border, sharp corners
-  | 'webtoon'         // Clean minimal, modern vertical-scroll style
-  | 'sketch'          // Hand-drawn storyboard feel
-  // Shoujo / Romance
-  | 'shoujo'          // Soft glow with flower & sparkle accents
-  | 'vintage_manga'   // Retro 80s/90s manga with offset shadow
-  | 'watercolor'      // Dreamy bleed effect
-  // Chibi / Fun
-  | 'speech_bubble'   // Comic dialogue bubble with tail
-  | 'pop'             // Bold offset shadow + halftone dots
-  | 'sticker'         // White outline + drop shadow (die-cut look)
-  // Action / Shonen
-  | 'speed_lines'     // Motion lines shooting off edge
-  | 'impact'          // Jagged explosive frame
-  | 'ink_splash';     // Brush stroke with ink splatters
-
-export type BorderThickness = 'thin' | 'medium' | 'thick';
-
 export type StickerPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 export type StickerScale = 'small' | 'medium' | 'large';
 
@@ -32,16 +11,15 @@ export type TypographyVibe = 'modern' | 'classic' | 'cute' | 'dramatic';
 
 export type MoodTone = 'playful' | 'elegant' | 'dark' | 'warm' | 'cool' | 'energetic';
 
-// Keep-style note background colors
+// Note background colors (refreshed to harmonize with purple theme)
 export enum NoteColor {
   White = '#FFFFFF',
-  Red = '#F28B82',
-  Orange = '#FBBC04',
-  Yellow = '#FFF475',
-  Green = '#CCFF90',
-  Teal = '#A7FFEB',
-  Blue = '#CBF0F8',
-  Purple = '#D7AEFB',
+  Lavender = '#EDE9FE',
+  Rose = '#FFE4E6',
+  Peach = '#FED7AA',
+  Mint = '#D1FAE5',
+  Sky = '#E0F2FE',
+  Violet = '#DDD6FE',
 }
 
 // Character sticker generated from AI
@@ -80,12 +58,6 @@ export interface NoteDesign {
     titleText: string;
     bodyText: string;
     accent: string;
-    border: string;
-  };
-
-  border: {
-    template: BorderTemplate;
-    thickness: BorderThickness;
   };
 
   typography: {
@@ -100,6 +72,14 @@ export interface NoteDesign {
   // "Feeling Lucky" fields
   vibe?: DesignVibe;          // Energy/mood of the design
   isLucky?: boolean;          // True if generated via "Feeling Lucky"
+
+  // System preset fields
+  isSystemDefault?: boolean;  // True for built-in theme presets
+  themeId?: ThemeId;          // Reference to source theme (for system defaults)
+
+  // Label preset fields
+  labelPresetId?: string;     // Reference to LabelPresetId
+  isLabelPreset?: boolean;    // True for auto-generated from label preset
 }
 
 // Background override for per-note customization
@@ -118,8 +98,10 @@ export interface Note {
   labels: string[];           // Array of label names
   color: NoteColor;           // Basic background color
   designId?: string;          // Reference to NoteDesign
+  activeDesignLabelId?: string;  // When multiple labels have presets, which one's design to use
   backgroundOverride?: BackgroundOverride;  // Per-note background customization
-  webtoonSketchUri?: string;  // Webtoon Artist generated sketch image
+  typographyPosterUri?: string;  // Typographic Poster generated text art image
+  characterMascotUri?: string;   // Character Mascot generated character image
   isPinned: boolean;
   isArchived: boolean;
   isDeleted: boolean;
@@ -132,7 +114,9 @@ export interface Note {
 export interface Label {
   id: string;
   name: string;
+  presetId?: string;  // Reference to LabelPresetId if this label has a design preset
   createdAt: number;
+  lastUsedAt?: number;  // Track when label was last added to a note (for sorting)
 }
 
 // User state and economy
@@ -151,6 +135,22 @@ export interface Purchase {
   coinsGranted: number;
   purchasedAt: number;
   transactionId: string;
+  platform: 'ios' | 'android';
+  priceString?: string;       // Localized price string (e.g., "$0.99")
+  currencyCode?: string;      // ISO 4217 currency code (e.g., "USD")
+}
+
+// Coin package for display in shop
+export interface CoinPackage {
+  id: string;
+  productId: string;
+  name: string;
+  coins: number;
+  bonusCoins: number;
+  totalCoins: number;
+  priceString: string;
+  isBestValue: boolean;
+  isMostPopular: boolean;
 }
 
 // App settings
@@ -166,9 +166,6 @@ export type DesignViewContext = 'grid' | 'list' | 'detail' | 'share';
 // ============================================
 // Design Engine Types
 // ============================================
-
-// Border style for React Native
-export type BorderStyleType = 'solid' | 'dashed' | 'dotted';
 
 // Composed style output from DesignEngine
 // This is the view-ready style that adapts to each context
@@ -186,17 +183,24 @@ export interface ComposedStyle {
     patternId: string;
     assetName: string;
   };
+  patternTintColor?: string;  // Color to tint the pattern (for universal diagonal stripes)
   backgroundOpacity: number;
   showBackground: boolean;    // False in grid/list for performance
 
   titleColor: string;
   bodyColor: string;
   accentColor: string;
-  borderColor: string;
 
-  // Border
-  borderWidth: number;
-  borderStyle: BorderStyleType;
+  // Typography
+  titleFontFamily?: string;  // Font family for title text
+  bodyFontFamily?: string;   // Font family for body text
+  fontStyle?: 'sans-serif' | 'serif' | 'display' | 'handwritten' | 'mono';
+
+  // Label preset info (for showing icon/badge)
+  labelIcon?: string;        // Emoji icon from preset (for boards)
+  noteIcon?: string;         // Phosphor icon name for notes (small, crisp)
+
+  // Border radius (for card corners)
   borderRadius: number;
 
   // Shadow
@@ -205,9 +209,6 @@ export interface ComposedStyle {
   shadowOpacity: number;
   shadowRadius: number;
   elevation: number; // Android shadow
-
-  // Effects
-  showBorder: boolean;
 
   // Sticker (only visible in detail/share)
   showSticker: boolean;
@@ -238,8 +239,84 @@ export interface Board {
   id: string;
   hashtag: string;           // Links to notes via labels
   customStyle?: BoardStyle;  // Optional custom styling override
+  boardDesignId?: string;    // Reference to BoardDesign
   createdAt: number;
   updatedAt: number;
+}
+
+// Board accent decoration types
+export type BoardAccentType = 'sparkles' | 'stars' | 'hearts' | 'flowers' | 'none';
+
+// AI-generated board design
+export interface BoardDesign {
+  id: string;
+  boardHashtag: string;      // Links to board
+  name: string;              // AI-generated name, e.g., "Anime Watchlist Corkboard"
+  createdAt: number;
+
+  // Header styling
+  header: {
+    backgroundColor: string;
+    textColor: string;
+    badgeColor: string;
+    badgeTextColor: string;
+    accentColor: string;
+  };
+
+  // Corkboard area styling
+  corkboard: {
+    backgroundColor: string;
+    textureId?: string;      // Optional texture from library
+    textureOpacity: number;  // 0.1-1.0
+    borderColor: string;
+  };
+
+  // Decorative elements
+  decorations: {
+    icon?: string;           // Lucide icon name
+    iconColor?: string;
+    accentType: BoardAccentType;
+    accentColor?: string;
+  };
+
+  // AI metadata
+  designSummary: string;
+  sourceKeywords: string[];
+  themeInspiration: string;
+}
+
+// Gemini API response for board design generation
+export interface GeminiBoardDesignResponse {
+  name: string;
+  header: {
+    background_color: string;
+    text_color: string;
+    badge_color: string;
+    badge_text_color: string;
+    accent_color: string;
+  };
+  corkboard: {
+    background_color: string;
+    texture_id: string | null;
+    texture_opacity: number;
+    border_color: string;
+  };
+  decorations: {
+    icon: string | null;
+    icon_color: string | null;
+    accent_type: BoardAccentType;
+    accent_color: string | null;
+  };
+  design_summary: string;
+  source_keywords: string[];
+  theme_inspiration: string;
+}
+
+// Board design generation request
+export interface BoardDesignRequest {
+  hashtag: string;
+  noteContent: string[];     // Array of note titles/content snippets
+  userHint?: string;         // Optional user text input
 }
 
 // Derived board data (for UI, computed from notes)
@@ -289,7 +366,6 @@ export interface DesignTheme {
     title: string;
     body: string;
     accent: string;
-    border: string;
   };
 
   // Background style
@@ -301,13 +377,6 @@ export interface DesignTheme {
       direction: 'vertical' | 'horizontal' | 'diagonal';
       colors: string[];
     };
-  };
-
-  // Border configuration
-  border: {
-    template: BorderTemplate;
-    thickness: BorderThickness;
-    customRadius?: number;
   };
 
   // Typography hints (used by AI for sticker style)
@@ -342,7 +411,6 @@ export interface ThemeSelection {
   customizations?: {
     primaryColor?: string;
     accentColor?: string;
-    borderTemplate?: BorderTemplate;
     patternId?: string;
   };
 }
@@ -358,11 +426,6 @@ export interface GeminiDesignResponse {
     title_text: string;
     body_text: string;
     accent: string;
-    border: string;
-  };
-  border: {
-    template: BorderTemplate;
-    thickness: BorderThickness;
   };
   typography: {
     title_style: TypographyStyle;
@@ -381,84 +444,82 @@ export interface GeminiDesignResponse {
 }
 
 // ============================================
-// Story Style - Text Analysis Types
+// Typographic Poster - Text Art Generation
 // ============================================
 
-// Text analysis result from AI
+// Text analysis result from AI content analysis
 export interface TextAnalysis {
-  context: {
-    purpose: 'work' | 'personal' | 'creative' | 'learning' | 'journal';
-    type: 'notes' | 'todo' | 'writing' | 'planning' | 'reflection' | 'list' | 'diary';
-    formality: 'casual' | 'professional' | 'creative' | 'intimate';
+  mood: {
+    primary: string;      // e.g., "happy", "sad", "excited"
+    energy: 'low' | 'medium' | 'high';
+    tone: string;         // e.g., "casual", "formal", "playful"
   };
   keywords: {
-    topics: string[];
-    category: string;
-    entities: string[];
+    topics: string[];     // Main topics identified
+    themes: string[];     // Underlying themes
   };
-  mood: {
-    primary: string;
-    energy: 'low' | 'medium' | 'high';
-    tone: 'informational' | 'emotional' | 'motivational' | 'reflective' | 'humorous';
+  context: {
+    purpose: string;      // e.g., "reminder", "story", "todo"
+    audience: string;     // e.g., "personal", "professional"
   };
   suggestedStyle: {
-    aesthetic: string;
-    colorMood: string;
-    intensity: 'subtle' | 'moderate' | 'bold';
+    aesthetic: string;    // e.g., "modern", "vintage", "cute"
+    colorMood: string;    // e.g., "warm", "cool", "vibrant"
   };
 }
 
-// Story Style design response from AI
-export interface StoryStyleDesignResponse {
-  name: string;
-  colors: {
-    background: string;
-    text: string;
-    accent: string;
-    border: string;
-  };
-  styles: {
-    borderStyle: 'solid' | 'dashed' | 'dotted';
-    borderWidth: string;
-    borderRadius: string;
-    boxShadow: 'none' | 'subtle' | 'medium' | 'glow';
-  };
-  matchedTheme: ThemeId;
-  designRationale: string;
-}
+// Typography poster style presets
+export type TypographyPosterStyle = 'hand-lettered' | 'brush-marker' | 'designer' | 'bold-modern';
 
-// ============================================
-// Webtoon Artist - AI Image Generation
-// ============================================
+// Character mascot type presets
+export type CharacterMascotType = 'chibi-anime' | 'realistic-anime' | 'mascot-cute';
 
-// Available webtoon art styles
-export type WebtoonStylePreset = 'shonen' | 'shoujo' | 'simple';
-
-// Webtoon style preset configurations
-export interface WebtoonStyleConfig {
-  id: WebtoonStylePreset;
+// Typography style configuration
+export interface TypographyStyleConfig {
+  id: TypographyPosterStyle;
   name: string;
   emoji: string;
   description: string;
-  artDirection: string;  // Prompt hints for AI
-  lineStyle: string;
+  artDirection: string;      // Prompt guidance for AI
+  fontVibe: string;          // e.g., "flowing script", "bold sans-serif"
   mood: string;
-  examples: string[];    // Example series for reference
 }
 
-// Webtoon sketch generation request
-export interface WebtoonSketchRequest {
+// Character mascot configuration
+export interface CharacterMascotConfig {
+  id: CharacterMascotType;
+  name: string;
+  emoji: string;
+  description: string;
+  artDirection: string;
+  proportions: string;       // e.g., "chibi 2:1 head ratio", "realistic"
+  expressionStyle: string;
+}
+
+// Typography poster generation request
+export interface TypographicPosterRequest {
   analysis: TextAnalysis;
-  style: WebtoonStylePreset;
   noteTitle: string;
   noteContent: string;
+  typographyStyle?: TypographyPosterStyle;
+  characterType?: CharacterMascotType;
 }
 
-// Webtoon sketch generation response
-export interface WebtoonSketchResponse {
+// Typography image response
+export interface TypographyImageResponse {
   imageBase64: string;
   mimeType: string;
-  style: WebtoonStylePreset;
-  sceneDescription: string;  // What the AI drew
-  artistNotes: string;       // Why it chose this composition
+  style: TypographyPosterStyle;
+  renderedText: string;      // The text that was rendered
+  artistNotes: string;       // AI explanation of design choices
+}
+
+// Character mascot response
+export interface CharacterMascotResponse {
+  imageBase64: string;
+  mimeType: string;
+  characterType: CharacterMascotType;
+  characterDescription: string;  // What the AI drew
+  poseDescription: string;       // How character relates to text
+  artistNotes: string;
 }

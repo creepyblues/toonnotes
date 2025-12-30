@@ -1,11 +1,11 @@
 /**
- * ThemePicker - Theme selection UI for design creation
+ * LabelPresetPicker - Label preset selection UI for design creation
  *
- * Displays anime-inspired themes as a carousel/grid with live preview.
- * Used in the design creation flow for style-first design.
+ * Displays 20 label-based design presets organized by category.
+ * Used in the design creation flow and note editor for auto-applying designs.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,95 +13,120 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { Check, Shuffle, Sparkles } from 'lucide-react-native';
+import { Check, Sparkle } from 'phosphor-react-native';
+import {
+  LabelPreset,
+  LabelPresetId,
+  LabelCategory,
+  LABEL_PRESET_LIST,
+  PRESETS_BY_CATEGORY,
+  CATEGORY_COLORS,
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
+} from '@/constants/labelPresets';
+
+// Also export old types for backward compatibility
 import { DesignTheme, ThemeId } from '@/types';
-import { THEME_LIST, getRandomTheme } from '@/constants/themes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // 2 columns with padding
 
-interface ThemePickerProps {
-  selectedTheme: ThemeId | null;
-  onSelectTheme: (theme: DesignTheme) => void;
-  onSurpriseMe?: () => void;
+// ============================================
+// Main Label Preset Picker (Full Grid)
+// ============================================
+
+interface LabelPresetPickerProps {
+  selectedPreset: LabelPresetId | null;
+  onSelectPreset: (preset: LabelPreset) => void;
   isDark?: boolean;
 }
 
-export function ThemePicker({
-  selectedTheme,
-  onSelectTheme,
-  onSurpriseMe,
+export function LabelPresetPicker({
+  selectedPreset,
+  onSelectPreset,
   isDark = false,
-}: ThemePickerProps) {
+}: LabelPresetPickerProps) {
   const bgColor = isDark ? 'bg-gray-900' : 'bg-gray-50';
   const textColor = isDark ? 'text-white' : 'text-gray-900';
-  const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
-  const cardBg = isDark ? 'bg-gray-800' : 'bg-white';
-
-  const handleSurpriseMe = () => {
-    const randomTheme = getRandomTheme();
-    onSelectTheme(randomTheme);
-    onSurpriseMe?.();
-  };
 
   return (
     <View className={`flex-1 ${bgColor}`}>
-      {/* Header with Surprise Me */}
-      <View className="px-4 pt-4 pb-2 flex-row items-center justify-between">
+      {/* Header */}
+      <View className="px-4 pt-4 pb-2">
         <Text className={`text-lg font-semibold ${textColor}`}>
-          Choose Your Style
+          Choose a Label Style
         </Text>
-        <TouchableOpacity
-          onPress={handleSurpriseMe}
-          className="flex-row items-center px-3 py-2 rounded-full bg-gradient-to-r"
-          style={{ backgroundColor: isDark ? '#374151' : '#F3F4F6' }}
-        >
-          <Shuffle size={16} color={isDark ? '#D1D5DB' : '#6B7280'} />
-          <Text className={`ml-1.5 text-sm font-medium ${textMuted}`}>
-            Surprise Me
-          </Text>
-        </TouchableOpacity>
+        <Text className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          Each label has a unique design that auto-applies
+        </Text>
       </View>
 
-      {/* Theme Grid */}
+      {/* Preset Grid by Category */}
       <ScrollView
         className="flex-1 px-4"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <View className="flex-row flex-wrap justify-between pt-2">
-          {THEME_LIST.map((theme) => (
-            <ThemeCard
-              key={theme.id}
-              theme={theme}
-              isSelected={selectedTheme === theme.id}
-              onSelect={() => onSelectTheme(theme)}
-              isDark={isDark}
-            />
-          ))}
-        </View>
+        {CATEGORY_ORDER.map((category) => (
+          <View key={category} className="mb-6">
+            {/* Category Header */}
+            <View className="flex-row items-center mb-3">
+              <View
+                style={{
+                  width: 4,
+                  height: 16,
+                  borderRadius: 2,
+                  backgroundColor: CATEGORY_COLORS[category],
+                  marginRight: 8,
+                }}
+              />
+              <Text className={`font-semibold ${textColor}`}>
+                {CATEGORY_LABELS[category]}
+              </Text>
+            </View>
+
+            {/* Presets in this category */}
+            <View className="flex-row flex-wrap justify-between">
+              {PRESETS_BY_CATEGORY[category].map((preset) => (
+                <PresetCard
+                  key={preset.id}
+                  preset={preset}
+                  isSelected={selectedPreset === preset.id}
+                  onSelect={() => onSelectPreset(preset)}
+                  isDark={isDark}
+                />
+              ))}
+            </View>
+          </View>
+        ))}
       </ScrollView>
     </View>
   );
 }
 
 // ============================================
-// Theme Card Component
+// Preset Card Component
 // ============================================
 
-interface ThemeCardProps {
-  theme: DesignTheme;
+interface PresetCardProps {
+  preset: LabelPreset;
   isSelected: boolean;
   onSelect: () => void;
   isDark: boolean;
 }
 
-function ThemeCard({ theme, isSelected, onSelect, isDark }: ThemeCardProps) {
+function PresetCard({ preset, isSelected, onSelect, isDark }: PresetCardProps) {
   const borderColor = isSelected
     ? 'border-sky-500'
     : isDark
     ? 'border-gray-700'
     : 'border-gray-200';
+
+  // Build gradient background style if applicable
+  const backgroundStyle =
+    preset.bgStyle === 'gradient' && preset.bgGradient
+      ? { backgroundColor: preset.bgGradient[0] }
+      : { backgroundColor: preset.colors.bg };
 
   return (
     <TouchableOpacity
@@ -110,72 +135,16 @@ function ThemeCard({ theme, isSelected, onSelect, isDark }: ThemeCardProps) {
       style={{ width: CARD_WIDTH }}
       activeOpacity={0.8}
     >
-      {/* Theme Preview */}
+      {/* Preset Preview */}
       <View
         style={{
-          backgroundColor: theme.colors.background,
-          height: 100,
+          ...backgroundStyle,
+          height: 90,
         }}
         className="relative items-center justify-center"
       >
-        {/* Gradient overlay for gradient themes */}
-        {theme.background.gradient && (
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              opacity: 0.5,
-              backgroundColor: theme.background.gradient.colors[1],
-            }}
-          />
-        )}
-
-        {/* Border preview */}
-        <View
-          style={{
-            width: '70%',
-            height: '60%',
-            backgroundColor: theme.colors.background,
-            borderColor: theme.colors.border,
-            borderWidth: theme.border.thickness === 'thick' ? 3 : theme.border.thickness === 'medium' ? 2 : 1,
-            borderRadius: theme.border.customRadius || 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-          className="items-center justify-center"
-        >
-          {/* Sample text */}
-          <Text
-            style={{ color: theme.colors.title, fontSize: 10, fontWeight: '600' }}
-            numberOfLines={1}
-          >
-            Sample Note
-          </Text>
-          <Text
-            style={{ color: theme.colors.body, fontSize: 8, marginTop: 2 }}
-            numberOfLines={1}
-          >
-            Your content here
-          </Text>
-          {/* Accent dot */}
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 6,
-              right: 6,
-              width: 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: theme.colors.accent,
-            }}
-          />
-        </View>
+        {/* Icon */}
+        <Text style={{ fontSize: 32 }}>{preset.icon}</Text>
 
         {/* Selected indicator */}
         {isSelected && (
@@ -184,18 +153,28 @@ function ThemeCard({ theme, isSelected, onSelect, isDark }: ThemeCardProps) {
           </View>
         )}
 
-        {/* Accent type indicator */}
-        {theme.accents.type !== 'none' && (
+        {/* Sticker type indicator */}
+        {preset.stickerType !== 'none' && (
           <View
             className="absolute bottom-2 right-2"
-            style={{ opacity: 0.6 }}
+            style={{ opacity: 0.7 }}
           >
-            <Sparkles size={14} color={theme.colors.accent} />
+            <Text style={{ fontSize: 16 }}>{preset.stickerEmoji}</Text>
           </View>
         )}
+
+        {/* Category badge */}
+        <View
+          className="absolute top-2 left-2 px-2 py-0.5 rounded-full"
+          style={{ backgroundColor: CATEGORY_COLORS[preset.category] }}
+        >
+          <Text className="text-white text-[9px] font-medium">
+            {CATEGORY_LABELS[preset.category]}
+          </Text>
+        </View>
       </View>
 
-      {/* Theme Info */}
+      {/* Preset Info */}
       <View
         className="p-3"
         style={{
@@ -203,41 +182,37 @@ function ThemeCard({ theme, isSelected, onSelect, isDark }: ThemeCardProps) {
         }}
       >
         <View className="flex-row items-center">
-          <Text style={{ fontSize: 16 }}>{theme.emoji}</Text>
           <Text
-            className={`ml-1.5 font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+            className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
             numberOfLines={1}
           >
-            {theme.name}
+            #{preset.name}
           </Text>
         </View>
         <Text
           className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-          numberOfLines={2}
+          numberOfLines={1}
         >
-          {theme.description}
+          {preset.description}
         </Text>
 
         {/* Color palette preview */}
         <View className="flex-row mt-2 space-x-1">
-          {[
-            theme.colors.background,
-            theme.colors.accent,
-            theme.colors.title,
-            theme.colors.border,
-          ].map((color, index) => (
-            <View
-              key={index}
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: 4,
-                backgroundColor: color,
-                borderWidth: 1,
-                borderColor: isDark ? '#374151' : '#E5E7EB',
-              }}
-            />
-          ))}
+          {[preset.colors.bg, preset.colors.primary, preset.colors.text].map(
+            (color, index) => (
+              <View
+                key={index}
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 4,
+                  backgroundColor: color,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#374151' : '#E5E7EB',
+                }}
+              />
+            )
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -245,49 +220,65 @@ function ThemeCard({ theme, isSelected, onSelect, isDark }: ThemeCardProps) {
 }
 
 // ============================================
-// Compact Theme Selector (for inline use)
+// Compact Label Preset Selector (Horizontal Scroll)
 // ============================================
 
-interface CompactThemePickerProps {
-  selectedTheme: ThemeId | null;
-  onSelectTheme: (theme: DesignTheme) => void;
+interface CompactLabelPresetPickerProps {
+  selectedPreset: LabelPresetId | null;
+  onSelectPreset: (preset: LabelPreset) => void;
   isDark?: boolean;
+  showCategoryDots?: boolean;
 }
 
-export function CompactThemePicker({
-  selectedTheme,
-  onSelectTheme,
+export function CompactLabelPresetPicker({
+  selectedPreset,
+  onSelectPreset,
   isDark = false,
-}: CompactThemePickerProps) {
+  showCategoryDots = true,
+}: CompactLabelPresetPickerProps) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16 }}
     >
-      {THEME_LIST.map((theme) => (
+      {LABEL_PRESET_LIST.map((preset) => (
         <TouchableOpacity
-          key={theme.id}
-          onPress={() => onSelectTheme(theme)}
+          key={preset.id}
+          onPress={() => onSelectPreset(preset)}
           className={`mr-3 px-4 py-2 rounded-full flex-row items-center ${
-            selectedTheme === theme.id
+            selectedPreset === preset.id
               ? 'bg-sky-500'
               : isDark
               ? 'bg-gray-800'
               : 'bg-gray-100'
           }`}
         >
-          <Text style={{ fontSize: 14 }}>{theme.emoji}</Text>
+          {showCategoryDots && (
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor:
+                  selectedPreset === preset.id
+                    ? '#FFFFFF'
+                    : CATEGORY_COLORS[preset.category],
+                marginRight: 6,
+              }}
+            />
+          )}
+          <Text style={{ fontSize: 14 }}>{preset.icon}</Text>
           <Text
             className={`ml-1.5 font-medium ${
-              selectedTheme === theme.id
+              selectedPreset === preset.id
                 ? 'text-white'
                 : isDark
                 ? 'text-gray-300'
                 : 'text-gray-700'
             }`}
           >
-            {theme.name.split(' ')[0]}
+            {preset.name}
           </Text>
         </TouchableOpacity>
       ))}
@@ -295,4 +286,159 @@ export function CompactThemePicker({
   );
 }
 
-export default ThemePicker;
+// ============================================
+// Backward Compatibility Exports
+// (Keep old API working during transition)
+// ============================================
+
+interface ThemePickerProps {
+  selectedTheme: ThemeId | null;
+  onSelectTheme: (theme: DesignTheme) => void;
+  onSurpriseMe?: () => void;
+  isDark?: boolean;
+}
+
+// Legacy ThemePicker - redirects to LabelPresetPicker
+export function ThemePicker({
+  selectedTheme,
+  onSelectTheme,
+  isDark = false,
+}: ThemePickerProps) {
+  // Map old theme IDs to new preset IDs for backward compat
+  const themeToPresetMap: Record<string, LabelPresetId> = {
+    ghibli: 'inspiration',
+    manga: 'character',
+    webtoon: 'blog',
+    shoujo: 'memory',
+    shonen: 'goals',
+    kawaii: 'favorites',
+    vintage: 'journal',
+  };
+
+  const mappedPreset = selectedTheme
+    ? themeToPresetMap[selectedTheme]
+    : null;
+
+  return (
+    <LabelPresetPicker
+      selectedPreset={mappedPreset}
+      onSelectPreset={(preset) => {
+        // Create a mock DesignTheme from the preset for backward compat
+        const mockTheme: DesignTheme = {
+          id: preset.id as any,
+          name: preset.name,
+          emoji: preset.icon,
+          description: preset.description,
+          colors: {
+            background: preset.colors.bg,
+            title: preset.colors.text,
+            body: preset.colors.text,
+            accent: preset.colors.primary,
+          },
+          background: {
+            style: preset.bgStyle === 'gradient' ? 'gradient' : 'solid',
+            defaultOpacity: 0.15,
+          },
+          typography: {
+            titleStyle:
+              preset.fontStyle === 'serif'
+                ? 'serif'
+                : preset.fontStyle === 'handwritten'
+                ? 'handwritten'
+                : 'sans-serif',
+            vibe: 'modern',
+          },
+          accents: {
+            type: 'none',
+            positions: ['corners'],
+          },
+          stickerHint: {
+            artStyle: preset.artStyle,
+            mood: 'playful',
+            defaultPosition: preset.stickerPosition,
+            defaultScale: 'medium',
+          },
+          aiPromptHints: preset.aiPromptHints,
+        };
+        onSelectTheme(mockTheme);
+      }}
+      isDark={isDark}
+    />
+  );
+}
+
+interface CompactThemePickerProps {
+  selectedTheme: ThemeId | null;
+  onSelectTheme: (theme: DesignTheme) => void;
+  isDark?: boolean;
+}
+
+// Legacy CompactThemePicker - redirects to CompactLabelPresetPicker
+export function CompactThemePicker({
+  selectedTheme,
+  onSelectTheme,
+  isDark = false,
+}: CompactThemePickerProps) {
+  const themeToPresetMap: Record<string, LabelPresetId> = {
+    ghibli: 'inspiration',
+    manga: 'character',
+    webtoon: 'blog',
+    shoujo: 'memory',
+    shonen: 'goals',
+    kawaii: 'favorites',
+    vintage: 'journal',
+  };
+
+  const mappedPreset = selectedTheme
+    ? themeToPresetMap[selectedTheme]
+    : null;
+
+  return (
+    <CompactLabelPresetPicker
+      selectedPreset={mappedPreset}
+      onSelectPreset={(preset) => {
+        // Create a mock DesignTheme from the preset for backward compat
+        const mockTheme: DesignTheme = {
+          id: preset.id as any,
+          name: preset.name,
+          emoji: preset.icon,
+          description: preset.description,
+          colors: {
+            background: preset.colors.bg,
+            title: preset.colors.text,
+            body: preset.colors.text,
+            accent: preset.colors.primary,
+          },
+          background: {
+            style: preset.bgStyle === 'gradient' ? 'gradient' : 'solid',
+            defaultOpacity: 0.15,
+          },
+          typography: {
+            titleStyle:
+              preset.fontStyle === 'serif'
+                ? 'serif'
+                : preset.fontStyle === 'handwritten'
+                ? 'handwritten'
+                : 'sans-serif',
+            vibe: 'modern',
+          },
+          accents: {
+            type: 'none',
+            positions: ['corners'],
+          },
+          stickerHint: {
+            artStyle: preset.artStyle,
+            mood: 'playful',
+            defaultPosition: preset.stickerPosition,
+            defaultScale: 'medium',
+          },
+          aiPromptHints: preset.aiPromptHints,
+        };
+        onSelectTheme(mockTheme);
+      }}
+      isDark={isDark}
+    />
+  );
+}
+
+export default LabelPresetPicker;

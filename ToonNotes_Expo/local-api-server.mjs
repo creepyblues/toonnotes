@@ -505,8 +505,8 @@ Return ONLY the JSON object, no other text.`;
         }));
       }
     });
-  } else if (req.method === 'POST' && req.url === '/api/analyze-note-text') {
-    // Story Style - Stage 1: Analyze note text for context, keywords, mood
+  } else if (req.method === 'POST' && req.url === '/api/generate-image-sticker') {
+    // Generate character sticker from uploaded image (removes background)
     let body = '';
 
     req.on('data', chunk => {
@@ -515,153 +515,137 @@ Return ONLY the JSON object, no other text.`;
 
     req.on('end', async () => {
       try {
-        const { title, content } = JSON.parse(body);
+        const { imageBase64, mimeType } = JSON.parse(body);
 
-        const noteText = `${title || ''}\n${content || ''}`.trim();
-
-        if (!noteText || noteText.length < 10) {
+        if (!imageBase64) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Note text is too short (minimum 10 characters)' }));
+          res.end(JSON.stringify({ error: 'imageBase64 is required' }));
           return;
         }
 
-        console.log('✨ Analyzing note text for Story Style...');
+        console.log('🎨 Generating character sticker from image...');
+
+        // Convert base64 to buffer
+        const imageBuffer = Buffer.from(imageBase64, 'base64');
+
+        // Create a Blob from the buffer
+        const blob = new Blob([imageBuffer], { type: mimeType || 'image/jpeg' });
+
+        // Remove background using @imgly/background-removal-node
+        console.log('Processing with background removal AI...');
+        const resultBlob = await removeBackground(blob, {
+          debug: false,
+          progress: (key, current, total) => {
+            console.log(`Background removal: ${key} ${Math.round(current/total*100)}%`);
+          }
+        });
+
+        // Convert result blob to base64
+        const arrayBuffer = await resultBlob.arrayBuffer();
+        const resultBuffer = Buffer.from(arrayBuffer);
+        const stickerBase64 = resultBuffer.toString('base64');
+
+        console.log('✅ Character sticker generated successfully');
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          stickerBase64: stickerBase64,
+          mimeType: 'image/png',
+        }));
+
+      } catch (error) {
+        console.error('Error generating sticker:', error);
+
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: error.message || 'Failed to generate sticker',
+        }));
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/generate-board-design') {
+    // Board Design - Generate visual design for a board based on hashtag and notes
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { hashtag, noteContent, userHint } = JSON.parse(body);
+
+        if (!hashtag) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'hashtag is required' }));
+          return;
+        }
+
+        console.log(`🎨 Generating board design for #${hashtag}...`);
 
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-        const analysisPrompt = `Analyze this note and extract structured information about its content, purpose, and emotional tone.
+        const boardPrompt = `Design a visual theme for a board (collection of notes) in a manga/anime note-taking app.
 
-Title: ${title || '(no title)'}
-Content: ${content || '(no content)'}
+BOARD HASHTAG: #${hashtag}
+
+NOTES IN THIS BOARD:
+${noteContent && noteContent.length > 0 ? noteContent.join('\n') : '(No notes yet)'}
+
+${userHint ? `USER'S STYLE PREFERENCE: ${userHint}` : ''}
+
+Create a cohesive board design that:
+1. Reflects the theme suggested by the hashtag "#${hashtag}"
+2. Matches the mood and content of the notes (if provided)
+3. Appeals to manga/anime fans
+4. Works well for a corkboard-style display
+
+Consider these anime aesthetics:
+- Shonen (bold, energetic, action-packed)
+- Shoujo (soft, romantic, sparkly)
+- Slice of Life (cozy, warm, gentle)
+- Dark Fantasy (moody, mysterious, gothic)
+- Kawaii (cute, pastel, playful)
+- Cyberpunk (neon, techy, futuristic)
+- Vintage Anime (retro 80s/90s aesthetic)
 
 Return a JSON object with this exact structure:
 {
-  "context": {
-    "purpose": "work|personal|creative|learning|journal",
-    "type": "notes|todo|writing|planning|reflection|list|diary",
-    "formality": "casual|professional|creative|intimate"
+  "name": "Creative 2-4 word board name (e.g., 'Starlit Inspiration Board', 'Shonen Dream Collection')",
+  "header": {
+    "background_color": "#HEX (header background)",
+    "text_color": "#HEX (hashtag text)",
+    "badge_color": "#HEX (note count badge background)",
+    "badge_text_color": "#HEX (badge text)",
+    "accent_color": "#HEX (decorative accents)"
   },
-  "keywords": {
-    "topics": ["array of 2-4 main topics"],
-    "category": "single primary category",
-    "entities": ["specific names, dates, or key terms"]
+  "corkboard": {
+    "background_color": "#HEX (main board area background)",
+    "texture_id": "corkboard|paper|fabric|wood|null",
+    "texture_opacity": 0.1 to 0.8,
+    "border_color": "#HEX (bottom border)"
   },
-  "mood": {
-    "primary": "focused|happy|sad|excited|calm|anxious|inspired|determined|grateful|nostalgic",
-    "energy": "low|medium|high",
-    "tone": "informational|emotional|motivational|reflective|humorous"
+  "decorations": {
+    "icon": "lucide-icon-name or null (e.g., 'heart', 'star', 'zap', 'sparkles', 'book', 'music')",
+    "icon_color": "#HEX or null",
+    "accent_type": "sparkles|stars|hearts|flowers|none",
+    "accent_color": "#HEX or null"
   },
-  "suggestedStyle": {
-    "aesthetic": "modern-minimal|playful|dramatic|dreamy|retro|bold|elegant|quirky",
-    "colorMood": "warm-cozy|cool-professional|vibrant-energetic|soft-calm|dark-moody|pastel-gentle",
-    "intensity": "subtle|moderate|bold"
-  }
+  "design_summary": "1-2 sentence explanation of design choices",
+  "source_keywords": ["3-5 keywords extracted from hashtag/notes"],
+  "theme_inspiration": "shonen|shoujo|slice_of_life|dark_fantasy|kawaii|cyberpunk|vintage|minimal"
 }
 
-Be thoughtful about the mood and style suggestions. Match them to how the content FEELS, not just what it says.
+Make the design feel unique and tailored to this specific board.
 Return ONLY the JSON object.`;
 
-        const result = await model.generateContent(analysisPrompt);
+        const result = await model.generateContent(boardPrompt);
         const response = await result.response;
         let text = response.text();
 
         // Clean up the response
         text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
-        console.log('✨ Text analysis response:', text);
-
-        const analysisData = JSON.parse(text);
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(analysisData));
-
-      } catch (error) {
-        console.error('Error analyzing note text:', error);
-
-        if (error.message?.includes('429') || error.message?.includes('quota')) {
-          res.writeHead(429, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            error: 'Rate limit exceeded',
-            retryAfter: 60
-          }));
-        } else {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
-        }
-      }
-    });
-  } else if (req.method === 'POST' && req.url === '/api/generate-story-style') {
-    // Story Style - Stage 2: Generate design from text analysis
-    let body = '';
-
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const { analysis, noteTitle } = JSON.parse(body);
-
-        if (!analysis) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'analysis is required' }));
-          return;
-        }
-
-        console.log('🎨 Generating Story Style design from analysis...');
-
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-
-        const designPrompt = `Create a note design based on this content analysis:
-
-Context: ${analysis.context.purpose} - ${analysis.context.type}
-Formality: ${analysis.context.formality}
-Mood: ${analysis.mood.primary} (${analysis.mood.energy} energy, ${analysis.mood.tone} tone)
-Topics: ${analysis.keywords.topics.join(', ')}
-Category: ${analysis.keywords.category}
-Suggested Style: ${analysis.suggestedStyle.aesthetic}, ${analysis.suggestedStyle.colorMood}
-Intensity: ${analysis.suggestedStyle.intensity}
-
-Design a toon-ish, anime-inspired note theme that matches this content's mood and purpose.
-
-Rules:
-- For "work/professional" → Clean lines, cool colors (blues, grays), minimal decorations
-- For "personal/journal" → Warm colors (peach, cream, soft yellows), softer edges, cozy feel
-- For "creative/writing" → Expressive colors, artistic borders, dreamy vibes
-- For "high energy/excited" → Vibrant saturated colors, bold borders, dynamic feel
-- For "calm/reflective" → Muted pastels, soft shadows, gentle aesthetic
-- For "learning" → Clear, organized feel with accent pops for focus
-- Keep it toon-ish and fun - this is ToonNotes!
-
-Return JSON:
-{
-  "name": "Creative 2-3 word theme name that captures the vibe",
-  "colors": {
-    "background": "#HEX (light, readable background)",
-    "text": "#HEX (dark, readable text)",
-    "accent": "#HEX (vibrant accent for highlights)",
-    "border": "#HEX (subtle but visible border)"
-  },
-  "styles": {
-    "borderStyle": "solid|dashed|dotted",
-    "borderWidth": "1px|2px|3px",
-    "borderRadius": "8px|12px|16px|20px",
-    "boxShadow": "none|subtle|medium|glow"
-  },
-  "matchedTheme": "ghibli|manga|webtoon|shoujo|shonen|kawaii|vintage",
-  "designRationale": "Brief explanation of design choices (1-2 sentences)"
-}
-
-Return ONLY the JSON object.`;
-
-        const result = await model.generateContent(designPrompt);
-        const response = await result.response;
-        let text = response.text();
-
-        // Clean up the response
-        text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-        console.log('🎨 Story Style design response:', text);
+        console.log('🎨 Board design response:', text);
 
         const designData = JSON.parse(text);
 
@@ -669,7 +653,7 @@ Return ONLY the JSON object.`;
         res.end(JSON.stringify(designData));
 
       } catch (error) {
-        console.error('Error generating story style design:', error);
+        console.error('Error generating board design:', error);
 
         if (error.message?.includes('429') || error.message?.includes('quota')) {
           res.writeHead(429, { 'Content-Type': 'application/json' });
@@ -683,8 +667,8 @@ Return ONLY the JSON object.`;
         }
       }
     });
-  } else if (req.method === 'POST' && req.url === '/api/generate-webtoon-sketch') {
-    // Webtoon Artist - Generate storyboard sketch from text analysis
+  } else if (req.method === 'POST' && req.url === '/api/generate-typography-poster') {
+    // Typography Poster - Generate hand-lettered/typographic art from note text
     let body = '';
 
     req.on('data', chunk => {
@@ -693,39 +677,51 @@ Return ONLY the JSON object.`;
 
     req.on('end', async () => {
       try {
-        const { analysis, style, noteTitle, noteContent } = JSON.parse(body);
+        const parsed = JSON.parse(body);
+        console.log('📝 Typography Poster request received:', JSON.stringify(parsed, null, 2));
+        const { analysis, style, noteTitle, noteContent } = parsed;
 
-        if (!analysis || !style) {
+        // Use noteTitle if available, otherwise use first part of noteContent
+        const textToUse = noteTitle || (noteContent ? noteContent.slice(0, 100) : '');
+
+        if (!analysis || !style || !textToUse) {
+          console.log('❌ Missing fields - analysis:', !!analysis, 'style:', style, 'textToUse:', textToUse);
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'analysis and style are required' }));
+          res.end(JSON.stringify({ error: 'analysis, style, and either noteTitle or noteContent are required' }));
           return;
         }
 
-        console.log(`🎨 Webtoon Artist: Generating ${style} style sketch...`);
+        console.log(`🎨 Typography Poster: Generating ${style} style typography for: "${textToUse.slice(0, 50)}..."`);
 
-        // Style-specific art directions
+        // Style configurations for typography
         const styleConfigs = {
-          shonen: {
-            name: 'Shonen',
-            artDirection: 'Bold dynamic lines, action-oriented composition, intense expressions, speed lines, dramatic angles. Think One Piece, Naruto, My Hero Academia style rough storyboards.',
-            lineStyle: 'thick bold strokes, high contrast, dynamic poses',
-            mood: 'energetic, determined, powerful'
+          'hand-lettered': {
+            name: 'Hand-Lettered',
+            artDirection: 'Hand-lettered calligraphy style with flowing, organic letters. Slight imperfections for authentic charm. Mix of thick and thin strokes like brush pen lettering.',
+            fontVibe: 'flowing script with personality, organic curves',
+            mood: 'personal, warm, artistic'
           },
-          shoujo: {
-            name: 'Shoujo',
-            artDirection: 'Soft flowing lines, delicate expressions, flowers and sparkles as accents, romantic atmosphere, gentle compositions. Think Fruits Basket, Sailor Moon, Ouran style rough storyboards.',
-            lineStyle: 'thin elegant lines, soft shading, decorative elements',
-            mood: 'emotional, dreamy, gentle'
+          'brush-marker': {
+            name: 'Brush/Marker',
+            artDirection: 'Bold brush or marker strokes with varying thickness. Japanese/Chinese calligraphy influence. Expressive, dynamic, with ink-like texture.',
+            fontVibe: 'expressive brushwork, dynamic strokes, varying pressure',
+            mood: 'energetic, expressive, bold'
           },
-          simple: {
-            name: 'Simple',
-            artDirection: 'Clean minimalist lines, clear compositions, focused on clarity over detail, modern webtoon style. Think Solo Leveling, Tower of God, Lore Olympus style rough storyboards.',
-            lineStyle: 'clean simple lines, minimal detail, clear silhouettes',
-            mood: 'clean, focused, modern'
+          'designer': {
+            name: 'Designer',
+            artDirection: 'Professional hand-lettering design with mixed styles. Decorative flourishes, balanced composition. Like vintage sign painting meets modern typography art.',
+            fontVibe: 'polished, decorative, multiple lettering styles combined',
+            mood: 'crafted, professional, detailed'
+          },
+          'bold-modern': {
+            name: 'Bold Modern',
+            artDirection: 'Bold sans-serif inspired lettering, high impact poster style. Thick letters with strong presence. Maximalist, attention-grabbing typography.',
+            fontVibe: 'thick bold letters, geometric, maximalist impact',
+            mood: 'powerful, attention-grabbing, modern'
           }
         };
 
-        const styleConfig = styleConfigs[style] || styleConfigs.simple;
+        const styleConfig = styleConfigs[style] || styleConfigs['hand-lettered'];
 
         // Use Gemini 2.0 Flash for image generation
         const model = genAI.getGenerativeModel({
@@ -735,49 +731,196 @@ Return ONLY the JSON object.`;
           }
         });
 
-        const imagePrompt = `Create a webtoon storyboard rough sketch that represents this note:
+        // Determine text to render (use title or content, limit length for better typography)
+        const textToRender = textToUse.length <= 50
+          ? textToUse
+          : textToUse.slice(0, 50) + '...';
 
-TITLE: ${noteTitle || 'Untitled'}
-CONTENT SUMMARY: ${noteContent?.slice(0, 200) || 'No content'}
+        const imagePrompt = `Create a beautiful typographic poster that renders this text as artistic hand-lettering:
 
-ANALYSIS:
-- Purpose: ${analysis.context.purpose}
-- Type: ${analysis.context.type}
+TEXT TO RENDER: "${textToRender}"
+
+NOTE ANALYSIS:
 - Mood: ${analysis.mood.primary} (${analysis.mood.energy} energy)
-- Topics: ${analysis.keywords.topics.join(', ')}
+- Tone: ${analysis.mood.tone}
+- Purpose: ${analysis.context.purpose}
 - Aesthetic: ${analysis.suggestedStyle.aesthetic}
+- Color Mood: ${analysis.suggestedStyle.colorMood}
 
 ART STYLE: ${styleConfig.name}
 - ${styleConfig.artDirection}
-- Line style: ${styleConfig.lineStyle}
+- Font vibe: ${styleConfig.fontVibe}
 - Mood: ${styleConfig.mood}
 
 REQUIREMENTS:
-1. Create a single panel rough storyboard sketch (not manga pages)
-2. Black and white sketch with hatching/shading
-3. Include a simple character or scene that represents the note's content
-4. Add minimal text/labels if helpful (like "WORK!" or "IDEA")
-5. Keep it rough and sketchy like a storyboard artist's quick concept
-6. The style should clearly match ${styleConfig.name} aesthetic
+1. The text must be READABLE and be the main visual element
+2. Use ${styleConfig.name} lettering style throughout
+3. Colors should complement the ${analysis.mood.primary} mood and ${analysis.suggestedStyle.colorMood} color palette
+4. Simple, clean background (solid color or subtle gradient) - NOT busy
+5. The typography IS the artwork - make each letter beautiful
+6. Fill the frame well with the text composition
+7. Style similar to motivational quote posters or hand-lettered signs
+8. Add subtle decorative elements if appropriate (small flourishes, stars, hearts - based on mood)
 
-Draw this as if you're a webtoon storyboard artist quickly sketching an idea.`;
+Create this as if you're a professional hand-lettering artist making a poster print.
+Output a high-quality image.`;
 
         const result = await model.generateContent(imagePrompt);
         const response = await result.response;
 
-        // Extract image and text from response
         let imageBase64 = null;
-        let sceneDescription = '';
         let artistNotes = '';
 
         for (const part of response.candidates[0].content.parts) {
           if (part.inlineData) {
             imageBase64 = part.inlineData.data;
           } else if (part.text) {
-            // Parse out scene description and notes
+            artistNotes = part.text;
+          }
+        }
+
+        if (!imageBase64) {
+          throw new Error('No image generated');
+        }
+
+        console.log(`🎨 Typography Poster: ${styleConfig.name} typography generated!`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          imageBase64,
+          mimeType: 'image/png',
+          style,
+          renderedText: textToRender,
+          artistNotes: artistNotes || `Created in ${styleConfig.name} style with ${styleConfig.fontVibe}`
+        }));
+
+      } catch (error) {
+        console.error('Typography Poster error:', error);
+
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+          res.writeHead(429, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'Rate limit exceeded',
+            retryAfter: 60
+          }));
+        } else {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message || 'Failed to generate typography' }));
+        }
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/generate-character-mascot') {
+    // Character Mascot - Generate anime character appearing to present the text
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { analysis, characterType, noteTitle, noteContent } = JSON.parse(body);
+
+        // Use noteTitle if available, otherwise use first part of noteContent
+        const textToUse = noteTitle || (noteContent ? noteContent.slice(0, 100) : '');
+
+        if (!analysis || !characterType || !textToUse) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'analysis, characterType, and either noteTitle or noteContent are required' }));
+          return;
+        }
+
+        console.log(`🎨 Character Mascot: Generating ${characterType} character for: "${textToUse.slice(0, 30)}..."`);
+
+        // Character type configurations
+        const characterConfigs = {
+          'chibi-anime': {
+            name: 'Chibi Anime',
+            artDirection: 'Chibi/super-deformed anime style. Large head with small body (2:1 or 3:1 ratio). Big expressive eyes, simplified features. Cute and adorable proportions.',
+            proportions: 'chibi 2:1 head to body ratio, oversized head, tiny body',
+            expressionStyle: 'exaggerated cute expressions, big sparkly eyes, simple mouth'
+          },
+          'realistic-anime': {
+            name: 'Anime Character',
+            artDirection: 'Standard anime/manga proportions. Detailed eyes with highlights, dynamic pose capable. Professional manga illustration quality.',
+            proportions: 'standard anime 6-7 head tall, balanced proportions',
+            expressionStyle: 'expressive but proportional, detailed eyes with emotion'
+          },
+          'mascot-cute': {
+            name: 'Mascot',
+            artDirection: 'Cute mascot character - could be animal, creature, or fantasy being. Kawaii aesthetic, round shapes, friendly appearance. Think brand mascots or game companions.',
+            proportions: 'round, simplified, approachable silhouette, blob-like cuteness',
+            expressionStyle: 'friendly, simple, iconic expressions, always happy/encouraging'
+          }
+        };
+
+        const charConfig = characterConfigs[characterType] || characterConfigs['chibi-anime'];
+
+        // Use Gemini 2.0 Flash for image generation
+        const model = genAI.getGenerativeModel({
+          model: 'gemini-2.0-flash-exp',
+          generationConfig: {
+            responseModalities: ['image', 'text'],
+          }
+        });
+
+        // Determine character pose/action based on mood
+        const moodToPose = {
+          'happy': 'cheerfully waving or giving thumbs up',
+          'excited': 'jumping with joy or pumping fist',
+          'calm': 'peaceful smile, hands together',
+          'focused': 'pointing forward determinedly',
+          'sad': 'looking sympathetic with gentle expression',
+          'motivated': 'striking an encouraging pose',
+          'reflective': 'thoughtful pose with hand on chin',
+          'energetic': 'dynamic action pose'
+        };
+
+        const pose = moodToPose[analysis.mood.primary] || 'cheerfully presenting';
+
+        const imagePrompt = `Create an anime character that appears to be announcing or presenting a message:
+
+MESSAGE CONTEXT:
+- Title/Content: "${textToUse.slice(0, 50)}"
+- Purpose: ${analysis.context.purpose}
+- Topics: ${analysis.keywords.topics.join(', ')}
+
+NOTE MOOD:
+- Primary: ${analysis.mood.primary} (${analysis.mood.energy} energy)
+- Tone: ${analysis.mood.tone}
+
+CHARACTER STYLE: ${charConfig.name}
+- ${charConfig.artDirection}
+- Proportions: ${charConfig.proportions}
+- Expression: ${charConfig.expressionStyle}
+
+REQUIREMENTS:
+1. Character should be ${pose} - matching the ${analysis.mood.primary} mood
+2. The character appears to be presenting or announcing something (like they're sharing the note's message)
+3. Pose ideas: holding a sign, speech bubble gesture, pointing enthusiastically, or announcing pose
+4. Expression matches the content mood (${analysis.mood.primary}, ${analysis.mood.tone})
+5. TRANSPARENT BACKGROUND (PNG with alpha channel)
+6. Full body or 3/4 body shot (not just face)
+7. Clean, crisp linework suitable for use as a sticker
+8. Character should feel like they "belong" with the note's theme
+
+Draw this as a professional anime illustrator creating a character sticker.
+Make the character appealing and full of personality!`;
+
+        const result = await model.generateContent(imagePrompt);
+        const response = await result.response;
+
+        let imageBase64 = null;
+        let characterDescription = '';
+        let artistNotes = '';
+
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            imageBase64 = part.inlineData.data;
+          } else if (part.text) {
             const text = part.text;
-            if (text.includes('Scene:') || text.includes('Description:')) {
-              sceneDescription = text;
+            if (text.toLowerCase().includes('character') || text.toLowerCase().includes('drawing')) {
+              characterDescription = text;
             } else {
               artistNotes = text;
             }
@@ -788,19 +931,20 @@ Draw this as if you're a webtoon storyboard artist quickly sketching an idea.`;
           throw new Error('No image generated');
         }
 
-        console.log(`🎨 Webtoon Artist: ${styleConfig.name} sketch generated!`);
+        console.log(`🎨 Character Mascot: ${charConfig.name} character generated!`);
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           imageBase64,
           mimeType: 'image/png',
-          style,
-          sceneDescription: sceneDescription || `A ${styleConfig.name} style sketch representing "${noteTitle || 'your note'}"`,
-          artistNotes: artistNotes || `Created in ${styleConfig.name} style with ${styleConfig.lineStyle}`
+          characterType,
+          characterDescription: characterDescription || `A ${charConfig.name} style character`,
+          poseDescription: `Character is ${pose}, expressing ${analysis.mood.primary} energy`,
+          artistNotes: artistNotes || `Created in ${charConfig.name} style with ${charConfig.expressionStyle}`
         }));
 
       } catch (error) {
-        console.error('Webtoon Artist error:', error);
+        console.error('Character Mascot error:', error);
 
         if (error.message?.includes('429') || error.message?.includes('quota')) {
           res.writeHead(429, { 'Content-Type': 'application/json' });
@@ -810,7 +954,7 @@ Draw this as if you're a webtoon storyboard artist quickly sketching an idea.`;
           }));
         } else {
           res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: error.message || 'Failed to generate sketch' }));
+          res.end(JSON.stringify({ error: error.message || 'Failed to generate character' }));
         }
       }
     });
@@ -825,11 +969,12 @@ server.listen(PORT, () => {
   console.log('Endpoints:');
   console.log('  POST /api/generate-theme - Generate theme from image');
   console.log('  POST /api/generate-sticker - Generate sticker with background removal');
+  console.log('  POST /api/generate-image-sticker - 🎨 Generate character sticker from image');
   console.log('  POST /api/generate-lucky-theme - 🎲 Generate chaotic random theme');
   console.log('  POST /api/generate-lucky-sticker - 🎲 Generate transformed funny sticker');
   console.log('  POST /api/generate-themed-sticker - 🎨 Generate sticker for specific theme');
   console.log('  POST /api/extract-colors - 🎨 Extract colors from image for theme');
-  console.log('  POST /api/analyze-note-text - ✨ Story Style: Analyze note text');
-  console.log('  POST /api/generate-story-style - ✨ Story Style: Generate design from analysis');
-  console.log('  POST /api/generate-webtoon-sketch - 🎨 Webtoon Artist: Generate storyboard sketch');
+  console.log('  POST /api/generate-board-design - 🎨 Board Design: Generate design for board');
+  console.log('  POST /api/generate-typography-poster - ✍️ Typography Poster: Generate hand-lettered text art');
+  console.log('  POST /api/generate-character-mascot - 🧸 Character Mascot: Generate anime character presenter');
 });

@@ -1,22 +1,18 @@
 /**
  * Secure Storage Service
  *
- * Uses expo-secure-store to securely store sensitive data like API keys.
- * Data is encrypted on device using iOS Keychain / Android Keystore.
+ * Stores sensitive data like API keys using AsyncStorage.
+ * Note: For production apps requiring maximum security, use expo-secure-store
+ * with a development build (not compatible with Expo Go).
  */
 
-import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GEMINI_API_KEY = 'gemini_api_key';
 
-// SecureStore options for maximum security
-const SECURE_OPTIONS: SecureStore.SecureStoreOptions = {
-  keychainAccessible: SecureStore.WHEN_UNLOCKED,
-};
-
 /**
- * Save the Gemini API key securely
+ * Save the Gemini API key
  */
 export async function saveApiKey(apiKey: string): Promise<boolean> {
   try {
@@ -27,19 +23,18 @@ export async function saveApiKey(apiKey: string): Promise<boolean> {
       return true;
     }
 
-    // Validate API key format (basic check - starts with expected prefix)
+    // Validate API key format (basic check)
     if (!isValidApiKeyFormat(trimmedKey)) {
       console.warn('Invalid API key format');
       return false;
     }
 
     if (Platform.OS === 'web') {
-      // Fallback for web (less secure, but web doesn't have SecureStore)
       localStorage.setItem(GEMINI_API_KEY, trimmedKey);
       return true;
     }
 
-    await SecureStore.setItemAsync(GEMINI_API_KEY, trimmedKey, SECURE_OPTIONS);
+    await AsyncStorage.setItem(GEMINI_API_KEY, trimmedKey);
     return true;
   } catch (error) {
     console.error('Failed to save API key:', error);
@@ -48,7 +43,7 @@ export async function saveApiKey(apiKey: string): Promise<boolean> {
 }
 
 /**
- * Retrieve the Gemini API key securely
+ * Retrieve the Gemini API key
  */
 export async function getApiKey(): Promise<string | null> {
   try {
@@ -56,7 +51,7 @@ export async function getApiKey(): Promise<string | null> {
       return localStorage.getItem(GEMINI_API_KEY);
     }
 
-    return await SecureStore.getItemAsync(GEMINI_API_KEY, SECURE_OPTIONS);
+    return await AsyncStorage.getItem(GEMINI_API_KEY);
   } catch (error) {
     console.error('Failed to retrieve API key:', error);
     return null;
@@ -73,7 +68,7 @@ export async function deleteApiKey(): Promise<boolean> {
       return true;
     }
 
-    await SecureStore.deleteItemAsync(GEMINI_API_KEY, SECURE_OPTIONS);
+    await AsyncStorage.removeItem(GEMINI_API_KEY);
     return true;
   } catch (error) {
     console.error('Failed to delete API key:', error);

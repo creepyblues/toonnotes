@@ -1,12 +1,14 @@
-import { File, Paths } from 'expo-file-system/next';
 import * as LegacyFileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
-import { NoteDesign, BorderTemplate, BorderThickness, DesignTheme, TextAnalysis, StoryStyleDesignResponse, WebtoonStylePreset, WebtoonSketchResponse, WebtoonStyleConfig } from '@/types';
+import { NoteDesign, DesignTheme, BoardDesign, GeminiBoardDesignResponse, Note, TypographyPosterStyle, CharacterMascotType, TypographyStyleConfig, CharacterMascotConfig, TypographyImageResponse, CharacterMascotResponse, TextAnalysis } from '@/types';
 import { themeToNoteDesign } from './designEngine';
+import { LabelPreset } from '@/constants/labelPresets';
 
-// API endpoints - localhost works for iOS simulator (shares host network)
-// Change these to your Vercel deployment URL for production
-const API_BASE_URL = 'http://localhost:3001';
+// API endpoints - localhost for dev, Vercel for production
+// __DEV__ is true in Expo dev mode, false in production builds
+const API_BASE_URL = __DEV__
+  ? 'http://localhost:3001'
+  : 'https://toonnotes-api.vercel.app';
 const THEME_API_URL = `${API_BASE_URL}/api/generate-theme`;
 const STICKER_API_URL = `${API_BASE_URL}/api/generate-sticker`;
 const LUCKY_THEME_API_URL = `${API_BASE_URL}/api/generate-lucky-theme`;
@@ -24,11 +26,8 @@ interface ThemeResponse {
     background: string;
     text: string;
     accent: string;
-    border: string;
   };
   styles: {
-    borderStyle: string;
-    borderWidth: string;
     borderRadius: string;
     boxShadow: string;
     backgroundGradient: string;
@@ -41,20 +40,23 @@ interface LuckyThemeResponse extends ThemeResponse {
 
 /**
  * Convert image URI to base64
+ * Uses legacy FileSystem API for reliable cross-platform compatibility
  */
 async function imageUriToBase64(uri: string): Promise<{ base64: string; mimeType: string }> {
   try {
     console.log('Reading image from URI:', uri);
 
-    // Check if file exists using new File API
-    const file = new File(uri);
-    if (!file.exists) {
+    // Check if file exists using legacy FileSystem API (more reliable with ImagePicker URIs)
+    const fileInfo = await LegacyFileSystem.getInfoAsync(uri);
+    if (!fileInfo.exists) {
       throw new Error('Image file does not exist');
     }
-    console.log('File exists:', file.exists);
+    console.log('File exists:', fileInfo.exists, 'Size:', fileInfo.size);
 
-    // Read file as base64 using the new File API
-    const base64 = await file.base64();
+    // Read file as base64 using the legacy FileSystem API
+    const base64 = await LegacyFileSystem.readAsStringAsync(uri, {
+      encoding: LegacyFileSystem.EncodingType.Base64,
+    });
 
     console.log('Base64 length:', base64.length);
 
@@ -76,29 +78,6 @@ async function imageUriToBase64(uri: string): Promise<{ base64: string; mimeType
     console.error('Failed to read image:', error);
     throw new Error(`Failed to read image file: ${error}`);
   }
-}
-
-/**
- * Map API border style to our BorderTemplate type
- */
-function mapBorderTemplate(style: string): BorderTemplate {
-  const styleMap: Record<string, BorderTemplate> = {
-    solid: 'webtoon',
-    dashed: 'sketch',
-    dotted: 'pop',
-    double: 'panel',
-  };
-  return styleMap[style] || 'webtoon';
-}
-
-/**
- * Map border width string to BorderThickness
- */
-function mapBorderThickness(width: string): BorderThickness {
-  const px = parseInt(width) || 2;
-  if (px <= 1) return 'thin';
-  if (px <= 3) return 'medium';
-  return 'thick';
 }
 
 /**
@@ -231,11 +210,6 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
           titleText: themeData.colors.text,
           bodyText: themeData.colors.text,
           accent: themeData.colors.accent,
-          border: themeData.colors.border,
-        },
-        border: {
-          template: mapBorderTemplate(themeData.styles.borderStyle),
-          thickness: mapBorderThickness(themeData.styles.borderWidth),
         },
         typography: {
           titleStyle: 'sans-serif',
@@ -441,11 +415,6 @@ export async function generateLuckyDesign(
           titleText: themeData.colors.text,
           bodyText: themeData.colors.text,
           accent: themeData.colors.accent,
-          border: themeData.colors.border,
-        },
-        border: {
-          template: mapBorderTemplate(themeData.styles.borderStyle),
-          thickness: mapBorderThickness(themeData.styles.borderWidth),
         },
         typography: {
           titleStyle: 'sans-serif',
@@ -501,8 +470,6 @@ export async function generateLuckyDesign(
 // ============================================
 
 const THEMED_STICKER_API_URL = `${API_BASE_URL}/api/generate-themed-sticker`;
-const ANALYZE_TEXT_API_URL = `${API_BASE_URL}/api/analyze-note-text`;
-const STORY_STYLE_API_URL = `${API_BASE_URL}/api/generate-story-style`;
 
 /**
  * Generate a sticker based on theme style hints
@@ -669,219 +636,334 @@ export async function generateThemedDesign(
 }
 
 // ============================================
-// Story Style - AI Text Analysis to Design
+// Label Preset Sticker Generation
 // ============================================
 
+const LABEL_PRESET_STICKER_API_URL = `${API_BASE_URL}/api/generate-label-sticker`;
+
 /**
- * Stage 1: Analyze note text for context, keywords, mood
+ * Generate a sticker for a label preset using its style hints
+ * Uses the preset's artStyle, mood, and aiPromptHints for generation
  */
-export async function analyzeNoteText(
-  title: string,
-  content: string
-): Promise<TextAnalysis> {
-  console.log('✨ Analyzing note text...');
+export async function generateLabelPresetSticker(
+  preset: LabelPreset,
+  imageBase64?: string,
+  mimeType?: string
+): Promise<string | null> {
+  try {
+    console.log(`🏷️ Generating sticker for label preset: ${preset.name}...`);
 
-  const response = await fetch(ANALYZE_TEXT_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      title,
-      content,
-    }),
-  });
+    const response = await fetch(LABEL_PRESET_STICKER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        presetId: preset.id,
+        presetName: preset.name,
+        category: preset.category,
+        mood: preset.mood,
+        artStyle: preset.artStyle,
+        aiPromptHints: preset.aiPromptHints,
+        stickerEmoji: preset.stickerEmoji,
+        colors: preset.colors,
+        imageData: imageBase64,
+        mimeType: mimeType,
+      }),
+    });
 
-  if (response.status === 429) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Rate limit exceeded. Please wait ${errorData.retryAfter || 60} seconds.`);
+    if (!response.ok) {
+      console.error('Label preset sticker API error:', response.status);
+      // Fall back to themed sticker generation if endpoint not available
+      if (imageBase64 && mimeType) {
+        return await generateSticker(imageBase64, mimeType, preset.name);
+      }
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Label preset sticker generation error:', data.error);
+      // Fall back to regular sticker generation
+      if (imageBase64 && mimeType) {
+        return await generateSticker(imageBase64, mimeType, preset.name);
+      }
+      return null;
+    }
+
+    // Save the sticker image locally
+    const stickerId = Crypto.randomUUID();
+    const extension = data.mimeType === 'image/png' ? 'png' : 'jpg';
+    const stickerPath = `${LegacyFileSystem.documentDirectory}stickers/${stickerId}.${extension}`;
+
+    // Ensure stickers directory exists
+    const stickersDir = `${LegacyFileSystem.documentDirectory}stickers`;
+    const dirInfo = await LegacyFileSystem.getInfoAsync(stickersDir);
+    if (!dirInfo.exists) {
+      await LegacyFileSystem.makeDirectoryAsync(stickersDir, { intermediates: true });
+    }
+
+    // Write the sticker image
+    await LegacyFileSystem.writeAsStringAsync(stickerPath, data.stickerData, {
+      encoding: LegacyFileSystem.EncodingType.Base64,
+    });
+
+    console.log(`🏷️ Label preset sticker saved to:`, stickerPath);
+    return stickerPath;
+  } catch (error) {
+    console.error('Failed to generate label preset sticker:', error);
+    // Fall back to regular sticker generation
+    if (imageBase64 && mimeType) {
+      return await generateSticker(imageBase64, mimeType, preset.name);
+    }
+    return null;
   }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Analysis failed: ${response.status}`);
-  }
-
-  const analysisData: TextAnalysis = await response.json();
-  console.log('✨ Analysis complete:', analysisData.mood.primary, analysisData.suggestedStyle.aesthetic);
-
-  return analysisData;
 }
 
 /**
- * Stage 2: Generate design from text analysis
+ * Generate a design from a label preset with an optional image
+ * Combines the preset's colors/styles with AI-generated sticker
  */
-export async function generateStoryStyleDesign(
-  analysis: TextAnalysis,
-  noteTitle: string
-): Promise<StoryStyleDesignResponse> {
-  console.log('🎨 Generating Story Style design...');
+export async function generateLabelPresetDesign(
+  preset: LabelPreset,
+  imageUri?: string
+): Promise<NoteDesign> {
+  let imageBase64: string | undefined;
+  let mimeType: string | undefined;
 
-  const response = await fetch(STORY_STYLE_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      analysis,
-      noteTitle,
-    }),
-  });
-
-  if (response.status === 429) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Rate limit exceeded. Please wait ${errorData.retryAfter || 60} seconds.`);
+  // If image provided, convert to base64
+  if (imageUri) {
+    try {
+      const imageData = await imageUriToBase64(imageUri);
+      imageBase64 = imageData.base64;
+      mimeType = imageData.mimeType;
+    } catch (error) {
+      console.warn('Could not process image for label preset design:', error);
+    }
   }
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Design generation failed: ${response.status}`);
-  }
+  // Generate preset-styled sticker
+  const stickerUri = await generateLabelPresetSticker(preset, imageBase64, mimeType);
 
-  const designData: StoryStyleDesignResponse = await response.json();
-  console.log('🎨 Design generated:', designData.name, designData.matchedTheme);
-
-  return designData;
-}
-
-/**
- * Convert Story Style response to NoteDesign
- */
-function storyStyleToNoteDesign(
-  storyStyle: StoryStyleDesignResponse,
-  analysis: TextAnalysis
-): NoteDesign {
-  // Map box shadow to border thickness
-  const thicknessMap: Record<string, BorderThickness> = {
-    none: 'thin',
-    subtle: 'thin',
-    medium: 'medium',
-    glow: 'thick',
-  };
-
-  // Map border style string to BorderTemplate
-  const templateMap: Record<string, BorderTemplate> = {
-    solid: 'webtoon',
-    dashed: 'sketch',
-    dotted: 'pop',
-  };
-
-  const borderRadius = parseInt(storyStyle.styles.borderRadius) || 12;
-  const borderWidth = parseInt(storyStyle.styles.borderWidth) || 2;
-
-  return {
-    id: Crypto.randomUUID(),
-    name: storyStyle.name,
-    sourceImageUri: '',
+  // Create the design from preset
+  const design: NoteDesign = {
+    id: `label-preset-${preset.id}`,
+    name: `#${preset.name}`,
+    sourceImageUri: imageUri || '',
     createdAt: Date.now(),
+
     background: {
-      primaryColor: storyStyle.colors.background,
-      secondaryColor: storyStyle.colors.accent,
-      style: 'solid',
+      primaryColor: preset.colors.bg,
+      secondaryColor: preset.colors.secondary,
+      style: preset.bgStyle === 'gradient' ? 'gradient' : 'solid',
+      imageUri: imageUri,
+      opacity: 0.15,
     },
+
     colors: {
-      titleText: storyStyle.colors.text,
-      bodyText: storyStyle.colors.text,
-      accent: storyStyle.colors.accent,
-      border: storyStyle.colors.border,
+      titleText: preset.colors.text,
+      bodyText: preset.colors.text,
+      accent: preset.colors.primary,
     },
-    border: {
-      template: templateMap[storyStyle.styles.borderStyle] || 'webtoon',
-      thickness: thicknessMap[storyStyle.styles.boxShadow] || 'medium',
-    },
+
     typography: {
-      titleStyle: 'sans-serif',
-      vibe: 'modern',
+      titleStyle: preset.fontStyle === 'serif' ? 'serif' :
+                  preset.fontStyle === 'handwritten' ? 'handwritten' : 'sans-serif',
+      vibe: preset.mood === 'playful' ? 'cute' :
+            preset.mood === 'serious' ? 'dramatic' :
+            preset.mood === 'dreamy' ? 'classic' : 'modern',
     },
+
     sticker: {
       id: Crypto.randomUUID(),
-      imageUri: '',
-      description: `Story Style: ${storyStyle.designRationale}`,
-      suggestedPosition: 'bottom-right',
+      imageUri: stickerUri || '',
+      description: `${preset.name} style character`,
+      suggestedPosition: preset.stickerPosition,
       scale: 'medium',
     },
-    designSummary: `✨ "${storyStyle.name}" - ${storyStyle.designRationale}`,
+
+    designSummary: `Design for #${preset.name} - ${preset.description}`,
+
+    // Mark as label preset
+    labelPresetId: preset.id,
+    isLabelPreset: true,
   };
+
+  return design;
 }
+
+// ============================================
+// Board Design Generation
+// ============================================
+
+const BOARD_DESIGN_API_URL = `${API_BASE_URL}/api/generate-board-design`;
 
 /**
- * Combined: Full Story Style flow
- * Analyzes note text and generates a matching design
+ * Generate a board design from hashtag and note content
  */
-export async function createStoryStyle(
-  title: string,
-  content: string
-): Promise<{
-  analysis: TextAnalysis;
-  design: NoteDesign;
-}> {
-  // Stage 1: Analyze text
-  const analysis = await analyzeNoteText(title, content);
+export async function generateBoardDesign(
+  hashtag: string,
+  notes: Note[],
+  userHint?: string
+): Promise<BoardDesign> {
+  console.log(`🎨 Generating board design for #${hashtag}...`);
 
-  // Stage 2: Generate design from analysis
-  const storyStyleResponse = await generateStoryStyleDesign(analysis, title);
+  // Extract note content for context (first 10 notes, title + 100 chars content)
+  const noteContent = notes.slice(0, 10).map(note => {
+    const title = note.title || '';
+    const content = note.content?.slice(0, 100) || '';
+    return `${title}: ${content}`.trim();
+  }).filter(Boolean);
 
-  // Convert to NoteDesign
-  const design = storyStyleToNoteDesign(storyStyleResponse, analysis);
+  const response = await fetch(BOARD_DESIGN_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      hashtag,
+      noteContent,
+      userHint,
+    }),
+  });
 
-  return {
-    analysis,
-    design,
+  if (response.status === 429) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Rate limit exceeded. Please wait ${errorData.retryAfter || 60} seconds.`);
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Board design generation failed: ${response.status}`);
+  }
+
+  const data: GeminiBoardDesignResponse = await response.json();
+  console.log('🎨 Board design received:', data.name);
+
+  // Convert API response to BoardDesign
+  const design: BoardDesign = {
+    id: Crypto.randomUUID(),
+    boardHashtag: hashtag.toLowerCase(),
+    name: data.name,
+    createdAt: Date.now(),
+    header: {
+      backgroundColor: data.header.background_color,
+      textColor: data.header.text_color,
+      badgeColor: data.header.badge_color,
+      badgeTextColor: data.header.badge_text_color,
+      accentColor: data.header.accent_color,
+    },
+    corkboard: {
+      backgroundColor: data.corkboard.background_color,
+      textureId: data.corkboard.texture_id || undefined,
+      textureOpacity: data.corkboard.texture_opacity,
+      borderColor: data.corkboard.border_color,
+    },
+    decorations: {
+      icon: data.decorations.icon || undefined,
+      iconColor: data.decorations.icon_color || undefined,
+      accentType: data.decorations.accent_type,
+      accentColor: data.decorations.accent_color || undefined,
+    },
+    designSummary: data.design_summary,
+    sourceKeywords: data.source_keywords,
+    themeInspiration: data.theme_inspiration,
   };
+
+  return design;
 }
 
 // ============================================
-// Webtoon Artist - AI Sketch Generation
+// Typographic Poster - Text Art Generation
 // ============================================
 
-const WEBTOON_SKETCH_API_URL = `${API_BASE_URL}/api/generate-webtoon-sketch`;
+const TYPOGRAPHY_POSTER_API_URL = `${API_BASE_URL}/api/generate-typography-poster`;
+const CHARACTER_MASCOT_API_URL = `${API_BASE_URL}/api/generate-character-mascot`;
 
-// Webtoon style preset configurations
-export const WEBTOON_STYLES: WebtoonStyleConfig[] = [
+// Typography style preset configurations
+export const TYPOGRAPHY_STYLES: TypographyStyleConfig[] = [
   {
-    id: 'shonen',
-    name: 'Shonen',
-    emoji: '💥',
-    description: 'Bold, dynamic, action-packed',
-    artDirection: 'Bold dynamic lines, action-oriented composition, intense expressions',
-    lineStyle: 'thick bold strokes, high contrast',
-    mood: 'energetic, determined, powerful',
-    examples: ['One Piece', 'Naruto', 'My Hero Academia'],
+    id: 'hand-lettered',
+    name: 'Hand-Lettered',
+    emoji: '✍️',
+    description: 'Flowing, artistic handwriting',
+    artDirection: 'Hand-lettered calligraphy style with flowing, organic letters. Slight imperfections for authentic charm.',
+    fontVibe: 'flowing script with personality, organic curves',
+    mood: 'personal, warm, artistic',
   },
   {
-    id: 'shoujo',
-    name: 'Shoujo',
-    emoji: '✿',
-    description: 'Soft, elegant, emotional',
-    artDirection: 'Soft flowing lines, delicate expressions, flowers and sparkles',
-    lineStyle: 'thin elegant lines, soft shading',
-    mood: 'emotional, dreamy, gentle',
-    examples: ['Fruits Basket', 'Sailor Moon', 'Ouran'],
+    id: 'brush-marker',
+    name: 'Brush/Marker',
+    emoji: '🖌️',
+    description: 'Bold brush strokes',
+    artDirection: 'Bold brush or marker strokes with varying thickness. Japanese/Chinese calligraphy influence.',
+    fontVibe: 'expressive brushwork, dynamic strokes',
+    mood: 'energetic, expressive, bold',
   },
   {
-    id: 'simple',
-    name: 'Simple',
-    emoji: '◇',
-    description: 'Clean, minimal, modern',
-    artDirection: 'Clean minimalist lines, clear compositions, focused on clarity',
-    lineStyle: 'clean simple lines, minimal detail',
-    mood: 'clean, focused, modern',
-    examples: ['Solo Leveling', 'Tower of God', 'Lore Olympus'],
+    id: 'designer',
+    name: 'Designer',
+    emoji: '🎨',
+    description: 'Professional lettering art',
+    artDirection: 'Professional hand-lettering design with mixed styles. Decorative flourishes.',
+    fontVibe: 'polished, decorative, multiple lettering styles',
+    mood: 'crafted, professional, detailed',
+  },
+  {
+    id: 'bold-modern',
+    name: 'Bold Modern',
+    emoji: '💪',
+    description: 'Strong, impactful typography',
+    artDirection: 'Bold sans-serif inspired lettering, high impact poster style. Thick letters with strong presence.',
+    fontVibe: 'thick bold letters, geometric, maximalist',
+    mood: 'powerful, attention-grabbing, modern',
+  },
+];
+
+// Character mascot type configurations
+export const CHARACTER_TYPES: CharacterMascotConfig[] = [
+  {
+    id: 'chibi-anime',
+    name: 'Chibi Anime',
+    emoji: '🧸',
+    description: 'Cute, small proportions',
+    artDirection: 'Chibi/super-deformed anime style. Large head with small body (2:1 ratio). Big expressive eyes.',
+    proportions: 'chibi 2:1 head to body ratio',
+    expressionStyle: 'exaggerated cute expressions, big sparkly eyes',
+  },
+  {
+    id: 'realistic-anime',
+    name: 'Anime Character',
+    emoji: '✨',
+    description: 'Standard anime proportions',
+    artDirection: 'Standard anime/manga proportions. Detailed eyes with highlights, dynamic pose capable.',
+    proportions: 'standard anime 6-7 head tall',
+    expressionStyle: 'expressive but proportional, detailed eyes',
+  },
+  {
+    id: 'mascot-cute',
+    name: 'Mascot',
+    emoji: '🐾',
+    description: 'Animal or creature mascot',
+    artDirection: 'Cute mascot character - could be animal, creature, or fantasy being. Kawaii aesthetic.',
+    proportions: 'round, simplified, approachable',
+    expressionStyle: 'friendly, simple, iconic expressions',
   },
 ];
 
 /**
- * Generate a webtoon storyboard sketch based on text analysis
+ * Generate a typography poster from note text
  */
-export async function generateWebtoonSketch(
+export async function generateTypographyPoster(
   analysis: TextAnalysis,
-  style: WebtoonStylePreset,
+  style: TypographyPosterStyle,
   noteTitle: string,
   noteContent: string
-): Promise<WebtoonSketchResponse> {
-  console.log(`🎨 Generating ${style} webtoon sketch...`);
+): Promise<TypographyImageResponse> {
+  console.log(`✍️ Generating ${style} typography poster...`);
 
-  const response = await fetch(WEBTOON_SKETCH_API_URL, {
+  const response = await fetch(TYPOGRAPHY_POSTER_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -901,38 +983,275 @@ export async function generateWebtoonSketch(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Sketch generation failed: ${response.status}`);
+    throw new Error(errorData.error || `Typography generation failed: ${response.status}`);
   }
 
-  const sketchData: WebtoonSketchResponse = await response.json();
-  console.log(`🎨 Sketch generated: ${style} style`);
+  const data: TypographyImageResponse = await response.json();
+  console.log(`✍️ Typography poster generated: ${style} style`);
 
-  return sketchData;
+  return data;
 }
 
 /**
- * Save webtoon sketch to local storage
- * Returns the local URI of the saved image
+ * Generate a character mascot from note text analysis
  */
-export async function saveWebtoonSketch(
-  sketchData: WebtoonSketchResponse
-): Promise<string> {
-  const sketchId = Crypto.randomUUID();
-  const extension = sketchData.mimeType === 'image/png' ? 'png' : 'jpg';
-  const sketchPath = `${LegacyFileSystem.documentDirectory}sketches/${sketchId}.${extension}`;
+export async function generateCharacterMascot(
+  analysis: TextAnalysis,
+  characterType: CharacterMascotType,
+  noteTitle: string,
+  noteContent: string
+): Promise<CharacterMascotResponse> {
+  console.log(`🧸 Generating ${characterType} character mascot...`);
 
-  // Ensure sketches directory exists
-  const sketchesDir = `${LegacyFileSystem.documentDirectory}sketches`;
-  const dirInfo = await LegacyFileSystem.getInfoAsync(sketchesDir);
-  if (!dirInfo.exists) {
-    await LegacyFileSystem.makeDirectoryAsync(sketchesDir, { intermediates: true });
+  const response = await fetch(CHARACTER_MASCOT_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      analysis,
+      characterType,
+      noteTitle,
+      noteContent,
+    }),
+  });
+
+  if (response.status === 429) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Rate limit exceeded. Please wait ${errorData.retryAfter || 60} seconds.`);
   }
 
-  // Write the sketch image
-  await LegacyFileSystem.writeAsStringAsync(sketchPath, sketchData.imageBase64, {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Character generation failed: ${response.status}`);
+  }
+
+  const data: CharacterMascotResponse = await response.json();
+  console.log(`🧸 Character mascot generated: ${characterType} style`);
+
+  return data;
+}
+
+/**
+ * Save typography poster to local storage
+ * Returns the local URI of the saved image
+ */
+export async function saveTypographyPoster(
+  posterData: TypographyImageResponse
+): Promise<string> {
+  const posterId = Crypto.randomUUID();
+  const extension = posterData.mimeType === 'image/png' ? 'png' : 'jpg';
+  const posterPath = `${LegacyFileSystem.documentDirectory}typography/${posterId}.${extension}`;
+
+  // Ensure typography directory exists
+  const typographyDir = `${LegacyFileSystem.documentDirectory}typography`;
+  const dirInfo = await LegacyFileSystem.getInfoAsync(typographyDir);
+  if (!dirInfo.exists) {
+    await LegacyFileSystem.makeDirectoryAsync(typographyDir, { intermediates: true });
+  }
+
+  // Write the poster image
+  await LegacyFileSystem.writeAsStringAsync(posterPath, posterData.imageBase64, {
     encoding: LegacyFileSystem.EncodingType.Base64,
   });
 
-  console.log('🎨 Webtoon sketch saved to:', sketchPath);
-  return sketchPath;
+  console.log('✍️ Typography poster saved to:', posterPath);
+  return posterPath;
+}
+
+/**
+ * Save character mascot to local storage
+ * Returns the local URI of the saved image
+ */
+export async function saveCharacterMascot(
+  mascotData: CharacterMascotResponse
+): Promise<string> {
+  const mascotId = Crypto.randomUUID();
+  const extension = mascotData.mimeType === 'image/png' ? 'png' : 'jpg';
+  const mascotPath = `${LegacyFileSystem.documentDirectory}mascots/${mascotId}.${extension}`;
+
+  // Ensure mascots directory exists
+  const mascotsDir = `${LegacyFileSystem.documentDirectory}mascots`;
+  const dirInfo = await LegacyFileSystem.getInfoAsync(mascotsDir);
+  if (!dirInfo.exists) {
+    await LegacyFileSystem.makeDirectoryAsync(mascotsDir, { intermediates: true });
+  }
+
+  // Write the mascot image
+  await LegacyFileSystem.writeAsStringAsync(mascotPath, mascotData.imageBase64, {
+    encoding: LegacyFileSystem.EncodingType.Base64,
+  });
+
+  console.log('🧸 Character mascot saved to:', mascotPath);
+  return mascotPath;
+}
+
+// ============================================
+// Image-Only Design Generation
+// ============================================
+
+const IMAGE_STICKER_API_URL = `${API_BASE_URL}/api/generate-image-sticker`;
+
+/**
+ * Generate a character sticker from an image (background removal)
+ * Returns the URI of the saved sticker image, or null if failed
+ */
+export async function generateStickerFromImage(imageUri: string): Promise<string | null> {
+  console.log('🎨 Generating sticker from image...');
+
+  // Convert image to base64
+  const { base64, mimeType } = await imageUriToBase64(imageUri);
+
+  try {
+    console.log('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
+    const stickerResponse = await fetch(IMAGE_STICKER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        imageBase64: base64,
+        mimeType: mimeType,
+      }),
+    });
+
+    console.log('📡 Sticker API response status:', stickerResponse.status);
+
+    if (stickerResponse.ok) {
+      const stickerData = await stickerResponse.json();
+      console.log('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
+
+      if (stickerData.stickerBase64) {
+        // Save sticker to local storage
+        const stickerUri = await saveStickerImage(stickerData.stickerBase64, stickerData.mimeType || 'image/png');
+        console.log('✅ Sticker generated and saved:', stickerUri);
+        return stickerUri;
+      } else {
+        console.warn('⚠️ API returned OK but no stickerBase64 in response');
+        return null;
+      }
+    } else {
+      const errorText = await stickerResponse.text();
+      console.warn('❌ Sticker generation failed:', stickerResponse.status, errorText);
+      return null;
+    }
+  } catch (error) {
+    console.warn('❌ Sticker generation error:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate a design from just an image
+ * Creates a character sticker and uses the image as background
+ */
+export async function generateImageDesign(imageUri: string): Promise<NoteDesign> {
+  console.log('🎨 Generating design from image...');
+
+  // Convert image to base64
+  const { base64, mimeType } = await imageUriToBase64(imageUri);
+
+  // Generate character sticker from the image
+  let stickerUri: string | undefined;
+
+  try {
+    console.log('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
+    const stickerResponse = await fetch(IMAGE_STICKER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        imageBase64: base64,
+        mimeType: mimeType,
+      }),
+    });
+
+    console.log('📡 Sticker API response status:', stickerResponse.status);
+
+    if (stickerResponse.ok) {
+      const stickerData = await stickerResponse.json();
+      console.log('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
+
+      if (stickerData.stickerBase64) {
+        // Save sticker to local storage
+        stickerUri = await saveStickerImage(stickerData.stickerBase64, stickerData.mimeType || 'image/png');
+        console.log('✅ Sticker generated and saved:', stickerUri);
+      } else {
+        console.warn('⚠️ API returned OK but no stickerBase64 in response');
+      }
+    } else {
+      const errorText = await stickerResponse.text();
+      console.warn('❌ Sticker generation failed:', stickerResponse.status, errorText);
+    }
+  } catch (error) {
+    console.warn('❌ Sticker generation error:', error);
+  }
+
+  // Create a design with neutral colors + image background
+  const design: NoteDesign = {
+    id: Crypto.randomUUID(),
+    name: 'Custom Design',
+    sourceImageUri: imageUri,
+    createdAt: Date.now(),
+
+    background: {
+      primaryColor: '#FFFFFF',
+      style: 'image',
+      imageUri: imageUri,
+      opacity: 0.2,
+    },
+
+    colors: {
+      titleText: '#1F2937',
+      bodyText: '#4B5563',
+      accent: '#7C3AED',
+    },
+
+    typography: {
+      titleStyle: 'sans-serif',
+      vibe: 'modern',
+    },
+
+    sticker: {
+      id: Crypto.randomUUID(),
+      imageUri: stickerUri || '',
+      description: 'Character from uploaded image',
+      suggestedPosition: 'bottom-right',
+      scale: 'medium',
+    },
+
+    designSummary: 'Custom design generated from uploaded image',
+  };
+
+  console.log('🎨 Design created:', {
+    id: design.id,
+    hasSticker: !!design.sticker?.imageUri,
+    stickerUri: design.sticker?.imageUri,
+  });
+
+  return design;
+}
+
+/**
+ * Helper to save sticker image to local storage
+ */
+async function saveStickerImage(base64: string, mimeType: string): Promise<string> {
+  const stickerId = Crypto.randomUUID();
+  const extension = mimeType === 'image/png' ? 'png' : 'jpg';
+  const stickerPath = `${LegacyFileSystem.documentDirectory}stickers/${stickerId}.${extension}`;
+
+  // Ensure stickers directory exists
+  const stickersDir = `${LegacyFileSystem.documentDirectory}stickers`;
+  const dirInfo = await LegacyFileSystem.getInfoAsync(stickersDir);
+  if (!dirInfo.exists) {
+    await LegacyFileSystem.makeDirectoryAsync(stickersDir, { intermediates: true });
+  }
+
+  // Write the sticker image
+  await LegacyFileSystem.writeAsStringAsync(stickerPath, base64, {
+    encoding: LegacyFileSystem.EncodingType.Base64,
+  });
+
+  return stickerPath;
 }

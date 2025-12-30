@@ -10,170 +10,16 @@ import {
   NoteColor,
   DesignViewContext,
   ComposedStyle,
-  BorderTemplate,
-  BorderThickness,
   StickerPosition,
-  BorderStyleType,
   BackgroundOverride,
 } from '@/types';
 import { getPatternById } from '@/constants/patterns';
-
-// ============================================
-// Border Configuration Types
-// ============================================
-
-interface BorderConfig {
-  borderWidth: { thin: number; medium: number; thick: number };
-  borderRadius: number;
-  borderStyle: BorderStyleType;
-  shadowOffset: { width: number; height: number };
-  shadowOpacity: { thin: number; medium: number; thick: number };
-  shadowRadius: { thin: number; medium: number; thick: number };
-  elevation: { thin: number; medium: number; thick: number };
-  decorationType: 'shoujo' | 'pop' | 'vintage' | 'none';
-}
-
-// ============================================
-// Pre-defined Border Configurations
-// Based on toonnotes-design-preview.html
-// ============================================
-
-const BORDER_CONFIGS: Record<BorderTemplate, BorderConfig> = {
-  // Panel Styles (Classic Comic/Manga)
-  panel: {
-    borderWidth: { thin: 2, medium: 3, thick: 5 },
-    borderRadius: 0,
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: { thin: 0, medium: 0, thick: 0 },
-    shadowRadius: { thin: 0, medium: 0, thick: 0 },
-    elevation: { thin: 0, medium: 0, thick: 0 },
-    decorationType: 'none',
-  },
-  webtoon: {
-    borderWidth: { thin: 1, medium: 1, thick: 2 },
-    borderRadius: 4,
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: { thin: 0.04, medium: 0.06, thick: 0.08 },
-    shadowRadius: { thin: 4, medium: 8, thick: 12 },
-    elevation: { thin: 1, medium: 2, thick: 3 },
-    decorationType: 'none',
-  },
-  sketch: {
-    borderWidth: { thin: 1, medium: 2, thick: 3 },
-    borderRadius: 8, // Simplified from CSS wobbly radius
-    borderStyle: 'dashed',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: { thin: 0, medium: 0, thick: 0 },
-    shadowRadius: { thin: 0, medium: 0, thick: 0 },
-    elevation: { thin: 0, medium: 0, thick: 0 },
-    decorationType: 'none',
-  },
-
-  // Shoujo / Romance
-  shoujo: {
-    borderWidth: { thin: 1, medium: 2, thick: 3 },
-    borderRadius: 20,
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: { thin: 0.3, medium: 0.4, thick: 0.5 },
-    shadowRadius: { thin: 15, medium: 20, thick: 25 },
-    elevation: { thin: 3, medium: 4, thick: 5 },
-    decorationType: 'shoujo',
-  },
-  vintage_manga: {
-    borderWidth: { thin: 2, medium: 3, thick: 4 },
-    borderRadius: 2,
-    borderStyle: 'solid',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: { thin: 0.15, medium: 0.2, thick: 0.25 },
-    shadowRadius: { thin: 0, medium: 0, thick: 0 },
-    elevation: { thin: 2, medium: 3, thick: 4 },
-    decorationType: 'vintage',
-  },
-  watercolor: {
-    borderWidth: { thin: 1, medium: 2, thick: 3 },
-    borderRadius: 12,
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: { thin: 0.05, medium: 0.08, thick: 0.1 },
-    shadowRadius: { thin: 10, medium: 15, thick: 20 },
-    elevation: { thin: 1, medium: 2, thick: 3 },
-    decorationType: 'none',
-  },
-
-  // Chibi / Fun
-  speech_bubble: {
-    borderWidth: { thin: 2, medium: 3, thick: 4 },
-    borderRadius: 24,
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: { thin: 0.1, medium: 0.15, thick: 0.2 },
-    shadowRadius: { thin: 4, medium: 6, thick: 8 },
-    elevation: { thin: 2, medium: 3, thick: 4 },
-    decorationType: 'none', // Tail would need SVG
-  },
-  pop: {
-    borderWidth: { thin: 3, medium: 4, thick: 5 },
-    borderRadius: 8,
-    borderStyle: 'solid',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: { thin: 1, medium: 1, thick: 1 },
-    shadowRadius: { thin: 0, medium: 0, thick: 0 },
-    elevation: { thin: 4, medium: 6, thick: 8 },
-    decorationType: 'pop',
-  },
-  sticker: {
-    borderWidth: { thin: 3, medium: 4, thick: 6 },
-    borderRadius: 16,
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: { thin: 0.2, medium: 0.25, thick: 0.3 },
-    shadowRadius: { thin: 10, medium: 15, thick: 20 },
-    elevation: { thin: 4, medium: 6, thick: 8 },
-    decorationType: 'none',
-  },
-
-  // Action / Shonen
-  speed_lines: {
-    borderWidth: { thin: 2, medium: 3, thick: 4 },
-    borderRadius: 4,
-    borderStyle: 'solid',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: { thin: 0.2, medium: 0.3, thick: 0.4 },
-    shadowRadius: { thin: 4, medium: 6, thick: 8 },
-    elevation: { thin: 2, medium: 3, thick: 4 },
-    decorationType: 'none', // Lines would need SVG
-  },
-  impact: {
-    borderWidth: { thin: 3, medium: 4, thick: 6 },
-    borderRadius: 4, // Jagged effect would need clip-path/SVG
-    borderStyle: 'solid',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: { thin: 0.3, medium: 0.4, thick: 0.5 },
-    shadowRadius: { thin: 6, medium: 8, thick: 10 },
-    elevation: { thin: 4, medium: 6, thick: 8 },
-    decorationType: 'none',
-  },
-  ink_splash: {
-    borderWidth: { thin: 0, medium: 0, thick: 0 },
-    borderRadius: 4,
-    borderStyle: 'solid',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: { thin: 0.4, medium: 0.5, thick: 0.6 },
-    shadowRadius: { thin: 2, medium: 3, thick: 4 },
-    elevation: { thin: 3, medium: 4, thick: 5 },
-    decorationType: 'none', // Ink dots would need additional views
-  },
-};
 
 // ============================================
 // Context-specific Rendering Rules
 // ============================================
 
 interface ContextRules {
-  borderScale: number; // Multiply border width
   shadowScale: number; // Multiply shadow values
   radiusScale: number; // Multiply border radius
   showSticker: boolean;
@@ -184,7 +30,6 @@ interface ContextRules {
 
 const CONTEXT_RULES: Record<DesignViewContext, ContextRules> = {
   grid: {
-    borderScale: 0.5,
     shadowScale: 0.5,
     radiusScale: 1,
     showSticker: true,
@@ -193,7 +38,6 @@ const CONTEXT_RULES: Record<DesignViewContext, ContextRules> = {
     showBackground: false, // Skip for performance
   },
   list: {
-    borderScale: 0,
     shadowScale: 0,
     radiusScale: 0.8,
     showSticker: false,
@@ -202,7 +46,6 @@ const CONTEXT_RULES: Record<DesignViewContext, ContextRules> = {
     showBackground: false, // Minimal styling
   },
   detail: {
-    borderScale: 1,
     shadowScale: 1,
     radiusScale: 1,
     showSticker: true,
@@ -211,7 +54,6 @@ const CONTEXT_RULES: Record<DesignViewContext, ContextRules> = {
     showBackground: true, // Full background
   },
   share: {
-    borderScale: 1.2,
     shadowScale: 1.5,
     radiusScale: 1,
     showSticker: true,
@@ -230,12 +72,20 @@ const DARK_MODE_COLORS = {
   title: '#FFFFFF',
   body: '#D1D5DB',
   accent: '#60A5FA',
-  border: '#4B5563',
 };
 
 // ============================================
 // Main Compose Functions
 // ============================================
+
+// Default iOS-style card styling
+const DEFAULT_BORDER_RADIUS = 12;
+const DEFAULT_SHADOW = {
+  offset: { width: 0, height: 2 },
+  opacity: 0.06,
+  radius: 8,
+  elevation: 2,
+};
 
 /**
  * Compose a view-ready style from a NoteDesign
@@ -250,22 +100,7 @@ export function composeStyle(
     return composeBasicStyle(fallbackColor, context, isDark);
   }
 
-  const borderConfig = BORDER_CONFIGS[design.border.template];
   const contextRules = CONTEXT_RULES[context];
-  const thickness = design.border.thickness;
-
-  // Calculate scaled values
-  const borderWidth = Math.round(
-    borderConfig.borderWidth[thickness] * contextRules.borderScale
-  );
-  const shadowOpacity =
-    borderConfig.shadowOpacity[thickness] * contextRules.shadowScale;
-  const shadowRadius = Math.round(
-    borderConfig.shadowRadius[thickness] * contextRules.shadowScale
-  );
-  const borderRadius = Math.round(
-    borderConfig.borderRadius * contextRules.radiusScale
-  );
 
   // Determine sticker settings
   const stickerPosition = design.sticker?.suggestedPosition || 'bottom-right';
@@ -276,6 +111,21 @@ export function composeStyle(
       ? 1.2
       : 1;
 
+  // Calculate scaled shadow values
+  const shadowOpacity = DEFAULT_SHADOW.opacity * contextRules.shadowScale;
+  const shadowRadius = Math.round(DEFAULT_SHADOW.radius * contextRules.shadowScale);
+  const borderRadius = Math.round(DEFAULT_BORDER_RADIUS * contextRules.radiusScale);
+
+  // Get typography info - pass through the titleStyle directly
+  const fontStyle = design.typography?.titleStyle || 'sans-serif';
+
+  // Get label icons if this is a label preset design
+  const preset = design.labelPresetId
+    ? getPresetById(design.labelPresetId as any)
+    : undefined;
+  const labelIcon = preset?.icon;
+  const noteIcon = preset?.noteIcon;
+
   // Build composed style
   const composed: ComposedStyle = {
     // Colors from design
@@ -283,7 +133,11 @@ export function composeStyle(
     titleColor: design.colors.titleText,
     bodyColor: design.colors.bodyText,
     accentColor: design.colors.accent,
-    borderColor: design.colors.border,
+
+    // Typography
+    fontStyle: fontStyle as any,
+    labelIcon,
+    noteIcon,
 
     // Gradient if applicable
     backgroundGradient:
@@ -312,32 +166,27 @@ export function composeStyle(
               : undefined;
           })()
         : undefined,
+    patternTintColor:
+      contextRules.showBackground && design.background.style === 'pattern'
+        ? design.colors.accent
+        : undefined,
     backgroundOpacity: design.background.opacity ?? 0.15,
     showBackground:
       contextRules.showBackground &&
       (design.background.style === 'image' || design.background.style === 'pattern'),
 
-    // Border
-    borderWidth,
-    borderStyle: borderConfig.borderStyle,
+    // Border radius for card corners
     borderRadius,
-    showBorder: borderWidth > 0,
 
-    // Shadow
-    shadowColor: design.colors.border,
+    // iOS-style shadow
+    shadowColor: '#000000',
     shadowOffset: {
-      width: Math.round(
-        borderConfig.shadowOffset.width * contextRules.shadowScale
-      ),
-      height: Math.round(
-        borderConfig.shadowOffset.height * contextRules.shadowScale
-      ),
+      width: Math.round(DEFAULT_SHADOW.offset.width * contextRules.shadowScale),
+      height: Math.round(DEFAULT_SHADOW.offset.height * contextRules.shadowScale),
     },
     shadowOpacity,
     shadowRadius,
-    elevation: Math.round(
-      borderConfig.elevation[thickness] * contextRules.shadowScale
-    ),
+    elevation: Math.round(DEFAULT_SHADOW.elevation * contextRules.shadowScale),
 
     // Sticker
     showSticker: contextRules.showSticker && !!design.sticker?.imageUri,
@@ -345,10 +194,10 @@ export function composeStyle(
     stickerPosition,
     stickerUri: design.sticker?.imageUri,
 
-    // Decorations
+    // Decorations (shoujo sparkles, etc.)
     decorations: contextRules.showDecorations
       ? {
-          type: borderConfig.decorationType,
+          type: 'shoujo', // Default decoration style
           color: design.colors.accent,
         }
       : { type: 'none' },
@@ -372,10 +221,8 @@ export function composeBasicStyle(
   const backgroundColor = isWhiteInDark ? DARK_MODE_COLORS.background : color;
   const titleColor = isWhiteInDark ? DARK_MODE_COLORS.title : '#1F2937';
   const bodyColor = isWhiteInDark ? DARK_MODE_COLORS.body : '#4B5563';
-  const borderColor = isWhiteInDark ? DARK_MODE_COLORS.border : 'rgba(0,0,0,0.1)';
 
   // Basic rounded card style
-  const baseBorderRadius = 12;
   const baseElevation = context === 'detail' ? 4 : context === 'grid' ? 2 : 0;
 
   return {
@@ -383,21 +230,17 @@ export function composeBasicStyle(
     titleColor,
     bodyColor,
     accentColor: '#0ea5e9',
-    borderColor,
 
     // No background image/pattern for basic style
     backgroundOpacity: 0.15,
     showBackground: false,
 
-    borderWidth: 0,
-    borderStyle: 'solid',
-    borderRadius: Math.round(baseBorderRadius * contextRules.radiusScale),
-    showBorder: false,
+    borderRadius: Math.round(DEFAULT_BORDER_RADIUS * contextRules.radiusScale),
 
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: context === 'list' ? 0 : 0.1,
-    shadowRadius: context === 'list' ? 0 : 4,
+    shadowOpacity: context === 'list' ? 0 : 0.06,
+    shadowRadius: context === 'list' ? 0 : 8,
     elevation: baseElevation,
 
     showSticker: false,
@@ -406,34 +249,6 @@ export function composeBasicStyle(
 
     decorations: { type: 'none' },
   };
-}
-
-/**
- * Get border color with special handling for certain templates
- */
-export function getBorderColor(
-  template: BorderTemplate,
-  designBorderColor: string
-): string {
-  // Sticker template always uses white border
-  if (template === 'sticker') {
-    return '#FFFFFF';
-  }
-  // Panel and pop use dark border
-  if (template === 'panel' || template === 'pop') {
-    return '#1a1a1a';
-  }
-  return designBorderColor;
-}
-
-/**
- * Get shadow color for pop template (solid shadow)
- */
-export function getPopShadowColor(template: BorderTemplate): string | undefined {
-  if (template === 'pop') {
-    return '#1a1a1a';
-  }
-  return undefined;
 }
 
 // ============================================
@@ -456,22 +271,12 @@ export function composeThemeStyle(
     ? { ...theme.colors, ...colorOverrides }
     : theme.colors;
 
-  const borderConfig = BORDER_CONFIGS[theme.border.template];
   const contextRules = CONTEXT_RULES[context];
-  const thickness = theme.border.thickness;
 
   // Calculate scaled values
-  const borderWidth = Math.round(
-    borderConfig.borderWidth[thickness] * contextRules.borderScale
-  );
-  const shadowOpacity =
-    borderConfig.shadowOpacity[thickness] * contextRules.shadowScale;
-  const shadowRadius = Math.round(
-    borderConfig.shadowRadius[thickness] * contextRules.shadowScale
-  );
-  const borderRadius = Math.round(
-    (theme.border.customRadius ?? borderConfig.borderRadius) * contextRules.radiusScale
-  );
+  const shadowOpacity = DEFAULT_SHADOW.opacity * contextRules.shadowScale;
+  const shadowRadius = Math.round(DEFAULT_SHADOW.radius * contextRules.shadowScale);
+  const borderRadius = Math.round(DEFAULT_BORDER_RADIUS * contextRules.radiusScale);
 
   // Build composed style
   const composed: ComposedStyle = {
@@ -480,7 +285,6 @@ export function composeThemeStyle(
     titleColor: colors.title,
     bodyColor: colors.body,
     accentColor: colors.accent,
-    borderColor: colors.border,
 
     // Gradient
     backgroundGradient:
@@ -522,21 +326,18 @@ export function composeThemeStyle(
     backgroundOpacity: theme.background.defaultOpacity,
     showBackground: contextRules.showBackground && !!theme.background.patternId,
 
-    // Border
-    borderWidth,
-    borderStyle: borderConfig.borderStyle,
+    // Border radius for card corners
     borderRadius,
-    showBorder: borderWidth > 0,
 
-    // Shadow
-    shadowColor: colors.border,
+    // iOS-style shadow
+    shadowColor: '#000000',
     shadowOffset: {
-      width: Math.round(borderConfig.shadowOffset.width * contextRules.shadowScale),
-      height: Math.round(borderConfig.shadowOffset.height * contextRules.shadowScale),
+      width: Math.round(DEFAULT_SHADOW.offset.width * contextRules.shadowScale),
+      height: Math.round(DEFAULT_SHADOW.offset.height * contextRules.shadowScale),
     },
     shadowOpacity,
     shadowRadius,
-    elevation: Math.round(borderConfig.elevation[thickness] * contextRules.shadowScale),
+    elevation: Math.round(DEFAULT_SHADOW.elevation * contextRules.shadowScale),
 
     // Sticker (will be set when sticker is generated)
     showSticker: false,
@@ -547,7 +348,7 @@ export function composeThemeStyle(
     // Decorations
     decorations: contextRules.showDecorations
       ? {
-          type: borderConfig.decorationType,
+          type: 'shoujo',
           color: colors.accent,
         }
       : { type: 'none' },
@@ -584,11 +385,6 @@ export function themeToNoteDesign(
       titleText: colors.title,
       bodyText: colors.body,
       accent: colors.accent,
-      border: colors.border,
-    },
-    border: {
-      template: theme.border.template,
-      thickness: theme.border.thickness,
     },
     typography: theme.typography,
     sticker,
@@ -622,4 +418,256 @@ export function getThemeAccents(
     positions: theme.accents.positions,
     animated: theme.accents.animated ?? false,
   };
+}
+
+// ============================================
+// Label Preset Style Composition
+// ============================================
+
+import { LabelPreset, getPresetById, LabelPresetId } from '@/constants/labelPresets';
+import { getPresetFonts, PresetFontStyle } from '@/constants/fonts';
+
+/**
+ * Compose a view-ready style from a LabelPreset
+ * Used for auto-applying designs when labels are selected
+ */
+export function composeLabelPresetStyle(
+  preset: LabelPreset,
+  context: DesignViewContext,
+  isDark: boolean
+): ComposedStyle {
+  const contextRules = CONTEXT_RULES[context];
+
+  // Calculate scaled values
+  const shadowOpacity = DEFAULT_SHADOW.opacity * contextRules.shadowScale;
+  const shadowRadius = Math.round(DEFAULT_SHADOW.radius * contextRules.shadowScale);
+  const borderRadius = Math.round(DEFAULT_BORDER_RADIUS * contextRules.radiusScale);
+
+  // Adjust colors for dark mode
+  const backgroundColor = isDark ? adjustColorForDarkMode(preset.colors.bg) : preset.colors.bg;
+  const titleColor = isDark ? '#FFFFFF' : preset.colors.text;
+  const bodyColor = isDark ? '#D1D5DB' : adjustColorOpacity(preset.colors.text, 0.8);
+
+  // Build gradient if preset uses gradient style
+  const backgroundGradient =
+    preset.bgStyle === 'gradient' && preset.bgGradient
+      ? {
+          colors: isDark
+            ? preset.bgGradient.map(adjustColorForDarkMode)
+            : preset.bgGradient,
+          start: { x: 0, y: 0 },
+          end: { x: 1, y: 1 },
+        }
+      : undefined;
+
+  // Get fonts for this preset using the font mapping
+  const fonts = getPresetFonts(preset.id as LabelPresetId, preset.fontStyle as PresetFontStyle);
+
+  // Build composed style
+  const composed: ComposedStyle = {
+    // Colors
+    backgroundColor,
+    titleColor,
+    bodyColor,
+    accentColor: preset.colors.primary,
+
+    // Typography - now with Google Fonts
+    fontStyle: preset.fontStyle,
+    titleFontFamily: fonts.titleFontFamily,
+    bodyFontFamily: fonts.bodyFontFamily,
+
+    // Label icons
+    labelIcon: preset.icon,
+    noteIcon: preset.noteIcon,
+
+    // Gradient
+    backgroundGradient,
+
+    // Background pattern
+    backgroundImageUri: undefined,
+    backgroundPattern:
+      contextRules.showBackground &&
+      (preset.bgStyle === 'pattern' || preset.bgStyle === 'texture') &&
+      preset.bgPattern
+        ? (() => {
+            const pattern = getPatternById(preset.bgPattern!);
+            return pattern
+              ? { patternId: preset.bgPattern!, assetName: pattern.assetName }
+              : undefined;
+          })()
+        : undefined,
+    backgroundOpacity: 0.15,
+    showBackground:
+      contextRules.showBackground &&
+      (preset.bgStyle === 'pattern' || preset.bgStyle === 'texture'),
+
+    // Border radius for card corners
+    borderRadius,
+
+    // iOS-style shadow with accent color tint
+    shadowColor: preset.colors.primary,
+    shadowOffset: {
+      width: Math.round(DEFAULT_SHADOW.offset.width * contextRules.shadowScale),
+      height: Math.round(DEFAULT_SHADOW.offset.height * contextRules.shadowScale),
+    },
+    shadowOpacity: shadowOpacity * 1.5, // Slightly more visible
+    shadowRadius,
+    elevation: Math.round(DEFAULT_SHADOW.elevation * contextRules.shadowScale),
+
+    // Sticker (will be set when sticker is generated)
+    showSticker: false,
+    stickerScale: contextRules.stickerScale,
+    stickerPosition: preset.stickerPosition,
+    stickerUri: undefined,
+
+    // Decorations based on mood
+    decorations: contextRules.showDecorations
+      ? {
+          type: preset.mood === 'playful' || preset.mood === 'dreamy' ? 'shoujo' : 'none',
+          color: preset.colors.primary,
+        }
+      : { type: 'none' },
+  };
+
+  return composed;
+}
+
+/**
+ * Convert a LabelPreset to a NoteDesign structure
+ * Creates a design that can be stored and referenced
+ */
+export function labelPresetToNoteDesign(
+  preset: LabelPreset,
+  stickerUri?: string
+): NoteDesign {
+  return {
+    id: `label-preset-${preset.id}`,
+    name: `${preset.name} Design`,
+    sourceImageUri: '',
+    createdAt: 0, // System preset - always available
+
+    background: {
+      primaryColor: preset.colors.bg,
+      secondaryColor: preset.bgGradient?.[1] || preset.colors.secondary,
+      style: 'pattern',  // Always use pattern for universal diagonal stripes
+      patternId: 'diagonal-stripes',  // Universal diagonal stripe pattern
+      opacity: 0.15, // Subtle pattern visibility
+    },
+
+    colors: {
+      titleText: preset.colors.text,
+      bodyText: adjustColorOpacity(preset.colors.text, 0.8),
+      accent: preset.colors.primary,
+    },
+
+    typography: {
+      titleStyle: preset.fontStyle as any, // Pass through font style directly
+      vibe:
+        preset.mood === 'playful'
+          ? 'cute'
+          : preset.mood === 'dreamy'
+          ? 'classic'
+          : preset.mood === 'bold'
+          ? 'dramatic'
+          : 'modern',
+    },
+
+    sticker: stickerUri
+      ? {
+          id: `${preset.id}-sticker`,
+          imageUri: stickerUri,
+          description: `${preset.name} style character`,
+          suggestedPosition: preset.stickerPosition,
+          scale: 'medium',
+        }
+      : {
+          id: `${preset.id}-placeholder`,
+          imageUri: '',
+          description: preset.description,
+          suggestedPosition: preset.stickerPosition,
+          scale: 'medium',
+        },
+
+    designSummary: preset.description,
+    isSystemDefault: true,
+    labelPresetId: preset.id,
+    isLabelPreset: true,
+  };
+}
+
+/**
+ * Get a NoteDesign from a label preset ID
+ * Useful for design store lookup
+ */
+export function getNoteDesignFromLabelPresetId(presetId: string): NoteDesign | null {
+  const preset = getPresetById(presetId as any);
+  if (!preset) return null;
+  return labelPresetToNoteDesign(preset);
+}
+
+// ============================================
+// Color Utility Functions
+// ============================================
+
+/**
+ * Adjust a hex color's opacity (returns rgba string or darkened hex)
+ */
+function adjustColorOpacity(hex: string, opacity: number): string {
+  // For simplicity, just darken/lighten the color
+  // In a real app, you might convert to rgba
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  // Blend toward dark for text colors
+  const r = Math.round(rgb.r * opacity + 0 * (1 - opacity));
+  const g = Math.round(rgb.g * opacity + 0 * (1 - opacity));
+  const b = Math.round(rgb.b * opacity + 0 * (1 - opacity));
+
+  return rgbToHex(r, g, b);
+}
+
+/**
+ * Adjust a color for dark mode (darken light colors)
+ */
+function adjustColorForDarkMode(hex: string): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  // Check if it's a light color
+  const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+
+  if (brightness > 128) {
+    // It's light, darken it significantly
+    const factor = 0.3;
+    const r = Math.round(rgb.r * factor);
+    const g = Math.round(rgb.g * factor);
+    const b = Math.round(rgb.b * factor);
+    return rgbToHex(r, g, b);
+  }
+
+  // Already dark, return as is
+  return hex;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return (
+    '#' +
+    [r, g, b]
+      .map((x) => {
+        const hex = Math.max(0, Math.min(255, x)).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      })
+      .join('')
+  );
 }

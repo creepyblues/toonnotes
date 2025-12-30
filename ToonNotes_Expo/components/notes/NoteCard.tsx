@@ -1,21 +1,76 @@
 /**
- * NoteCard - Hand-drawn style note card
+ * NoteCard - Clean iOS-style note card
  *
  * Features:
  * - Square aspect ratio
- * - Wavy/sketchy SVG border (hand-drawn look)
- * - Straight alignment (no tilt)
- * - Applied to all notes regardless of design
+ * - Clean rounded corners with subtle shadow (iOS-native feel)
+ * - Stickers and decorations preserved (per user preference)
  * - Memoized to prevent unnecessary re-renders
  */
 
-import React, { useState, memo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { Image } from 'expo-image';
-import { Pin } from 'lucide-react-native';
+import React, { memo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Note, NoteDesign, DesignViewContext } from '@/types';
 import { composeStyle } from '@/services/designEngine';
-import { HandDrawnBorder } from './HandDrawnBorder';
+import { useFontsLoaded } from '@/app/_layout';
+import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
+import {
+  // Productivity
+  CheckSquare,
+  Star,
+  Archive,
+  Target,
+  // Reading
+  BookOpen,
+  Television,
+  ChatCircleText,
+  HeartStraight,
+  // Creative
+  Lightbulb,
+  Brain,
+  UserCircle,
+  Heart,
+  // Content
+  PencilLine,
+  NotePencil,
+  Quotes,
+  MagnifyingGlass,
+  // Personal
+  Notebook,
+  Camera,
+  Sparkle,
+  Palette,
+  IconProps,
+} from 'phosphor-react-native';
+
+// Phosphor icon mapping for note cards (small, crisp icons)
+const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
+  // Productivity
+  CheckSquare,
+  Star,
+  Archive,
+  Target,
+  // Reading
+  BookOpen,
+  Television,
+  ChatCircleText,
+  HeartStraight,
+  // Creative
+  Lightbulb,
+  Brain,
+  UserCircle,
+  Heart,
+  // Content
+  PencilLine,
+  NotePencil,
+  Quotes,
+  MagnifyingGlass,
+  // Personal
+  Notebook,
+  Camera,
+  Sparkle,
+  Palette,
+};
 
 interface NoteCardProps {
   note: Note;
@@ -23,6 +78,8 @@ interface NoteCardProps {
   onPress: () => void;
   isDark?: boolean;
   context?: DesignViewContext;
+  compact?: boolean; // For board previews - removes aspect ratio constraint
+  hideIcon?: boolean; // Hide label icon (when board already shows it)
 }
 
 /**
@@ -36,6 +93,8 @@ function arePropsEqual(
   // Check primitive props
   if (prevProps.isDark !== nextProps.isDark) return false;
   if (prevProps.context !== nextProps.context) return false;
+  if (prevProps.compact !== nextProps.compact) return false;
+  if (prevProps.hideIcon !== nextProps.hideIcon) return false;
 
   // Check note changes (comparing relevant fields only)
   const prevNote = prevProps.note;
@@ -68,16 +127,11 @@ function NoteCardComponent({
   onPress,
   isDark = false,
   context = 'grid',
+  compact = false,
+  hideIcon = false,
 }: NoteCardProps) {
-  // Track card size for hand-drawn border
-  const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
-
-  const handleLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    if (width !== cardSize.width || height !== cardSize.height) {
-      setCardSize({ width, height });
-    }
-  };
+  // Check if Google Fonts are loaded
+  const fontsLoaded = useFontsLoaded();
 
   // Get preview text (more chars to fill space above hashtags)
   const previewText = note.content.slice(0, 150);
@@ -86,9 +140,24 @@ function NoteCardComponent({
   // Compose style using DesignEngine
   const style = composeStyle(design, note.color, context, isDark);
 
+  // Get font family with fallback
+  const getTitleFont = () => {
+    if (fontsLoaded && style.titleFontFamily) {
+      return style.titleFontFamily;
+    }
+    // Fallback to system font based on style category
+    const fontStyle = (style.fontStyle || 'sans-serif') as PresetFontStyle;
+    return SYSTEM_FONT_FALLBACKS[fontStyle] || 'System';
+  };
 
-  // Border color for hand-drawn border
-  const borderColor = style.showBorder ? style.borderColor : (isDark ? '#4B5563' : '#D1D5DB');
+  const getBodyFont = () => {
+    if (fontsLoaded && style.bodyFontFamily) {
+      return style.bodyFontFamily;
+    }
+    // Fallback to system font based on style category
+    const fontStyle = (style.fontStyle || 'sans-serif') as PresetFontStyle;
+    return SYSTEM_FONT_FALLBACKS[fontStyle] || 'System';
+  };
 
   // Get decoration emoji for shoujo style
   const getDecorations = () => {
@@ -104,54 +173,45 @@ function NoteCardComponent({
   };
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, compact && styles.compactWrapper]}>
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
-        onLayout={handleLayout}
         style={[
-          styles.container,
+          compact ? styles.compactContainer : styles.container,
           {
             backgroundColor: style.backgroundColor,
-            borderRadius: style.borderRadius,
-            // Shadow
-            shadowColor: style.shadowColor,
-            shadowOffset: style.shadowOffset,
-            shadowOpacity: style.shadowOpacity,
-            shadowRadius: style.shadowRadius,
-            elevation: style.elevation,
+            borderRadius: compact ? 12 : 16,
+            borderWidth: 0.5,
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            // iOS-style shadow
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 2,
           },
         ]}
       >
-        {/* Hand-drawn border overlay */}
-        {cardSize.width > 0 && (
-          <View style={styles.borderOverlay}>
-            <HandDrawnBorder
-              width={cardSize.width}
-              height={cardSize.height}
-              color={borderColor}
-              strokeWidth={1.5}
-              seed={note.id}
-              wobble={2.5}
-            />
-          </View>
-        )}
-
-        {/* Decorations */}
+        {/* Decorations (kept per user preference) */}
         {getDecorations()}
-
-        {/* Pin indicator */}
-        {note.isPinned && (
-          <View style={styles.pinContainer}>
-            <Pin size={12} color={style.bodyColor} />
-          </View>
-        )}
 
         {/* Title */}
         {note.title ? (
           <Text
-            style={[styles.title, { color: style.titleColor }]}
-            numberOfLines={2}
+            style={[
+              styles.title,
+              {
+                color: style.titleColor,
+                fontFamily: getTitleFont(),
+              },
+              // Additional style adjustments per font category
+              style.fontStyle === 'mono' && { fontSize: 13 },
+              style.fontStyle === 'display' && { letterSpacing: -0.5 },
+              // Compact mode: smaller font
+              compact && { fontSize: 13, marginBottom: 4 },
+            ]}
+            numberOfLines={compact ? 1 : 2}
           >
             {note.title}
           </Text>
@@ -159,15 +219,25 @@ function NoteCardComponent({
 
         {/* Content preview */}
         <Text
-          style={[styles.content, { color: style.bodyColor }]}
-          numberOfLines={note.title ? 5 : 6}
+          style={[
+            styles.content,
+            {
+              color: style.bodyColor,
+              fontFamily: getBodyFont(),
+            },
+            // Additional style adjustments per font category
+            style.fontStyle === 'mono' && { fontSize: 11 },
+            // Compact mode: smaller font
+            compact && { fontSize: 11, lineHeight: 15 },
+          ]}
+          numberOfLines={compact ? 3 : (note.title ? 5 : 6)}
         >
           {previewText}
           {hasMore && '...'}
         </Text>
 
-        {/* Labels */}
-        {note.labels.length > 0 && (
+        {/* Labels - hidden in compact mode */}
+        {!compact && note.labels.length > 0 && (
           <View style={styles.labelsContainer}>
             {note.labels.slice(0, 2).map((label) => (
               <View
@@ -176,38 +246,46 @@ function NoteCardComponent({
                   styles.labelPill,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(255,255,255,0.1)'
-                      : 'rgba(0,0,0,0.08)',
+                      ? 'rgba(167, 139, 250, 0.15)'
+                      : 'rgba(124, 58, 237, 0.08)',
                   },
                 ]}
               >
-                <Text style={[styles.labelText, { color: style.titleColor }]}>
+                <Text style={[styles.labelText, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
                   #{label}
                 </Text>
               </View>
             ))}
             {note.labels.length > 2 && (
-              <Text style={[styles.moreLabels, { color: style.bodyColor }]}>
+              <Text style={[styles.moreLabels, { color: isDark ? '#A78BFA' : '#7C3AED' }]}>
                 +{note.labels.length - 2}
               </Text>
             )}
           </View>
         )}
 
-        {/* Sticker overlay */}
-        {style.showSticker && style.stickerUri && (
-          <Image
-            source={{ uri: style.stickerUri }}
-            style={[
-              styles.sticker,
-              {
-                width: 60 * style.stickerScale,
-                height: 60 * style.stickerScale,
-              },
-            ]}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
+        {/* Bottom right icon - stickers only shown in note edit page, not in card previews */}
+        {!compact && !hideIcon && (
+          style.noteIcon && NOTE_ICON_MAP[style.noteIcon] ? (
+            // Phosphor icon for notes (crisp, monochrome)
+            (() => {
+              const IconComponent = NOTE_ICON_MAP[style.noteIcon];
+              return (
+                <View style={styles.bottomRightIcon}>
+                  <IconComponent
+                    size={24}
+                    color={style.bodyColor}
+                    weight={style.noteIcon === 'Star' || style.noteIcon === 'Heart' ? 'fill' : 'regular'}
+                  />
+                </View>
+              );
+            })()
+          ) : style.labelIcon ? (
+            // Fallback to emoji icon
+            <Text style={styles.bottomRightIconEmoji}>
+              {style.labelIcon}
+            </Text>
+          ) : null
         )}
 
         {/* Design indicator */}
@@ -216,6 +294,7 @@ function NoteCardComponent({
             style={[
               styles.designIndicator,
               { backgroundColor: style.accentColor },
+              compact && { height: 2, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
             ]}
           />
         )}
@@ -228,53 +307,52 @@ const styles = StyleSheet.create({
   wrapper: {
     // Allow rotation overflow
   },
+  compactWrapper: {
+    flex: 1,
+  },
   container: {
     aspectRatio: 1, // Square!
-    padding: 12,
+    padding: 14,
     position: 'relative',
     overflow: 'hidden',
   },
-  borderOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-    pointerEvents: 'none',
-  },
-  pinContainer: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 2,
+  compactContainer: {
+    flex: 1,
+    padding: 10,
+    position: 'relative',
+    overflow: 'hidden',
   },
   title: {
     fontWeight: '600',
-    marginBottom: 4,
-    fontSize: 13,
+    marginBottom: 6,
+    fontSize: 15,
+    letterSpacing: -0.24,
   },
   content: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     flex: 1,
+    opacity: 0.85,
   },
   labelsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 6,
-    gap: 4,
+    flexWrap: 'nowrap',
+    marginTop: 8,
+    gap: 6,
+    overflow: 'hidden',
   },
   labelPill: {
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   labelText: {
-    fontSize: 9,
+    fontSize: 11,
+    fontWeight: '500',
   },
   moreLabels: {
-    fontSize: 9,
+    fontSize: 11,
+    fontWeight: '500',
   },
   decoration: {
     position: 'absolute',
@@ -290,18 +368,29 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 8,
   },
+  bottomRightIcon: {
+    position: 'absolute',
+    bottom: 6,
+    right: 8,
+    opacity: 0.5,
+    zIndex: 1,
+  },
+  bottomRightIconEmoji: {
+    position: 'absolute',
+    bottom: 4,
+    right: 8,
+    fontSize: 27,
+    opacity: 0.4,
+    zIndex: 1,
+  },
   designIndicator: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -0.5,
     left: 0,
     right: 0,
     height: 3,
-  },
-  sticker: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    zIndex: 10,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
 });
 

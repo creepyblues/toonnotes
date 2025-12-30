@@ -47,6 +47,13 @@ export const PATTERNS: Pattern[] = [
     defaultOpacity: 0.12,
   },
   {
+    id: 'diagonal-stripes',
+    name: 'Diagonal Stripes',
+    assetName: 'diagonal-stripes',
+    category: 'lines',
+    defaultOpacity: 0.15,
+  },
+  {
     id: 'grid',
     name: 'Grid',
     assetName: 'grid',
@@ -109,6 +116,7 @@ export const PATTERN_ASSETS: Record<string, any> = {
   'dots-large': require('@/assets/patterns/dots-large.png'),
   'lines-h': require('@/assets/patterns/lines-h.png'),
   'lines-diag': require('@/assets/patterns/lines-diag.png'),
+  'diagonal-stripes': require('@/assets/patterns/diagonal-stripes.png'),
   'grid': require('@/assets/patterns/grid.png'),
   'paper-subtle': require('@/assets/patterns/paper-subtle.png'),
   'paper-rough': require('@/assets/patterns/paper-rough.png'),
@@ -117,6 +125,9 @@ export const PATTERN_ASSETS: Record<string, any> = {
   'watercolor': require('@/assets/patterns/watercolor.png'),
   'noise': require('@/assets/patterns/noise.png'),
 };
+
+// Universal diagonal stripe pattern (tintable)
+export const DIAGONAL_STRIPES_ASSET = require('@/assets/patterns/diagonal-stripes.png');
 
 // Helper functions
 export const getPatternById = (id: string): Pattern | undefined =>

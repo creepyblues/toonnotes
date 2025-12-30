@@ -7,17 +7,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Archive } from 'lucide-react-native';
+import { ArrowLeft, Archive } from 'phosphor-react-native';
 
-import { useNoteStore, useUserStore } from '@/stores';
+import { useNoteStore, useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note } from '@/types';
+import { useTheme } from '@/src/theme';
 
 export default function ArchiveScreen() {
   const router = useRouter();
   const { getArchivedNotes, unarchiveNote } = useNoteStore();
-  const { settings } = useUserStore();
-  const isDark = settings.darkMode;
+  const { getDesignById } = useDesignStore();
+  const { colors, isDark } = useTheme();
 
   const archivedNotes = getArchivedNotes();
 
@@ -27,16 +28,28 @@ export default function ArchiveScreen() {
 
   const renderEmpty = () => (
     <View className="flex-1 items-center justify-center py-20">
-      <Archive size={48} color="#9CA3AF" />
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: `${colors.accent}15`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <Archive size={40} color={colors.textSecondary} weight="regular" />
+      </View>
       <Text
-        className="text-xl font-semibold mb-2 mt-4"
-        style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+        className="text-xl font-semibold mb-2"
+        style={{ color: colors.textPrimary }}
       >
         No archived notes
       </Text>
       <Text
         className="text-center px-8"
-        style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
+        style={{ color: colors.textSecondary }}
       >
         Notes you archive will appear here
       </Text>
@@ -46,23 +59,23 @@ export default function ArchiveScreen() {
   return (
     <SafeAreaView
       className="flex-1"
-      style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}
+      style={{ backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
       <View
         className="flex-row items-center px-2 py-2 border-b"
         style={{
-          backgroundColor: isDark ? '#121212' : '#FFFFFF',
-          borderBottomColor: isDark ? '#2D2D2D' : '#F3F4F6'
+          backgroundColor: colors.backgroundSecondary,
+          borderBottomColor: colors.separator,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <ArrowLeft size={24} color={isDark ? '#FFFFFF' : '#1F2937'} />
+          <ArrowLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text
           className="text-lg font-semibold ml-2"
-          style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+          style={{ color: colors.textPrimary }}
         >
           Archive
         </Text>
@@ -80,7 +93,13 @@ export default function ArchiveScreen() {
           columnWrapperStyle={{ gap: 8 }}
           renderItem={({ item }) => (
             <View className="flex-1 mb-2">
-              <NoteCard note={item} onPress={() => handleNotePress(item)} isDark={isDark} />
+              <NoteCard
+                note={item}
+                design={item.designId ? getDesignById(item.designId) : null}
+                onPress={() => handleNotePress(item)}
+                isDark={isDark}
+                context="grid"
+              />
             </View>
           )}
         />

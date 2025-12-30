@@ -1,18 +1,76 @@
 /**
- * BoardCard - Corkboard-style board display
+ * BoardCard - Full-width board card with note previews
  *
  * Features:
- * - Full-width single card style (no more hero/grid variants)
- * - Corkboard texture background
- * - Horizontal scrolling sticky notes
- * - Clean header with hashtag and note count
+ * - Full-width single column layout
+ * - Flat colored background from preset
+ * - Shows actual note content/design previews using NoteCard
+ * - Gradient Phosphor icons for board decoration
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
-import { Hash } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BoardData } from '@/types';
-import { StickyNotesRow } from './StickyNotesRow';
+import { getPresetForHashtag } from '@/constants/boardPresets';
+import { useDesignStore } from '@/stores';
+import { NoteCard } from '@/components/notes/NoteCard';
+import {
+  // Productivity
+  CheckCircle,
+  StarFour,
+  Archive,
+  Crosshair,
+  // Reading
+  Books,
+  FilmSlate,
+  ChatTeardrop,
+  HeartHalf,
+  // Creative
+  LightbulbFilament,
+  Atom,
+  UsersFour,
+  HeartBreak,
+  // Content
+  Feather,
+  FileText,
+  ChatCenteredDots,
+  Flask,
+  // Personal
+  BookBookmark,
+  ImageSquare,
+  Sparkle,
+  PaintBrush,
+  IconProps,
+} from 'phosphor-react-native';
+
+// Phosphor icon mapping for board cards (large, expressive, duotone)
+const BOARD_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
+  // Productivity
+  CheckCircle,
+  StarFour,
+  Archive,
+  Crosshair,
+  // Reading
+  Books,
+  FilmSlate,
+  ChatTeardrop,
+  HeartHalf,
+  // Creative
+  LightbulbFilament,
+  Atom,
+  UsersFour,
+  HeartBreak,
+  // Content
+  Feather,
+  FileText,
+  ChatCenteredDots,
+  Flask,
+  // Personal
+  BookBookmark,
+  ImageSquare,
+  Sparkle,
+  PaintBrush,
+};
 
 interface BoardCardProps {
   board: BoardData;
@@ -21,10 +79,6 @@ interface BoardCardProps {
   onNotePress?: (noteId: string) => void;
 }
 
-// Corkboard texture
-const CORKBOARD_TEXTURE = require('@/assets/textures/corkboard.png');
-
-// Fixed card height
 const CARD_HEIGHT = 200;
 
 export function BoardCard({
@@ -33,145 +87,141 @@ export function BoardCard({
   onPress,
   onNotePress,
 }: BoardCardProps) {
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-      <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: isDark ? '#2D2520' : '#C49A6C',
-            shadowColor: isDark ? '#000' : '#8B5A2B',
-          },
-        ]}
-      >
-        {/* Header */}
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.2)',
-              borderBottomColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(139,90,43,0.15)',
-            },
-          ]}
-        >
-          <View style={styles.headerLeft}>
-            <Hash
-              size={18}
-              color={isDark ? '#E5E7EB' : '#4A3728'}
-              strokeWidth={2.5}
-            />
-            <Text
-              style={[
-                styles.hashtagText,
-                { color: isDark ? '#FFFFFF' : '#3D2914' },
-              ]}
-              numberOfLines={1}
-            >
-              {board.hashtag}
-            </Text>
-          </View>
+  // Get preset for this board's hashtag
+  const preset = getPresetForHashtag(board.hashtag);
+  const { getDesignById } = useDesignStore();
 
-          <View
-            style={[
-              styles.countBadge,
-              {
-                backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.12)'
-                  : 'rgba(74,55,40,0.12)',
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.countText,
-                { color: isDark ? '#D1D5DB' : '#5D4037' },
-              ]}
-            >
+  // Colors from preset or defaults
+  const bgColor = preset?.colors.bg ?? (isDark ? '#2D3436' : '#F5F5F5');
+  const textColor = preset?.colors.labelText ?? (isDark ? '#FFFFFF' : '#2D3436');
+  const badgeBg = preset?.colors.badge ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)');
+  const badgeTextColor = preset?.colors.badgeText ?? (isDark ? '#FFFFFF' : '#2D3436');
+
+  // Get board icon component
+  const boardIconName = preset?.boardIcon ?? '';
+  const IconComponent = boardIconName ? BOARD_ICON_MAP[boardIconName] : null;
+
+  // Get up to 3 preview notes
+  const previewNotes = board.previewNotes.slice(0, 3);
+
+  return (
+    <View style={styles.shadowWrapper}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.85}
+        style={[styles.card, { backgroundColor: bgColor }]}
+      >
+        {/* Background Icon - Phosphor icon with accent color */}
+        {IconComponent && preset ? (
+          <View style={styles.backgroundIcon}>
+            <IconComponent
+              size={80}
+              color={preset.colors.accent}
+              weight={boardIconName === 'HeartBreak' ? 'fill' : 'duotone'}
+            />
+          </View>
+        ) : null}
+
+        {/* Header Row */}
+        <View style={styles.header}>
+          <Text style={[styles.hashtag, { color: textColor }]} numberOfLines={1}>
+            # {board.hashtag}
+          </Text>
+          <View style={[styles.badge, { backgroundColor: badgeBg }]}>
+            <Text style={[styles.badgeText, { color: badgeTextColor }]}>
               {board.noteCount}
             </Text>
           </View>
         </View>
 
-        {/* Corkboard Area with Sticky Notes */}
-        <ImageBackground
-          source={CORKBOARD_TEXTURE}
-          style={styles.corkboard}
-          imageStyle={[
-            styles.corkboardImage,
-            { opacity: isDark ? 0.3 : 0.7 },
-          ]}
-          resizeMode="repeat"
-        >
-          <StickyNotesRow
-            notes={board.previewNotes}
-            isDark={isDark}
-            onNotePress={onNotePress ? (note) => onNotePress(note.id) : undefined}
-          />
-        </ImageBackground>
-
-        {/* Subtle bottom border for depth */}
-        <View
-          style={[
-            styles.bottomBorder,
-            {
-              backgroundColor: isDark
-                ? 'rgba(0,0,0,0.4)'
-                : 'rgba(139,90,43,0.25)',
-            },
-          ]}
-        />
-      </View>
-    </TouchableOpacity>
+        {/* Note Previews Row */}
+        <View style={styles.notesRow}>
+          {previewNotes.map((note) => (
+            <View key={note.id} style={styles.noteWrapper}>
+              <NoteCard
+                note={note}
+                design={note.designId ? getDesignById(note.designId) : null}
+                onPress={onNotePress ? () => onNotePress(note.id) : () => {}}
+                isDark={isDark}
+                context="grid"
+                compact
+              />
+            </View>
+          ))}
+          {/* Fill empty slots with placeholder */}
+          {previewNotes.length < 3 &&
+            Array(3 - previewNotes.length).fill(null).map((_, i) => (
+              <View key={`empty-${i}`} style={styles.emptySlot} />
+            ))
+          }
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  shadowWrapper: {
+    // Subtle shadow (light from top-left)
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+    borderRadius: 16,
+  },
+  card: {
     height: CARD_HEIGHT,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: 16,
+    paddingTop: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 30,
+    overflow: 'hidden', // Clip background icon, won't affect shadow on wrapper
+  },
+  backgroundIcon: {
+    position: 'absolute',
+    bottom: 8,
+    right: 12,
+    opacity: 0.35,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 16,
   },
-  hashtagText: {
-    fontSize: 17,
+  hashtag: {
+    fontSize: 16,
     fontWeight: '700',
-    marginLeft: 6,
+    flex: 1,
+    marginRight: 8,
   },
-  countBadge: {
+  badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 10,
-    marginLeft: 12,
+    borderRadius: 12,
+    minWidth: 28,
+    alignItems: 'center',
   },
-  countText: {
+  badgeText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  corkboard: {
+  notesRow: {
+    flexDirection: 'row',
     flex: 1,
-    justifyContent: 'center',
+    gap: 10,
+    alignItems: 'stretch',
   },
-  corkboardImage: {
-    // Texture tiling handled by resizeMode="repeat"
+  noteWrapper: {
+    flex: 1,
+    opacity: 0.8, // 20% transparent
   },
-  bottomBorder: {
-    height: 3,
+  emptySlot: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
 });
 

@@ -8,16 +8,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Trash2, RotateCcw, X } from 'lucide-react-native';
+import { ArrowLeft, Trash, ArrowCounterClockwise, X } from 'phosphor-react-native';
 
-import { useNoteStore, useUserStore } from '@/stores';
+import { useNoteStore } from '@/stores';
 import { Note, NoteColor } from '@/types';
+import { useTheme } from '@/src/theme';
 
 export default function TrashScreen() {
   const router = useRouter();
   const { getDeletedNotes, restoreNote, permanentlyDeleteNote } = useNoteStore();
-  const { settings } = useUserStore();
-  const isDark = settings.darkMode;
+  const { colors, isDark } = useTheme();
 
   const deletedNotes = getDeletedNotes();
 
@@ -61,16 +61,28 @@ export default function TrashScreen() {
 
   const renderEmpty = () => (
     <View className="flex-1 items-center justify-center py-20">
-      <Trash2 size={48} color="#9CA3AF" />
+      <View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: 'rgba(255, 59, 48, 0.1)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <Trash size={40} color={colors.textSecondary} weight="regular" />
+      </View>
       <Text
-        className="text-xl font-semibold mb-2 mt-4"
-        style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+        className="text-xl font-semibold mb-2"
+        style={{ color: colors.textPrimary }}
       >
         Trash is empty
       </Text>
       <Text
         className="text-center px-8"
-        style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
+        style={{ color: colors.textSecondary }}
       >
         Deleted notes will appear here for 30 days
       </Text>
@@ -80,10 +92,10 @@ export default function TrashScreen() {
   const renderItem = ({ item }: { item: Note }) => {
     // For white notes in dark mode, use a dark background
     const backgroundColor = isDark && item.color === NoteColor.White
-      ? '#2D2D2D'
+      ? colors.surfaceCard
       : item.color;
-    const titleColor = isDark && item.color === NoteColor.White ? '#FFFFFF' : '#1F2937';
-    const contentColor = isDark && item.color === NoteColor.White ? '#D1D5DB' : '#4B5563';
+    const titleColor = isDark && item.color === NoteColor.White ? colors.textPrimary : '#1F2937';
+    const contentColor = isDark && item.color === NoteColor.White ? colors.textSecondary : '#4B5563';
 
     const previewText = item.content.slice(0, 80);
     const deletedDate = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : '';
@@ -123,9 +135,9 @@ export default function TrashScreen() {
           <TouchableOpacity
             onPress={() => handleRestore(item.id)}
             className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
-            style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
+            style={{ backgroundColor: isDark ? colors.backgroundTertiary : 'rgba(0,0,0,0.05)' }}
           >
-            <RotateCcw size={16} color="#10B981" />
+            <ArrowCounterClockwise size={16} color="#10B981" />
             <Text className="ml-2" style={{ color: '#10B981', fontWeight: '500' }}>
               Restore
             </Text>
@@ -134,7 +146,7 @@ export default function TrashScreen() {
           <TouchableOpacity
             onPress={() => handlePermanentDelete(item.id)}
             className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
-            style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
+            style={{ backgroundColor: isDark ? colors.backgroundTertiary : 'rgba(0,0,0,0.05)' }}
           >
             <X size={16} color="#EF4444" />
             <Text className="ml-2" style={{ color: '#EF4444', fontWeight: '500' }}>
@@ -149,24 +161,24 @@ export default function TrashScreen() {
   return (
     <SafeAreaView
       className="flex-1"
-      style={{ backgroundColor: isDark ? '#121212' : '#FFFFFF' }}
+      style={{ backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
       <View
         className="flex-row items-center justify-between px-2 py-2 border-b"
         style={{
-          backgroundColor: isDark ? '#121212' : '#FFFFFF',
-          borderBottomColor: isDark ? '#2D2D2D' : '#F3F4F6'
+          backgroundColor: colors.backgroundSecondary,
+          borderBottomColor: colors.separator,
         }}
       >
         <View className="flex-row items-center">
           <TouchableOpacity onPress={() => router.back()} className="p-2">
-            <ArrowLeft size={24} color={isDark ? '#FFFFFF' : '#1F2937'} />
+            <ArrowLeft size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text
             className="text-lg font-semibold ml-2"
-            style={{ color: isDark ? '#FFFFFF' : '#1F2937' }}
+            style={{ color: colors.textPrimary }}
           >
             Trash
           </Text>

@@ -1,3 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ToonNotes Design System */
+:root {
+  /* Primary Purple */
+  --color-primary: #8B5CF6;
+  --color-primary-light: #A78BFA;
+  --color-primary-dark: #7C3AED;
+
+  /* Accent */
+  --color-accent-coral: #FF6B6B;
+  --color-accent-pink: #FF8ED4;
+  --color-accent-mint: #6EE7B7;
+
+  /* Surface Light */
+  --color-surface-light: #FAFAFF;
+  --color-surface-card: #FFFFFF;
+
+  /* Text Light */
+  --color-text-primary: #1A1625;
+  --color-text-secondary: #6B6B7B;
+}
+
+.dark {
+  /* Surface Dark */
+  --color-surface-light: #0F0D15;
+  --color-surface-card: #1C1826;
+
+  /* Text Dark */
+  --color-text-primary: #F5F3FF;
+  --color-text-secondary: #A8A8B8;
+}

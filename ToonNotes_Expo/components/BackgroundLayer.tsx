@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import { View, ImageBackground, StyleSheet, ViewStyle } from 'react-native';
-import { Image } from 'expo-image';
+import { View, ImageBackground, StyleSheet, ViewStyle, Image } from 'react-native';
 import { ComposedStyle, DesignViewContext } from '@/types';
 import { PATTERN_ASSETS } from '@/constants/patterns';
 
@@ -60,8 +59,7 @@ export function BackgroundLayer({
         <Image
           source={{ uri: style.backgroundImageUri }}
           style={[StyleSheet.absoluteFill, { opacity: style.backgroundOpacity }]}
-          contentFit="cover"
-          cachePolicy="memory-disk"
+          resizeMode="cover"
           blurRadius={3}
         />
         {/* Children render on top of the image */}
@@ -82,8 +80,9 @@ export function BackgroundLayer({
             source={patternAsset}
             style={StyleSheet.absoluteFill}
             imageStyle={{
-              opacity: style.backgroundOpacity * 2, // Boost opacity for patterns
+              opacity: style.backgroundOpacity,
               resizeMode: 'repeat',
+              tintColor: style.patternTintColor, // Apply color tint
             }}
             resizeMode="repeat"
           />

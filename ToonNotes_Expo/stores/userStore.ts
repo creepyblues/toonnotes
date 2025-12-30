@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User, AppSettings, NoteColor } from '@/types';
+import { User, AppSettings, NoteColor, Purchase } from '@/types';
 import { generateUUID } from '@/utils/uuid';
 import {
   saveApiKey,
@@ -17,12 +17,25 @@ interface UserState {
   apiKeyLoaded: boolean;
   apiKeyMasked: string | null;
 
+  // Purchase state
+  purchases: Purchase[];
+  isProcessingPurchase: boolean;
+  isPurchaseSheetOpen: boolean;
+
   // User actions
   setFreeDesignUsed: () => void;
   addCoins: (amount: number) => void;
   spendCoin: () => boolean; // Returns false if insufficient balance
   canAffordDesign: () => boolean;
   getDesignCost: () => number; // 0 if free design available, 1 otherwise
+
+  // Purchase actions
+  addPurchase: (purchase: Purchase) => void;
+  setProcessingPurchase: (processing: boolean) => void;
+  openPurchaseSheet: () => void;
+  closePurchaseSheet: () => void;
+  getTotalPurchases: () => number;
+  getTotalCoinsEarned: () => number;
 
   // Settings actions
   toggleDarkMode: () => void;
@@ -55,6 +68,11 @@ export const useUserStore = create<UserState>()(
       settings: INITIAL_SETTINGS,
       apiKeyLoaded: false,
       apiKeyMasked: null,
+
+      // Purchase state
+      purchases: [],
+      isProcessingPurchase: false,
+      isPurchaseSheetOpen: false,
 
       setFreeDesignUsed: () => {
         set((state) => ({
@@ -98,6 +116,37 @@ export const useUserStore = create<UserState>()(
       getDesignCost: () => {
         const { user } = get();
         return user.freeDesignUsed ? 1 : 0;
+      },
+
+      // Purchase actions
+      addPurchase: (purchase) => {
+        set((state) => ({
+          purchases: [...state.purchases, purchase],
+          user: {
+            ...state.user,
+            coinBalance: state.user.coinBalance + purchase.coinsGranted,
+          },
+        }));
+      },
+
+      setProcessingPurchase: (processing) => {
+        set({ isProcessingPurchase: processing });
+      },
+
+      openPurchaseSheet: () => {
+        set({ isPurchaseSheetOpen: true });
+      },
+
+      closePurchaseSheet: () => {
+        set({ isPurchaseSheetOpen: false });
+      },
+
+      getTotalPurchases: () => {
+        return get().purchases.length;
+      },
+
+      getTotalCoinsEarned: () => {
+        return get().purchases.reduce((sum, p) => sum + p.coinsGranted, 0);
       },
 
       toggleDarkMode: () => {
@@ -186,6 +235,7 @@ export const useUserStore = create<UserState>()(
       // Don't persist API key in AsyncStorage - it's stored in SecureStore
       partialize: (state) => ({
         user: state.user,
+        purchases: state.purchases,
         settings: {
           darkMode: state.settings.darkMode,
           defaultNoteColor: state.settings.defaultNoteColor,
