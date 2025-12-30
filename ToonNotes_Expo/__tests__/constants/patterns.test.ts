@@ -101,6 +101,7 @@ describe('Pattern Constants', () => {
         'dots-large',
         'lines-horizontal',
         'lines-diagonal',
+        'diagonal-stripes',
         'grid',
         'paper-subtle',
         'paper-rough',
@@ -136,11 +137,12 @@ describe('Pattern Constants', () => {
     it('should retrieve all lines patterns', () => {
       const patterns = getPatternsByCategory('lines');
 
-      expect(patterns).toHaveLength(3);
+      expect(patterns).toHaveLength(4);
       expect(patterns.every((p) => p.category === 'lines')).toBe(true);
       expect(patterns.map((p) => p.id)).toEqual([
         'lines-horizontal',
         'lines-diagonal',
+        'diagonal-stripes',
         'grid',
       ]);
     });
@@ -249,14 +251,14 @@ describe('Pattern Constants', () => {
   });
 
   describe('Pattern Count', () => {
-    it('should have exactly 11 patterns defined', () => {
-      expect(PATTERNS).toHaveLength(11);
+    it('should have exactly 12 patterns defined', () => {
+      expect(PATTERNS).toHaveLength(12);
     });
 
     it('should distribute patterns across categories', () => {
       const categoryCounts = {
         dots: 2,
-        lines: 3,
+        lines: 4, // includes diagonal-stripes
         paper: 2,
         manga: 2,
         artistic: 2,

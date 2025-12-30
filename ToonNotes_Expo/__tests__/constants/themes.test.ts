@@ -2,6 +2,8 @@
  * Unit Tests for Theme Constants and Helper Functions
  *
  * Tests theme retrieval, random selection, and AI prompt generation.
+ *
+ * Note: These themes are legacy presets. New features should use Label Presets.
  */
 
 import {
@@ -11,8 +13,8 @@ import {
   getRandomTheme,
   getThemeStickerPrompt,
   mergeThemeWithAIColors,
-  ThemeId,
 } from '@/constants/themes';
+import { ThemeId } from '@/types';
 
 describe('Theme Constants', () => {
   describe('Theme Data Structure', () => {
@@ -29,7 +31,6 @@ describe('Theme Constants', () => {
         expect(theme).toHaveProperty('description');
         expect(theme).toHaveProperty('colors');
         expect(theme).toHaveProperty('background');
-        expect(theme).toHaveProperty('border');
         expect(theme).toHaveProperty('typography');
         expect(theme).toHaveProperty('accents');
         expect(theme).toHaveProperty('stickerHint');
@@ -74,13 +75,11 @@ describe('Theme Constants', () => {
         expect(theme.colors).toHaveProperty('title');
         expect(theme.colors).toHaveProperty('body');
         expect(theme.colors).toHaveProperty('accent');
-        expect(theme.colors).toHaveProperty('border');
 
         expect(typeof theme.colors.background).toBe('string');
         expect(typeof theme.colors.title).toBe('string');
         expect(typeof theme.colors.body).toBe('string');
         expect(typeof theme.colors.accent).toBe('string');
-        expect(typeof theme.colors.border).toBe('string');
       });
     });
 
@@ -92,7 +91,6 @@ describe('Theme Constants', () => {
         expect(theme.colors.title).toMatch(hexRegex);
         expect(theme.colors.body).toMatch(hexRegex);
         expect(theme.colors.accent).toMatch(hexRegex);
-        expect(theme.colors.border).toMatch(hexRegex);
 
         if (theme.colors.backgroundSecondary) {
           expect(theme.colors.backgroundSecondary).toMatch(hexRegex);
@@ -133,8 +131,7 @@ describe('Theme Constants', () => {
       const theme = getThemeById('ghibli');
 
       expect(theme.name).toBe('Ghibli Dreamscape');
-      expect(theme.border.template).toBe('watercolor');
-      expect(theme.background.style).toBe('pattern');
+      expect(theme.background.style).toBe('solid');
       expect(theme.accents.type).toBe('clouds');
     });
 
@@ -142,8 +139,7 @@ describe('Theme Constants', () => {
       const theme = getThemeById('manga');
 
       expect(theme.name).toBe('Manga Panel');
-      expect(theme.border.template).toBe('panel');
-      expect(theme.border.thickness).toBe('thick');
+      expect(theme.background.style).toBe('solid');
       expect(theme.accents.type).toBe('speed_lines');
     });
 
@@ -151,7 +147,6 @@ describe('Theme Constants', () => {
       const theme = getThemeById('shoujo');
 
       expect(theme.name).toBe('Shoujo Romance');
-      expect(theme.border.template).toBe('shoujo');
       expect(theme.accents.type).toBe('sparkles');
       expect(theme.accents.animated).toBe(true);
     });
@@ -262,13 +257,11 @@ describe('Theme Constants', () => {
       const aiColors = {
         background: '#AAAAAA',
         accent: '#BBBBBB',
-        border: '#CCCCCC',
       };
       const merged = mergeThemeWithAIColors(theme, aiColors);
 
       expect(merged.background).toBe('#AAAAAA');
       expect(merged.accent).toBe('#BBBBBB');
-      expect(merged.border).toBe('#CCCCCC');
       expect(merged.title).toBe(theme.colors.title); // Unchanged
       expect(merged.body).toBe(theme.colors.body); // Unchanged
     });
@@ -281,7 +274,6 @@ describe('Theme Constants', () => {
         title: '#333333',
         body: '#444444',
         accent: '#555555',
-        border: '#666666',
       };
       const merged = mergeThemeWithAIColors(theme, aiColors);
 
@@ -313,8 +305,7 @@ describe('Theme Constants', () => {
 
       expect(theme.emoji).toBe('📖');
       expect(theme.colors.accent).toBe('#FF4444');
-      expect(theme.colors.border).toBe('#000000');
-      expect(theme.border.thickness).toBe('thick');
+      expect(theme.typography.vibe).toBe('dramatic');
     });
 
     it('should have correct webtoon theme properties', () => {
@@ -323,7 +314,6 @@ describe('Theme Constants', () => {
       expect(theme.emoji).toBe('📱');
       expect(theme.background.style).toBe('solid');
       expect(theme.accents.type).toBe('none');
-      expect(theme.border.template).toBe('webtoon');
     });
 
     it('should have correct shoujo theme properties', () => {
@@ -347,7 +337,6 @@ describe('Theme Constants', () => {
       const theme = getThemeById('kawaii');
 
       expect(theme.emoji).toBe('🎌');
-      expect(theme.border.template).toBe('sticker');
       expect(theme.accents.type).toBe('hearts');
     });
 
@@ -355,33 +344,27 @@ describe('Theme Constants', () => {
       const theme = getThemeById('vintage');
 
       expect(theme.emoji).toBe('🌙');
-      expect(theme.border.template).toBe('vintage_manga');
-      expect(theme.background.patternId).toBe('noise');
+      expect(theme.accents.type).toBe('retro_shapes');
     });
   });
 
   describe('Theme Background Styles', () => {
     it('should have correct background styles', () => {
-      expect(getThemeById('ghibli').background.style).toBe('pattern');
-      expect(getThemeById('manga').background.style).toBe('pattern');
+      // All legacy themes now use 'solid' style
+      expect(getThemeById('ghibli').background.style).toBe('solid');
+      expect(getThemeById('manga').background.style).toBe('solid');
       expect(getThemeById('webtoon').background.style).toBe('solid');
-      expect(getThemeById('shoujo').background.style).toBe('gradient');
-      expect(getThemeById('shonen').background.style).toBe('gradient');
-      expect(getThemeById('kawaii').background.style).toBe('pattern');
-      expect(getThemeById('vintage').background.style).toBe('pattern');
+      expect(getThemeById('shoujo').background.style).toBe('solid');
+      expect(getThemeById('shonen').background.style).toBe('solid');
+      expect(getThemeById('kawaii').background.style).toBe('solid');
+      expect(getThemeById('vintage').background.style).toBe('solid');
     });
 
-    it('should have gradient themes with gradient configuration', () => {
-      const shoujo = getThemeById('shoujo');
-      const shonen = getThemeById('shonen');
-
-      expect(shoujo.background.gradient).toBeDefined();
-      expect(shoujo.background.gradient?.direction).toBe('diagonal');
-      expect(shoujo.background.gradient?.colors).toHaveLength(2);
-
-      expect(shonen.background.gradient).toBeDefined();
-      expect(shonen.background.gradient?.direction).toBe('diagonal');
-      expect(shonen.background.gradient?.colors).toHaveLength(3);
+    it('should have default opacity defined', () => {
+      THEME_LIST.forEach((theme) => {
+        expect(theme.background.defaultOpacity).toBeDefined();
+        expect(typeof theme.background.defaultOpacity).toBe('number');
+      });
     });
   });
 
