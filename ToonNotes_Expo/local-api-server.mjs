@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { removeBackground } from '@imgly/background-removal-node';
+import sharp from 'sharp';
 
 // Load .env file
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,6 +29,112 @@ if (!GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// Helper function to convert white/light background to transparent using sharp
+async function convertBackgroundToTransparent(imageBase64) {
+  try {
+    const inputBuffer = Buffer.from(imageBase64, 'base64');
+
+    // Get image metadata and raw pixel data
+    const image = sharp(inputBuffer);
+    const metadata = await image.metadata();
+    const { width, height, channels } = metadata;
+
+    // Get raw pixel data (RGBA)
+    const rawBuffer = await image
+      .ensureAlpha()
+      .raw()
+      .toBuffer();
+
+    // Process pixels - make white/near-white pixels transparent
+    const THRESHOLD = 240; // Pixels with R,G,B all above this become transparent
+    const outputBuffer = Buffer.alloc(rawBuffer.length);
+
+    for (let i = 0; i < rawBuffer.length; i += 4) {
+      const r = rawBuffer[i];
+      const g = rawBuffer[i + 1];
+      const b = rawBuffer[i + 2];
+      const a = rawBuffer[i + 3];
+
+      // Check if pixel is white/near-white
+      if (r >= THRESHOLD && g >= THRESHOLD && b >= THRESHOLD) {
+        // Make it transparent
+        outputBuffer[i] = r;
+        outputBuffer[i + 1] = g;
+        outputBuffer[i + 2] = b;
+        outputBuffer[i + 3] = 0; // Fully transparent
+      } else {
+        // Keep original pixel
+        outputBuffer[i] = r;
+        outputBuffer[i + 1] = g;
+        outputBuffer[i + 2] = b;
+        outputBuffer[i + 3] = a;
+      }
+    }
+
+    // Convert back to PNG
+    const outputPng = await sharp(outputBuffer, {
+      raw: {
+        width,
+        height,
+        channels: 4
+      }
+    })
+      .png()
+      .toBuffer();
+
+    return outputPng.toString('base64');
+  } catch (error) {
+    console.error('Error converting background to transparent:', error);
+    // Return original on error
+    return imageBase64;
+  }
+}
+
+// Helper function for Gemini-based background removal
+async function removeBackgroundWithGemini(imageBase64, mimeType) {
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-exp',
+    generationConfig: {
+      responseModalities: ['image', 'text'],
+    }
+  });
+
+  const prompt = `Remove the background from this image.
+
+Instructions:
+- Extract the main subject (character, person, animal, or object)
+- Replace the background with pure WHITE (#FFFFFF)
+- Keep the subject with clean, sharp edges
+- The white background should be completely flat with no gradients
+- Preserve fine details like hair, fur, or feathers
+
+Output a PNG with the subject on a solid white background.`;
+
+  const result = await model.generateContent([
+    prompt,
+    {
+      inlineData: {
+        mimeType: mimeType || 'image/jpeg',
+        data: imageBase64
+      }
+    }
+  ]);
+
+  const response = await result.response;
+
+  // Extract image from response
+  for (const part of response.candidates?.[0]?.content?.parts || []) {
+    if (part.inlineData) {
+      // Convert white background to transparent using sharp
+      console.log('Converting white background to transparent...');
+      const processedImage = await convertBackgroundToTransparent(part.inlineData.data);
+      return processedImage;
+    }
+  }
+
+  return null;
+}
 
 // Helper to save base64 image to file
 function saveBase64Image(base64Data, filename) {
@@ -239,7 +345,7 @@ Return ONLY the JSON object, no other text.`;
       }
     });
   } else if (req.method === 'POST' && req.url === '/api/generate-lucky-sticker') {
-    // "Feeling Lucky" - Just use background removal (Gemini can't do transparent images)
+    // "Feeling Lucky" - Use Gemini for background removal
     let body = '';
 
     req.on('data', chunk => {
@@ -256,22 +362,21 @@ Return ONLY the JSON object, no other text.`;
           return;
         }
 
-        console.log('🎲 Generating LUCKY sticker with background removal...');
+        console.log('🎲 Generating LUCKY sticker with Gemini background removal...');
 
-        // Use background removal to create transparent sticker
-        const imageBuffer = Buffer.from(imageData, 'base64');
-        const blob = new Blob([imageBuffer], { type: mimeType || 'image/jpeg' });
+        const stickerBase64 = await removeBackgroundWithGemini(imageData, mimeType);
 
-        const resultBlob = await removeBackground(blob, {
-          debug: false,
-          progress: (key, current, total) => {
-            console.log(`🎲 Background removal: ${key} ${Math.round(current/total*100)}%`);
-          }
-        });
-
-        const arrayBuffer = await resultBlob.arrayBuffer();
-        const resultBuffer = Buffer.from(arrayBuffer);
-        const stickerBase64 = resultBuffer.toString('base64');
+        if (!stickerBase64) {
+          console.warn('🎲 Gemini did not return an image, falling back to original');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            stickerData: imageData,
+            mimeType: mimeType || 'image/jpeg',
+            transformed: false,
+            fallback: true
+          }));
+          return;
+        }
 
         console.log('🎲 Lucky sticker created with transparent background!');
 
@@ -279,7 +384,8 @@ Return ONLY the JSON object, no other text.`;
         res.end(JSON.stringify({
           stickerData: stickerBase64,
           mimeType: 'image/png',
-          transformed: true
+          transformed: true,
+          fallback: false
         }));
 
       } catch (error) {
@@ -304,37 +410,8 @@ Return ONLY the JSON object, no other text.`;
       try {
         const { themeId, themeName, artStyle, mood, aiPromptHints, imageData, mimeType } = JSON.parse(body);
 
-        console.log(`🎨 Generating ${themeName} themed sticker...`);
-
-        // If we have image data, use background removal to create the sticker
-        if (imageData) {
-          console.log('Using provided image with background removal...');
-
-          const imageBuffer = Buffer.from(imageData, 'base64');
-          const blob = new Blob([imageBuffer], { type: mimeType || 'image/jpeg' });
-
-          const resultBlob = await removeBackground(blob, {
-            debug: false,
-            progress: (key, current, total) => {
-              console.log(`🎨 ${themeName} sticker: ${key} ${Math.round(current/total*100)}%`);
-            }
-          });
-
-          const arrayBuffer = await resultBlob.arrayBuffer();
-          const resultBuffer = Buffer.from(arrayBuffer);
-          const stickerBase64 = resultBuffer.toString('base64');
-
-          console.log(`🎨 ${themeName} themed sticker created!`);
-
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            stickerData: stickerBase64,
-            mimeType: 'image/png',
-            themeId: themeId,
-            artStyleApplied: artStyle
-          }));
-        } else {
-          // No image provided - return info about what sticker style would be used
+        // If no image provided - return info about what sticker style would be used
+        if (!imageData) {
           console.log('No image provided, returning theme sticker hints...');
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -345,7 +422,36 @@ Return ONLY the JSON object, no other text.`;
             hints: aiPromptHints,
             message: 'No image provided - use these hints for sticker generation'
           }));
+          return;
         }
+
+        console.log(`🎨 Generating ${themeName} themed sticker with Gemini...`);
+
+        const stickerBase64 = await removeBackgroundWithGemini(imageData, mimeType);
+
+        if (!stickerBase64) {
+          console.warn(`🎨 ${themeName}: Gemini did not return an image, falling back to original`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            stickerData: imageData,
+            mimeType: mimeType || 'image/jpeg',
+            themeId: themeId,
+            artStyleApplied: artStyle,
+            fallback: true
+          }));
+          return;
+        }
+
+        console.log(`🎨 ${themeName} themed sticker created!`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          stickerData: stickerBase64,
+          mimeType: 'image/png',
+          themeId: themeId,
+          artStyleApplied: artStyle,
+          fallback: false
+        }));
 
       } catch (error) {
         console.error('Error generating themed sticker:', error);
@@ -464,27 +570,20 @@ Return ONLY the JSON object, no other text.`;
           return;
         }
 
-        console.log('Removing background from image...');
+        console.log('Removing background from image with Gemini...');
 
-        // Convert base64 to buffer
-        const imageBuffer = Buffer.from(imageData, 'base64');
+        const stickerBase64 = await removeBackgroundWithGemini(imageData, mimeType);
 
-        // Create a Blob from the buffer
-        const blob = new Blob([imageBuffer], { type: mimeType || 'image/jpeg' });
-
-        // Remove background using @imgly/background-removal-node
-        console.log('Processing with background removal AI...');
-        const resultBlob = await removeBackground(blob, {
-          debug: false,
-          progress: (key, current, total) => {
-            console.log(`Background removal: ${key} ${Math.round(current/total*100)}%`);
-          }
-        });
-
-        // Convert result blob to base64
-        const arrayBuffer = await resultBlob.arrayBuffer();
-        const resultBuffer = Buffer.from(arrayBuffer);
-        const stickerBase64 = resultBuffer.toString('base64');
+        if (!stickerBase64) {
+          console.warn('Gemini did not return an image, falling back to original');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            stickerData: imageData,
+            mimeType: mimeType || 'image/jpeg',
+            fallback: true
+          }));
+          return;
+        }
 
         console.log('Background removed successfully');
 
@@ -523,27 +622,20 @@ Return ONLY the JSON object, no other text.`;
           return;
         }
 
-        console.log('🎨 Generating character sticker from image...');
+        console.log('🎨 Generating character sticker from image with Gemini...');
 
-        // Convert base64 to buffer
-        const imageBuffer = Buffer.from(imageBase64, 'base64');
+        const stickerBase64 = await removeBackgroundWithGemini(imageBase64, mimeType);
 
-        // Create a Blob from the buffer
-        const blob = new Blob([imageBuffer], { type: mimeType || 'image/jpeg' });
-
-        // Remove background using @imgly/background-removal-node
-        console.log('Processing with background removal AI...');
-        const resultBlob = await removeBackground(blob, {
-          debug: false,
-          progress: (key, current, total) => {
-            console.log(`Background removal: ${key} ${Math.round(current/total*100)}%`);
-          }
-        });
-
-        // Convert result blob to base64
-        const arrayBuffer = await resultBlob.arrayBuffer();
-        const resultBuffer = Buffer.from(arrayBuffer);
-        const stickerBase64 = resultBuffer.toString('base64');
+        if (!stickerBase64) {
+          console.warn('🎨 Gemini did not return an image, falling back to original');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            stickerBase64: imageBase64,
+            mimeType: mimeType || 'image/jpeg',
+            fallback: true
+          }));
+          return;
+        }
 
         console.log('✅ Character sticker generated successfully');
 
@@ -551,6 +643,7 @@ Return ONLY the JSON object, no other text.`;
         res.end(JSON.stringify({
           stickerBase64: stickerBase64,
           mimeType: 'image/png',
+          fallback: false
         }));
 
       } catch (error) {
@@ -968,8 +1061,8 @@ server.listen(PORT, () => {
   console.log(`Local API server running at http://localhost:${PORT}`);
   console.log('Endpoints:');
   console.log('  POST /api/generate-theme - Generate theme from image');
-  console.log('  POST /api/generate-sticker - Generate sticker with background removal');
-  console.log('  POST /api/generate-image-sticker - 🎨 Generate character sticker from image');
+  console.log('  POST /api/generate-sticker - Generate sticker with Gemini background removal');
+  console.log('  POST /api/generate-image-sticker - 🎨 Generate character sticker (Gemini)');
   console.log('  POST /api/generate-lucky-theme - 🎲 Generate chaotic random theme');
   console.log('  POST /api/generate-lucky-sticker - 🎲 Generate transformed funny sticker');
   console.log('  POST /api/generate-themed-sticker - 🎨 Generate sticker for specific theme');

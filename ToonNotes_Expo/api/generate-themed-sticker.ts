@@ -1,8 +1,54 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import sharp from 'sharp';
 
-// Note: @imgly/background-removal-node is too large for Vercel (250MB limit)
-// This endpoint returns the original image as a fallback
-// TODO: Integrate with a cloud background removal API (remove.bg, etc.)
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// Helper function to convert white background to transparent
+async function convertBackgroundToTransparent(imageBase64: string): Promise<string> {
+  try {
+    const inputBuffer = Buffer.from(imageBase64, 'base64');
+    const image = sharp(inputBuffer);
+    const metadata = await image.metadata();
+    const { width, height } = metadata;
+
+    if (!width || !height) {
+      return imageBase64;
+    }
+
+    const rawBuffer = await image.ensureAlpha().raw().toBuffer();
+    const THRESHOLD = 240;
+    const outputBuffer = Buffer.alloc(rawBuffer.length);
+
+    for (let i = 0; i < rawBuffer.length; i += 4) {
+      const r = rawBuffer[i];
+      const g = rawBuffer[i + 1];
+      const b = rawBuffer[i + 2];
+      const a = rawBuffer[i + 3];
+
+      if (r >= THRESHOLD && g >= THRESHOLD && b >= THRESHOLD) {
+        outputBuffer[i] = r;
+        outputBuffer[i + 1] = g;
+        outputBuffer[i + 2] = b;
+        outputBuffer[i + 3] = 0;
+      } else {
+        outputBuffer[i] = r;
+        outputBuffer[i + 1] = g;
+        outputBuffer[i + 2] = b;
+        outputBuffer[i + 3] = a;
+      }
+    }
+
+    const outputPng = await sharp(outputBuffer, {
+      raw: { width, height, channels: 4 }
+    }).png().toBuffer();
+
+    return outputPng.toString('base64');
+  } catch (error) {
+    console.error('Error converting background:', error);
+    return imageBase64;
+  }
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
@@ -21,20 +67,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { themeId, themeName, artStyle, mood, aiPromptHints, imageData, mimeType } = req.body;
 
-    console.log(`Themed sticker for ${themeName}: returning original image (background removal not available)`);
-
-    // If we have image data, return it as-is (fallback mode)
-    if (imageData) {
-      return res.status(200).json({
-        stickerData: imageData,
-        mimeType: mimeType || 'image/jpeg',
-        themeId: themeId,
-        artStyleApplied: artStyle,
-        fallback: true,
-        message: 'Background removal not available in production - using original image'
-      });
-    } else {
-      // No image provided - return info about what sticker style would be used
+    // If no image provided - return info about what sticker style would be used
+    if (!imageData) {
       console.log('No image provided, returning theme sticker hints...');
 
       return res.status(200).json({
@@ -46,8 +80,95 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    if (!GEMINI_API_KEY) {
+      // Fallback if no API key
+      return res.status(200).json({
+        stickerData: imageData,
+        mimeType: mimeType || 'image/jpeg',
+        themeId: themeId,
+        artStyleApplied: artStyle,
+        fallback: true,
+        message: 'GEMINI_API_KEY not configured - using original image'
+      });
+    }
+
+    console.log(`Themed sticker for ${themeName}: Using Gemini to remove background...`);
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+      generationConfig: {
+        responseModalities: ['image', 'text'],
+      } as any
+    });
+
+    const prompt = `Remove the background from this image.
+
+Instructions:
+- Extract the main subject (character, person, animal, or object)
+- Replace the background with pure WHITE (#FFFFFF)
+- Keep the subject with clean, sharp edges
+- The white background should be completely flat with no gradients
+- Preserve fine details like hair, fur, or feathers
+
+Output a PNG with the subject on a solid white background.`;
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: mimeType || 'image/jpeg',
+          data: imageData
+        }
+      }
+    ]);
+
+    const response = await result.response;
+
+    // Extract image from response
+    let stickerData = null;
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if ((part as any).inlineData) {
+        stickerData = (part as any).inlineData.data;
+        break;
+      }
+    }
+
+    if (!stickerData) {
+      console.warn(`Themed sticker for ${themeName}: Gemini did not return an image, falling back to original`);
+      return res.status(200).json({
+        stickerData: imageData,
+        mimeType: mimeType || 'image/jpeg',
+        themeId: themeId,
+        artStyleApplied: artStyle,
+        fallback: true,
+        message: 'Gemini could not process image - using original'
+      });
+    }
+
+    // Convert white background to transparent
+    console.log(`Themed sticker for ${themeName}: Converting white background to transparent...`);
+    const transparentSticker = await convertBackgroundToTransparent(stickerData);
+
+    console.log(`Themed sticker for ${themeName}: Background removed and made transparent`);
+
+    return res.status(200).json({
+      stickerData: transparentSticker,
+      mimeType: 'image/png',
+      themeId: themeId,
+      artStyleApplied: artStyle,
+      fallback: false
+    });
+
   } catch (error: any) {
     console.error('Error in themed sticker endpoint:', error);
+
+    if (error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        retryAfter: 60
+      });
+    }
 
     return res.status(500).json({
       error: error.message || 'Failed to generate themed sticker',
