@@ -78,103 +78,155 @@ export const PRESET_FONT_MAPPING: Record<LabelPresetId, {
   body: FontFamilyKey;
 }> = {
   // ==========================================
-  // PRODUCTIVITY
+  // PRODUCTIVITY (5)
   // ==========================================
-  todo: {
+  'todo': {
     title: 'Inter-SemiBold',
     body: 'Inter-Regular',
   },
-  important: {
-    title: 'Outfit-Bold',
+  'in-progress': {
+    title: 'Poppins-SemiBold',
     body: 'Poppins-Regular',
   },
-  archive: {
-    title: 'Lora-SemiBold',
-    body: 'Lora-Regular',
+  'done': {
+    title: 'Nunito-Bold',
+    body: 'Nunito-Regular',
   },
-  goals: {
-    title: 'Righteous-Regular',
+  'waiting': {
+    title: 'Inter-Medium',
+    body: 'Inter-Regular',
+  },
+  'priority': {
+    title: 'Outfit-Bold',
     body: 'Poppins-Regular',
   },
 
   // ==========================================
-  // READING
+  // PLANNING (5)
   // ==========================================
-  reading: {
-    title: 'PlayfairDisplay-SemiBold',
-    body: 'Lora-Regular',
+  'goals': {
+    title: 'Righteous-Regular',
+    body: 'Poppins-Regular',
   },
-  watchlist: {
+  'meeting': {
+    title: 'Inter-SemiBold',
+    body: 'Inter-Regular',
+  },
+  'planning': {
     title: 'Poppins-SemiBold',
     body: 'Poppins-Regular',
   },
-  review: {
+  'deadline': {
+    title: 'Outfit-Bold',
+    body: 'Poppins-Regular',
+  },
+  'project': {
+    title: 'Nunito-SemiBold',
+    body: 'Nunito-Regular',
+  },
+
+  // ==========================================
+  // CHECKLISTS (5)
+  // ==========================================
+  'shopping': {
+    title: 'Poppins-SemiBold',
+    body: 'Poppins-Regular',
+  },
+  'wishlist': {
+    title: 'DancingScript-Bold',
+    body: 'Caveat-Regular',
+  },
+  'packing': {
+    title: 'Inter-SemiBold',
+    body: 'Inter-Regular',
+  },
+  'bucket-list': {
+    title: 'Righteous-Regular',
+    body: 'Nunito-Regular',
+  },
+  'errands': {
+    title: 'Nunito-SemiBold',
+    body: 'Nunito-Regular',
+  },
+
+  // ==========================================
+  // MEDIA (5)
+  // ==========================================
+  'reading': {
+    title: 'PlayfairDisplay-SemiBold',
+    body: 'Lora-Regular',
+  },
+  'watchlist': {
+    title: 'Poppins-SemiBold',
+    body: 'Poppins-Regular',
+  },
+  'bookmarks': {
+    title: 'Lora-SemiBold',
+    body: 'Lora-Regular',
+  },
+  'review': {
     title: 'Nunito-Bold',
     body: 'Nunito-Regular',
   },
-  recommendation: {
+  'recommendation': {
     title: 'Caveat-Bold',
     body: 'Caveat-Regular',
   },
 
   // ==========================================
-  // CREATIVE
+  // CREATIVE (5)
   // ==========================================
-  ideas: {
+  'ideas': {
     title: 'Outfit-Bold',
     body: 'Nunito-Regular',
   },
-  theory: {
-    title: 'JetBrainsMono-Medium',
-    body: 'JetBrainsMono-Regular',
-  },
-  character: {
-    title: 'Poppins-SemiBold',
-    body: 'Poppins-Regular',
-  },
-  favorites: {
-    title: 'BebasNeue-Regular',
-    body: 'Poppins-Regular',
-  },
-
-  // ==========================================
-  // CONTENT
-  // ==========================================
-  blog: {
-    title: 'Merriweather-Bold',
-    body: 'Merriweather-Regular',
-  },
-  draft: {
+  'draft': {
     title: 'DancingScript-Bold',
     body: 'Caveat-Regular',
   },
-  quotes: {
-    title: 'PlayfairDisplay-SemiBold',
-    body: 'PlayfairDisplay-Regular',
+  'brainstorm': {
+    title: 'Poppins-SemiBold',
+    body: 'Poppins-Regular',
   },
-  research: {
+  'inspiration': {
+    title: 'Righteous-Regular',
+    body: 'Nunito-Regular',
+  },
+  'research': {
     title: 'FiraCode-Medium',
     body: 'FiraCode-Regular',
   },
 
   // ==========================================
-  // PERSONAL
+  // PERSONAL (5)
   // ==========================================
-  journal: {
+  'journal': {
     title: 'Pacifico-Regular',
     body: 'Caveat-Regular',
   },
-  memory: {
+  'memory': {
     title: 'Lora-SemiBold',
     body: 'Lora-Regular',
   },
-  inspiration: {
-    title: 'Righteous-Regular',
-    body: 'Nunito-Regular',
+  'reflection': {
+    title: 'PlayfairDisplay-SemiBold',
+    body: 'Lora-Regular',
   },
-  art: {
-    title: 'BebasNeue-Regular',
-    body: 'IndieFlower-Regular',
+  'gratitude': {
+    title: 'Caveat-Bold',
+    body: 'Caveat-Regular',
+  },
+  'quotes': {
+    title: 'PlayfairDisplay-SemiBold',
+    body: 'PlayfairDisplay-Regular',
+  },
+
+  // ==========================================
+  // SYSTEM (1)
+  // ==========================================
+  'uncategorized': {
+    title: 'Inter-Medium',
+    body: 'Inter-Regular',
   },
 };
 

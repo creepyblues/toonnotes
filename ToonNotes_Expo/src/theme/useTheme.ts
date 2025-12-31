@@ -3,7 +3,17 @@
 
 import { useMemo } from 'react';
 import { useUserStore } from '@/stores';
-import { SystemColors, DarkModeColors, SemanticColors, TagColors, TagColorsDark } from './tokens/colors';
+import {
+  SystemColors,
+  DarkModeColors,
+  SemanticColors,
+  TagColors,
+  TagColorsDark,
+  NoteColors,
+  TealScale,
+  CoralScale,
+  NeutralScale,
+} from './tokens/colors';
 import { Typography } from './tokens/typography';
 import { Spacing } from './tokens/spacing';
 import { BorderRadius, Shadows } from './tokens/effects';
@@ -34,6 +44,13 @@ export function useTheme() {
     colors,
     semantic,
     tagColors,
+    noteColors: NoteColors,
+    // Color scales for custom styling
+    scales: {
+      teal: TealScale,
+      coral: CoralScale,
+      neutral: NeutralScale,
+    },
     typography: Typography,
     spacing: Spacing,
     borderRadius: BorderRadius,

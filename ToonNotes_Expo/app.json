@@ -11,12 +11,14 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F87171"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.toonnotes.app",
       "infoPlist": {
+        "NSCameraUsageDescription": "ToonNotes uses your camera to capture images for creating custom note designs.",
+        "NSPhotoLibraryUsageDescription": "ToonNotes needs access to your photos to create custom note designs from your images.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
           "NSAllowsLocalNetworking": true,
@@ -33,16 +35,13 @@
       "package": "com.toonnotes.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#F87171"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
+      "predictiveBackGestureEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.READ_MEDIA_IMAGES"
       ]
     },
     "web": {
@@ -58,7 +57,7 @@
           "photosPermission": "ToonNotes needs access to your photos to create custom note designs from your images."
         }
       ],
-      "react-native-purchases"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

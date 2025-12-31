@@ -7,6 +7,7 @@ import {
   validateNoteContent,
   validateLabelName,
 } from '@/utils/validation';
+import { normalizeLabel } from '@/utils/labelNormalization';
 import { debouncedStorage } from './debouncedStorage';
 import { getPresetForLabel, LabelPresetId } from '@/constants/labelPresets';
 
@@ -35,6 +36,7 @@ interface NoteState {
   addLabelToNote: (noteId: string, labelName: string) => void;
   removeLabelFromNote: (noteId: string, labelName: string) => void;
   setActiveDesignLabel: (noteId: string, labelName: string | undefined) => void;
+  assignUncategorizedLabel: (noteId: string) => void;
 
   // Queries
   getNoteById: (id: string) => Note | undefined;
@@ -168,14 +170,15 @@ export const useNoteStore = create<NoteState>()(
         // Validate and sanitize the label name
         const { isValid, sanitized } = validateLabelName(name);
         if (!isValid || !sanitized) {
-          // Try to find existing label with the raw name
+          // Try to find existing label with the raw name (normalized)
+          const normalizedRaw = normalizeLabel(name);
           const existing = get().labels.find(
-            (l) => l.name.toLowerCase() === name.toLowerCase().trim()
+            (l) => l.name === normalizedRaw
           );
           if (existing) return existing;
           // If validation failed and no existing label, return a fallback label
           // This prevents undefined errors when sanitized is null/undefined
-          const fallbackName = name.toLowerCase().trim() || 'untitled';
+          const fallbackName = normalizedRaw || 'untitled';
           const fallbackLabel: Label = {
             id: generateUUID(),
             name: fallbackName,
@@ -185,9 +188,10 @@ export const useNoteStore = create<NoteState>()(
           return fallbackLabel;
         }
 
-        const normalizedName = sanitized.toLowerCase();
+        // Normalize to canonical form (handles singular/plural)
+        const normalizedName = normalizeLabel(sanitized);
         const existing = get().labels.find(
-          (l) => l.name.toLowerCase() === normalizedName
+          (l) => l.name === normalizedName
         );
         if (existing) return existing;
 
@@ -204,12 +208,14 @@ export const useNoteStore = create<NoteState>()(
         const label = get().labels.find((l) => l.id === id);
         if (!label) return;
 
+        const normalizedLabelName = normalizeLabel(label.name);
+
         // Remove label from all notes
         set((state) => ({
           labels: state.labels.filter((l) => l.id !== id),
           notes: state.notes.map((note) => ({
             ...note,
-            labels: note.labels.filter((l) => l.toLowerCase() !== label.name.toLowerCase()),
+            labels: note.labels.filter((l) => normalizeLabel(l) !== normalizedLabelName),
           })),
         }));
       },
@@ -218,7 +224,10 @@ export const useNoteStore = create<NoteState>()(
         const oldLabel = get().labels.find((l) => l.id === id);
         if (!oldLabel) return;
 
-        const normalizedNewName = newName.toLowerCase().trim();
+        // Normalize the new name to canonical form
+        const normalizedNewName = normalizeLabel(newName);
+        const oldNormalizedName = normalizeLabel(oldLabel.name);
+
         set((state) => ({
           labels: state.labels.map((l) =>
             l.id === id ? { ...l, name: normalizedNewName } : l
@@ -226,7 +235,7 @@ export const useNoteStore = create<NoteState>()(
           notes: state.notes.map((note) => ({
             ...note,
             labels: note.labels.map((l) =>
-              l.toLowerCase() === oldLabel.name.toLowerCase() ? normalizedNewName : l
+              normalizeLabel(l) === oldNormalizedName ? normalizedNewName : l
             ),
           })),
         }));
@@ -237,20 +246,21 @@ export const useNoteStore = create<NoteState>()(
         const note = get().notes.find((n) => n.id === noteId);
         if (!note) return;
 
-        const normalizedName = labelName.toLowerCase().trim();
+        // Normalize to canonical form (handles singular/plural variants)
+        const normalizedName = normalizeLabel(labelName);
 
         // Skip if label already exists on note
-        if (note.labels.some((l) => l.toLowerCase() === normalizedName)) {
+        if (note.labels.some((l) => normalizeLabel(l) === normalizedName)) {
           return;
         }
 
-        // Check if label has a preset
+        // Check if label has a preset (using normalized name)
         const preset = getPresetForLabel(normalizedName);
         const presetDesignId = preset ? `label-preset-${preset.id}` : undefined;
 
         // Ensure the label exists in the labels collection and update lastUsedAt
         const existingLabel = get().labels.find(
-          (l) => l.name.toLowerCase() === normalizedName
+          (l) => l.name === normalizedName
         );
         const now = Date.now();
 
@@ -267,7 +277,7 @@ export const useNoteStore = create<NoteState>()(
           // Update lastUsedAt for existing label
           set((state) => ({
             labels: state.labels.map((l) =>
-              l.name.toLowerCase() === normalizedName
+              l.name === normalizedName
                 ? { ...l, lastUsedAt: now }
                 : l
             ),
@@ -304,7 +314,7 @@ export const useNoteStore = create<NoteState>()(
       },
 
       removeLabelFromNote: (noteId, labelName) => {
-        const normalizedName = labelName.toLowerCase().trim();
+        const normalizedName = normalizeLabel(labelName);
         const note = get().notes.find((n) => n.id === noteId);
         if (!note) return;
 
@@ -313,7 +323,7 @@ export const useNoteStore = create<NoteState>()(
             if (n.id !== noteId) return n;
 
             const newLabels = n.labels.filter(
-              (l) => l.toLowerCase() !== normalizedName
+              (l) => normalizeLabel(l) !== normalizedName
             );
 
             // If the removed label was the active design label, clear it
@@ -321,7 +331,7 @@ export const useNoteStore = create<NoteState>()(
             let newDesignId = n.designId;
             let newActiveDesignLabelId = n.activeDesignLabelId;
 
-            if (n.activeDesignLabelId?.toLowerCase() === normalizedName) {
+            if (n.activeDesignLabelId && normalizeLabel(n.activeDesignLabelId) === normalizedName) {
               // Find another label with a preset
               const otherPresetLabel = newLabels.find((l) =>
                 getPresetForLabel(l)
@@ -367,6 +377,50 @@ export const useNoteStore = create<NoteState>()(
         }));
       },
 
+      assignUncategorizedLabel: (noteId) => {
+        const note = get().notes.find((n) => n.id === noteId);
+        if (!note) return;
+
+        // Don't add if already has labels
+        if (note.labels.length > 0) return;
+
+        const uncategorizedLabel = 'uncategorized';
+        const preset = getPresetForLabel(uncategorizedLabel);
+        const presetDesignId = preset ? `label-preset-${preset.id}` : undefined;
+
+        // Ensure the uncategorized label exists in the labels collection
+        const existingLabel = get().labels.find(
+          (l) => l.name.toLowerCase() === uncategorizedLabel
+        );
+        const now = Date.now();
+
+        if (!existingLabel) {
+          const newLabel: Label = {
+            id: generateUUID(),
+            name: uncategorizedLabel,
+            presetId: preset?.id,
+            isSystemLabel: true,
+            createdAt: now,
+            lastUsedAt: now,
+          };
+          set((state) => ({ labels: [...state.labels, newLabel] }));
+        }
+
+        set((state) => ({
+          notes: state.notes.map((n) => {
+            if (n.id !== noteId) return n;
+
+            return {
+              ...n,
+              labels: [uncategorizedLabel],
+              designId: presetDesignId,
+              activeDesignLabelId: uncategorizedLabel,
+              updatedAt: Date.now(),
+            };
+          }),
+        }));
+      },
+
       // Queries
       getNoteById: (id) => get().notes.find((note) => note.id === id),
 
@@ -378,13 +432,15 @@ export const useNoteStore = create<NoteState>()(
 
       getDeletedNotes: () => get().notes.filter((note) => note.isDeleted),
 
-      getNotesByLabel: (labelName) =>
-        get().notes.filter(
+      getNotesByLabel: (labelName) => {
+        const normalized = normalizeLabel(labelName);
+        return get().notes.filter(
           (note) =>
             !note.isArchived &&
             !note.isDeleted &&
-            note.labels.some((l) => l.toLowerCase() === labelName.toLowerCase())
-        ),
+            note.labels.some((l) => normalizeLabel(l) === normalized)
+        );
+      },
 
       searchNotes: (query) => {
         const q = query.toLowerCase().trim();

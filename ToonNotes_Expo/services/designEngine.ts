@@ -68,10 +68,10 @@ const CONTEXT_RULES: Record<DesignViewContext, ContextRules> = {
 // ============================================
 
 const DARK_MODE_COLORS = {
-  background: '#2D2D2D',
-  title: '#FFFFFF',
-  body: '#D1D5DB',
-  accent: '#60A5FA',
+  background: '#292524',  // neutral-800 (warm gray)
+  title: '#FAFAF9',       // neutral-50
+  body: '#A8A29E',        // neutral-400
+  accent: '#70BFBD',      // teal-300 (Hanok Teal for dark mode)
 };
 
 // ============================================
@@ -126,6 +126,17 @@ export function composeStyle(
   const labelIcon = preset?.icon;
   const noteIcon = preset?.noteIcon;
 
+  // Get font families based on preset or default font style
+  const validFontStyle = (fontStyle as PresetFontStyle) in DEFAULT_FONT_BY_STYLE
+    ? (fontStyle as PresetFontStyle)
+    : 'sans-serif';
+  const fonts = design.labelPresetId
+    ? getPresetFonts(design.labelPresetId as LabelPresetId, validFontStyle)
+    : {
+        titleFontFamily: getFontFamilyName(DEFAULT_FONT_BY_STYLE[validFontStyle].title),
+        bodyFontFamily: getFontFamilyName(DEFAULT_FONT_BY_STYLE[validFontStyle].body),
+      };
+
   // Build composed style
   const composed: ComposedStyle = {
     // Colors from design
@@ -136,6 +147,8 @@ export function composeStyle(
 
     // Typography
     fontStyle: fontStyle as any,
+    titleFontFamily: fonts.titleFontFamily,
+    bodyFontFamily: fonts.bodyFontFamily,
     labelIcon,
     noteIcon,
 
@@ -225,11 +238,19 @@ export function composeBasicStyle(
   // Basic rounded card style
   const baseElevation = context === 'detail' ? 4 : context === 'grid' ? 2 : 0;
 
+  // Default fonts for basic style
+  const defaultFonts = DEFAULT_FONT_BY_STYLE['sans-serif'];
+
   return {
     backgroundColor,
     titleColor,
     bodyColor,
-    accentColor: '#0ea5e9',
+    accentColor: '#4C9C9B',  // teal-500 (Hanok Teal)
+
+    // Typography - default sans-serif
+    fontStyle: 'sans-serif',
+    titleFontFamily: getFontFamilyName(defaultFonts.title),
+    bodyFontFamily: getFontFamilyName(defaultFonts.body),
 
     // No background image/pattern for basic style
     backgroundOpacity: 0.15,
@@ -425,7 +446,7 @@ export function getThemeAccents(
 // ============================================
 
 import { LabelPreset, getPresetById, LabelPresetId } from '@/constants/labelPresets';
-import { getPresetFonts, PresetFontStyle } from '@/constants/fonts';
+import { getPresetFonts, PresetFontStyle, getFontFamilyName, DEFAULT_FONT_BY_STYLE } from '@/constants/fonts';
 
 /**
  * Compose a view-ready style from a LabelPreset

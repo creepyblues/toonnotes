@@ -8,8 +8,9 @@
  * - Memoized to prevent unnecessary re-renders
  */
 
-import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { memo, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { Check } from 'phosphor-react-native';
 import { Note, NoteDesign, DesignViewContext } from '@/types';
 import { composeStyle } from '@/services/designEngine';
 import { useFontsLoaded } from '@/app/_layout';
@@ -17,12 +18,26 @@ import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
 import {
   // Productivity
   CheckSquare,
+  CheckCircle,
+  Spinner,
+  Hourglass,
   Star,
   Archive,
   Target,
+  // Planning
+  Users,
+  Calendar,
+  Alarm,
+  Folder,
+  // Checklists
+  ShoppingCart,
+  Suitcase,
+  MapPin,
+  MapTrifold,
   // Reading
   BookOpen,
   Television,
+  BookmarkSimple,
   ChatCircleText,
   HeartStraight,
   // Creative
@@ -40,6 +55,8 @@ import {
   Camera,
   Sparkle,
   Palette,
+  SunHorizon,
+  Tray,
   IconProps,
 } from 'phosphor-react-native';
 
@@ -47,12 +64,26 @@ import {
 const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   // Productivity
   CheckSquare,
+  CheckCircle,
+  Spinner,
+  Hourglass,
   Star,
   Archive,
   Target,
+  // Planning
+  Users,
+  Calendar,
+  Alarm,
+  Folder,
+  // Checklists
+  ShoppingCart,
+  Suitcase,
+  MapPin,
+  MapTrifold,
   // Reading
   BookOpen,
   Television,
+  BookmarkSimple,
   ChatCircleText,
   HeartStraight,
   // Creative
@@ -70,6 +101,8 @@ const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   Camera,
   Sparkle,
   Palette,
+  SunHorizon,
+  Tray,
 };
 
 interface NoteCardProps {
@@ -121,6 +154,34 @@ function arePropsEqual(
   return true;
 }
 
+// Parse line to detect checkbox or bullet
+function parseLineType(line: string): { type: 'checkbox' | 'bullet' | 'text'; checked?: boolean; text: string } {
+  // Checkbox patterns: - [ ], - [], -[ ], -[], [ ], [] (with flexible spacing)
+  const uncheckedMatch = line.match(/^-?\s*\[\s*\]\s*/);
+  const checkedMatch = line.match(/^-?\s*\[[xX]\]\s*/);
+
+  if (checkedMatch) {
+    return { type: 'checkbox', checked: true, text: line.replace(/^-?\s*\[[xX]\]\s*/, '') };
+  }
+  if (uncheckedMatch) {
+    return { type: 'checkbox', checked: false, text: line.replace(/^-?\s*\[\s*\]\s*/, '') };
+  }
+
+  // Bullet patterns: •, * at start
+  const bulletMatch = line.match(/^([•\*])\s*/);
+  // dash followed by space but NOT [ (to avoid matching checkbox prefix)
+  const dashBulletMatch = line.match(/^-\s+(?!\[)/);
+
+  if (bulletMatch) {
+    return { type: 'bullet', text: line.replace(/^[•\*]\s*/, '') };
+  }
+  if (dashBulletMatch) {
+    return { type: 'bullet', text: line.replace(/^-\s+/, '') };
+  }
+
+  return { type: 'text', text: line };
+}
+
 function NoteCardComponent({
   note,
   design = null,
@@ -133,9 +194,13 @@ function NoteCardComponent({
   // Check if Google Fonts are loaded
   const fontsLoaded = useFontsLoaded();
 
-  // Get preview text (more chars to fill space above hashtags)
-  const previewText = note.content.slice(0, 150);
-  const hasMore = note.content.length > 150;
+  // Parse content into lines with formatting
+  const parsedLines = useMemo(() => {
+    const lines = note.content.slice(0, 200).split('\n').slice(0, compact ? 4 : 6);
+    return lines.map(line => parseLineType(line));
+  }, [note.content, compact]);
+
+  const hasMore = note.content.length > 200 || note.content.split('\n').length > (compact ? 4 : 6);
 
   // Compose style using DesignEngine
   const style = composeStyle(design, note.color, context, isDark);
@@ -151,12 +216,8 @@ function NoteCardComponent({
   };
 
   const getBodyFont = () => {
-    if (fontsLoaded && style.bodyFontFamily) {
-      return style.bodyFontFamily;
-    }
-    // Fallback to system font based on style category
-    const fontStyle = (style.fontStyle || 'sans-serif') as PresetFontStyle;
-    return SYSTEM_FONT_FALLBACKS[fontStyle] || 'System';
+    // Always use system font for content text
+    return 'System';
   };
 
   // Get decoration emoji for shoujo style
@@ -189,9 +250,12 @@ function NoteCardComponent({
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
             shadowRadius: 8,
-            elevation: 2,
+            elevation: compact ? 0 : 2,
           },
         ]}
+        accessibilityLabel={note.title || 'Untitled note'}
+        accessibilityHint={note.content ? `Contains: ${note.content.slice(0, 50)}${note.content.length > 50 ? '...' : ''}` : 'Empty note'}
+        accessibilityRole="button"
       >
         {/* Decorations (kept per user preference) */}
         {getDecorations()}
@@ -217,75 +281,141 @@ function NoteCardComponent({
           </Text>
         ) : null}
 
-        {/* Content preview */}
-        <Text
-          style={[
-            styles.content,
-            {
-              color: style.bodyColor,
-              fontFamily: getBodyFont(),
-            },
-            // Additional style adjustments per font category
-            style.fontStyle === 'mono' && { fontSize: 11 },
-            // Compact mode: smaller font
-            compact && { fontSize: 11, lineHeight: 15 },
-          ]}
-          numberOfLines={compact ? 3 : (note.title ? 5 : 6)}
-        >
-          {previewText}
-          {hasMore && '...'}
-        </Text>
+        {/* Content preview with formatted checkboxes and bullets */}
+        <View style={[styles.content, { flex: 1, overflow: 'hidden' }]}>
+          {parsedLines.slice(0, compact ? 3 : (note.labels.length > 0 ? 4 : 5)).map((line, index) => {
+            const fontSize = compact ? 11 : (style.fontStyle === 'mono' ? 11 : 13);
+            const lineHeight = compact ? 15 : 18;
 
-        {/* Labels - hidden in compact mode */}
-        {!compact && note.labels.length > 0 && (
-          <View style={styles.labelsContainer}>
-            {note.labels.slice(0, 2).map((label) => (
-              <View
-                key={label}
-                style={[
-                  styles.labelPill,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(167, 139, 250, 0.15)'
-                      : 'rgba(124, 58, 237, 0.08)',
-                  },
-                ]}
-              >
-                <Text style={[styles.labelText, { color: isDark ? '#C4B5FD' : '#7C3AED' }]}>
-                  #{label}
-                </Text>
-              </View>
-            ))}
-            {note.labels.length > 2 && (
-              <Text style={[styles.moreLabels, { color: isDark ? '#A78BFA' : '#7C3AED' }]}>
-                +{note.labels.length - 2}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Bottom right icon - stickers only shown in note edit page, not in card previews */}
-        {!compact && !hideIcon && (
-          style.noteIcon && NOTE_ICON_MAP[style.noteIcon] ? (
-            // Phosphor icon for notes (crisp, monochrome)
-            (() => {
-              const IconComponent = NOTE_ICON_MAP[style.noteIcon];
+            if (line.type === 'checkbox') {
               return (
-                <View style={styles.bottomRightIcon}>
-                  <IconComponent
-                    size={24}
-                    color={style.bodyColor}
-                    weight={style.noteIcon === 'Star' || style.noteIcon === 'Heart' ? 'fill' : 'regular'}
-                  />
+                <View key={index} style={styles.checkboxLine}>
+                  {line.checked ? (
+                    <View style={[styles.checkboxChecked, { backgroundColor: style.accentColor || '#10B981' }]}>
+                      <Check size={8} color="#FFF" weight="bold" />
+                    </View>
+                  ) : (
+                    <View style={[styles.checkboxUnchecked, { borderColor: isDark ? '#666' : '#CCC' }]} />
+                  )}
+                  <Text
+                    style={[
+                      styles.checkboxText,
+                      {
+                        color: line.checked ? (isDark ? '#888' : '#999') : style.bodyColor,
+                        fontFamily: getBodyFont(),
+                        fontSize,
+                        textDecorationLine: line.checked ? 'line-through' : 'none',
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {line.text}
+                  </Text>
                 </View>
               );
-            })()
-          ) : style.labelIcon ? (
-            // Fallback to emoji icon
-            <Text style={styles.bottomRightIconEmoji}>
-              {style.labelIcon}
-            </Text>
-          ) : null
+            }
+
+            if (line.type === 'bullet') {
+              return (
+                <View key={index} style={styles.bulletLine}>
+                  <Text style={[styles.bulletDot, { color: style.bodyColor, fontSize }]}>•</Text>
+                  <Text
+                    style={{
+                      color: style.bodyColor,
+                      fontFamily: getBodyFont(),
+                      fontSize,
+                      lineHeight,
+                      flex: 1,
+                      opacity: 0.85,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {line.text}
+                  </Text>
+                </View>
+              );
+            }
+
+            // Regular text
+            return (
+              <Text
+                key={index}
+                style={{
+                  color: style.bodyColor,
+                  fontFamily: getBodyFont(),
+                  fontSize,
+                  lineHeight,
+                  opacity: 0.85,
+                }}
+                numberOfLines={1}
+              >
+                {line.text}
+              </Text>
+            );
+          })}
+          {hasMore && (
+            <Text style={{ color: style.bodyColor, opacity: 0.5, fontSize: compact ? 11 : 13 }}>...</Text>
+          )}
+        </View>
+
+        {/* Bottom row: Labels on left, Icon/Sticker on right - hidden in compact mode */}
+        {!compact && (note.labels.length > 0 || !hideIcon) && (
+          <View style={styles.bottomRow}>
+            {/* Primary Label Only */}
+            <View style={styles.labelsContainer}>
+              {note.labels.length > 0 && (
+                <View
+                  style={[
+                    styles.labelPill,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255, 255, 255, 0.16)'
+                        : 'rgba(60, 60, 67, 0.12)',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.labelText, { color: isDark ? '#E5E5E7' : '#3C3C43' }]}>
+                    #{note.labels[0]}
+                  </Text>
+                </View>
+              )}
+              {note.labels.length > 1 && (
+                <Text style={[styles.moreLabels, { color: isDark ? '#98989D' : '#8E8E93' }]}>
+                  +{note.labels.length - 1}
+                </Text>
+              )}
+            </View>
+
+            {/* Icon or Sticker */}
+            {!hideIcon && (
+              design?.sticker?.imageUri ? (
+                // Character sticker from design
+                <Image
+                  source={{ uri: design.sticker.imageUri }}
+                  style={styles.stickerThumbnail}
+                  resizeMode="contain"
+                />
+              ) : style.noteIcon && NOTE_ICON_MAP[style.noteIcon] ? (
+                // Phosphor icon for notes (crisp, monochrome)
+                (() => {
+                  const IconComponent = NOTE_ICON_MAP[style.noteIcon];
+                  return (
+                    <IconComponent
+                      size={24}
+                      color={style.bodyColor}
+                      weight={style.noteIcon === 'Star' || style.noteIcon === 'Heart' ? 'fill' : 'regular'}
+                      style={styles.bottomIcon}
+                    />
+                  );
+                })()
+              ) : style.labelIcon ? (
+                // Fallback to emoji icon
+                <Text style={[styles.bottomIconEmoji, { color: style.bodyColor }]}>
+                  {style.labelIcon}
+                </Text>
+              ) : null
+            )}
+          </View>
         )}
 
         {/* Design indicator */}
@@ -334,10 +464,50 @@ const styles = StyleSheet.create({
     flex: 1,
     opacity: 0.85,
   },
+  checkboxLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  checkboxUnchecked: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    borderWidth: 1.5,
+    marginRight: 6,
+  },
+  checkboxChecked: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    marginRight: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxText: {
+    flex: 1,
+  },
+  bulletLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 2,
+  },
+  bulletDot: {
+    width: 14,
+    marginRight: 4,
+    textAlign: 'center',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 8,
+  },
   labelsContainer: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    marginTop: 8,
+    flex: 1,
     gap: 6,
     overflow: 'hidden',
   },
@@ -368,20 +538,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 8,
   },
-  bottomRightIcon: {
-    position: 'absolute',
-    bottom: 6,
-    right: 8,
-    opacity: 0.5,
-    zIndex: 1,
+  stickerThumbnail: {
+    width: 28,
+    height: 28,
+    opacity: 0.7,
   },
-  bottomRightIconEmoji: {
-    position: 'absolute',
-    bottom: 4,
-    right: 8,
-    fontSize: 27,
-    opacity: 0.4,
-    zIndex: 1,
+  bottomIcon: {
+    opacity: 0.5,
+  },
+  bottomIconEmoji: {
+    fontSize: 20,
+    opacity: 0.5,
   },
   designIndicator: {
     position: 'absolute',

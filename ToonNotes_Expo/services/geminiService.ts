@@ -1,8 +1,16 @@
 import * as LegacyFileSystem from 'expo-file-system/legacy';
+import { devLog, devWarn, devError } from '@/utils/devLog';
 import * as Crypto from 'expo-crypto';
 import { NoteDesign, DesignTheme, BoardDesign, GeminiBoardDesignResponse, Note, TypographyPosterStyle, CharacterMascotType, TypographyStyleConfig, CharacterMascotConfig, TypographyImageResponse, CharacterMascotResponse, TextAnalysis } from '@/types';
 import { themeToNoteDesign } from './designEngine';
 import { LabelPreset } from '@/constants/labelPresets';
+import {
+  parseThemeResponse,
+  parseLuckyThemeResponse,
+  parseStickerResponse,
+  ValidatedThemeResponse,
+  ValidatedLuckyThemeResponse,
+} from '@/utils/validation/apiResponse';
 
 // API endpoints - localhost for dev, Vercel for production
 // __DEV__ is true in Expo dev mode, false in production builds
@@ -44,21 +52,21 @@ interface LuckyThemeResponse extends ThemeResponse {
  */
 async function imageUriToBase64(uri: string): Promise<{ base64: string; mimeType: string }> {
   try {
-    console.log('Reading image from URI:', uri);
+    devLog('Reading image from URI:', uri);
 
     // Check if file exists using legacy FileSystem API (more reliable with ImagePicker URIs)
     const fileInfo = await LegacyFileSystem.getInfoAsync(uri);
     if (!fileInfo.exists) {
       throw new Error('Image file does not exist');
     }
-    console.log('File exists:', fileInfo.exists, 'Size:', fileInfo.size);
+    devLog('File exists:', fileInfo.exists, 'Size:', fileInfo.size);
 
     // Read file as base64 using the legacy FileSystem API
     const base64 = await LegacyFileSystem.readAsStringAsync(uri, {
       encoding: LegacyFileSystem.EncodingType.Base64,
     });
 
-    console.log('Base64 length:', base64.length);
+    devLog('Base64 length:', base64.length);
 
     // Determine MIME type from URI extension or default to jpeg
     const extension = uri.split('.').pop()?.toLowerCase() || 'jpg';
@@ -71,7 +79,7 @@ async function imageUriToBase64(uri: string): Promise<{ base64: string; mimeType
       heic: 'image/jpeg', // HEIC from iPhone, treat as jpeg after conversion
     };
     const mimeType = mimeTypes[extension] || 'image/jpeg';
-    console.log('MIME type:', mimeType);
+    devLog('MIME type:', mimeType);
 
     return { base64, mimeType };
   } catch (error) {
@@ -90,7 +98,7 @@ async function generateSticker(
   characterDescription?: string
 ): Promise<string | null> {
   try {
-    console.log('Generating sticker with background removal...');
+    devLog('Generating sticker with background removal...');
 
     const response = await fetch(STICKER_API_URL, {
       method: 'POST',
@@ -109,10 +117,11 @@ async function generateSticker(
       return null;
     }
 
-    const data = await response.json();
+    const rawData = await response.json();
+    const data = parseStickerResponse(rawData);
 
-    if (data.error) {
-      console.error('Sticker generation error:', data.error);
+    if (!data || !data.stickerData) {
+      console.error('Sticker generation failed or returned invalid data');
       return null;
     }
 
@@ -133,8 +142,8 @@ async function generateSticker(
       encoding: LegacyFileSystem.EncodingType.Base64,
     });
 
-    console.log('Sticker saved to:', stickerPath);
-    console.log('Fallback used:', data.fallback);
+    devLog('Sticker saved to:', stickerPath);
+    devLog('Fallback used:', data.fallback);
 
     return stickerPath;
   } catch (error) {
@@ -154,7 +163,7 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      console.log(`Attempting API call (${attempt + 1}/${MAX_RETRIES})...`);
+      devLog(`Attempting API call (${attempt + 1}/${MAX_RETRIES})...`);
 
       const response = await fetch(THEME_API_URL, {
         method: 'POST',
@@ -173,7 +182,7 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
         const retryAfter = errorData.retryAfter || Math.pow(2, attempt) * (BASE_DELAY_MS / 1000);
 
         if (attempt < MAX_RETRIES - 1) {
-          console.log(`Rate limited. Retrying in ${retryAfter}s...`);
+          devLog(`Rate limited. Retrying in ${retryAfter}s...`);
           await delay(retryAfter * 1000);
           continue;
         } else {
@@ -186,11 +195,12 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
         throw new Error(errorData.error || `API error: ${response.status}`);
       }
 
-      const themeData: ThemeResponse = await response.json();
-      console.log('Received theme:', themeData);
+      const rawData = await response.json();
+      const themeData = parseThemeResponse(rawData);
+      devLog('Received and validated theme:', themeData);
 
       // Generate sticker with background removal (runs in parallel conceptually, but after theme)
-      console.log('Generating sticker with background removal...');
+      devLog('Generating sticker with background removal...');
       const stickerUri = await generateSticker(base64, mimeType);
 
       // Convert API response to NoteDesign format
@@ -246,7 +256,7 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
       // Retry on network errors
       if (attempt < MAX_RETRIES - 1) {
         const waitTime = BASE_DELAY_MS * Math.pow(2, attempt);
-        console.log(`Retrying in ${waitTime}ms...`);
+        devLog(`Retrying in ${waitTime}ms...`);
         await delay(waitTime);
         continue;
       }
@@ -267,7 +277,7 @@ async function generateLuckySticker(
   mimeType: string
 ): Promise<string | null> {
   try {
-    console.log('🎲 Generating lucky transformed sticker...');
+    devLog('🎲 Generating lucky transformed sticker...');
 
     const response = await fetch(LUCKY_STICKER_API_URL, {
       method: 'POST',
@@ -285,10 +295,11 @@ async function generateLuckySticker(
       return null;
     }
 
-    const data = await response.json();
+    const rawData = await response.json();
+    const data = parseStickerResponse(rawData);
 
-    if (data.error) {
-      console.error('Lucky sticker generation error:', data.error);
+    if (!data || !data.stickerData) {
+      console.error('Lucky sticker generation failed or returned invalid data');
       return null;
     }
 
@@ -309,8 +320,8 @@ async function generateLuckySticker(
       encoding: LegacyFileSystem.EncodingType.Base64,
     });
 
-    console.log('🎲 Lucky sticker saved to:', stickerPath);
-    console.log('Transformed:', data.transformed);
+    devLog('🎲 Lucky sticker saved to:', stickerPath);
+    devLog('Transformed:', data.transformed ?? false);
 
     return stickerPath;
   } catch (error) {
@@ -359,7 +370,7 @@ export async function generateLuckyDesign(
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      console.log(`🎲 Attempting Lucky API call (${attempt + 1}/${MAX_RETRIES})...`);
+      devLog(`🎲 Attempting Lucky API call (${attempt + 1}/${MAX_RETRIES})...`);
 
       const response = await fetch(LUCKY_THEME_API_URL, {
         method: 'POST',
@@ -378,7 +389,7 @@ export async function generateLuckyDesign(
         const retryAfter = errorData.retryAfter || Math.pow(2, attempt) * (BASE_DELAY_MS / 1000);
 
         if (attempt < MAX_RETRIES - 1) {
-          console.log(`Rate limited. Retrying in ${retryAfter}s...`);
+          devLog(`Rate limited. Retrying in ${retryAfter}s...`);
           await delay(retryAfter * 1000);
           continue;
         } else {
@@ -391,11 +402,12 @@ export async function generateLuckyDesign(
         throw new Error(errorData.error || `API error: ${response.status}`);
       }
 
-      const themeData: LuckyThemeResponse = await response.json();
-      console.log('🎲 Received lucky theme:', themeData);
+      const rawData = await response.json();
+      const themeData = parseLuckyThemeResponse(rawData);
+      devLog('🎲 Received and validated lucky theme:', themeData);
 
       // Generate transformed sticker
-      console.log('🎲 Generating transformed sticker...');
+      devLog('🎲 Generating transformed sticker...');
       const stickerUri = await generateLuckySticker(base64, mimeType);
 
       // Convert API response to NoteDesign format
@@ -453,7 +465,7 @@ export async function generateLuckyDesign(
       // Retry on network errors
       if (attempt < MAX_RETRIES - 1) {
         const waitTime = BASE_DELAY_MS * Math.pow(2, attempt);
-        console.log(`Retrying in ${waitTime}ms...`);
+        devLog(`Retrying in ${waitTime}ms...`);
         await delay(waitTime);
         continue;
       }
@@ -480,7 +492,7 @@ async function generateThemedSticker(
   mimeType?: string
 ): Promise<string | null> {
   try {
-    console.log(`Generating ${theme.name} themed sticker...`);
+    devLog(`Generating ${theme.name} themed sticker...`);
 
     const response = await fetch(THEMED_STICKER_API_URL, {
       method: 'POST',
@@ -535,7 +547,7 @@ async function generateThemedSticker(
       encoding: LegacyFileSystem.EncodingType.Base64,
     });
 
-    console.log(`${theme.name} sticker saved to:`, stickerPath);
+    devLog(`${theme.name} sticker saved to:`, stickerPath);
     return stickerPath;
   } catch (error) {
     console.error('Failed to generate themed sticker:', error);
@@ -585,15 +597,15 @@ export async function generateThemedDesign(
           const colorData = await colorResponse.json();
           if (colorData.colors) {
             colorOverrides = colorData.colors;
-            console.log('Color overrides from image:', colorOverrides);
+            devLog('Color overrides from image:', colorOverrides);
           }
         }
       } catch (e) {
         // Color extraction is optional, continue without it
-        console.log('Color extraction skipped:', e);
+        devLog('Color extraction skipped:', e);
       }
     } catch (error) {
-      console.warn('Could not process image, using default theme colors:', error);
+      devWarn('Could not process image, using default theme colors:', error);
     }
   }
 
@@ -651,7 +663,7 @@ export async function generateLabelPresetSticker(
   mimeType?: string
 ): Promise<string | null> {
   try {
-    console.log(`🏷️ Generating sticker for label preset: ${preset.name}...`);
+    devLog(`🏷️ Generating sticker for label preset: ${preset.name}...`);
 
     const response = await fetch(LABEL_PRESET_STICKER_API_URL, {
       method: 'POST',
@@ -709,7 +721,7 @@ export async function generateLabelPresetSticker(
       encoding: LegacyFileSystem.EncodingType.Base64,
     });
 
-    console.log(`🏷️ Label preset sticker saved to:`, stickerPath);
+    devLog(`🏷️ Label preset sticker saved to:`, stickerPath);
     return stickerPath;
   } catch (error) {
     console.error('Failed to generate label preset sticker:', error);
@@ -739,7 +751,7 @@ export async function generateLabelPresetDesign(
       imageBase64 = imageData.base64;
       mimeType = imageData.mimeType;
     } catch (error) {
-      console.warn('Could not process image for label preset design:', error);
+      devWarn('Could not process image for label preset design:', error);
     }
   }
 
@@ -807,7 +819,7 @@ export async function generateBoardDesign(
   notes: Note[],
   userHint?: string
 ): Promise<BoardDesign> {
-  console.log(`🎨 Generating board design for #${hashtag}...`);
+  devLog(`🎨 Generating board design for #${hashtag}...`);
 
   // Extract note content for context (first 10 notes, title + 100 chars content)
   const noteContent = notes.slice(0, 10).map(note => {
@@ -839,7 +851,7 @@ export async function generateBoardDesign(
   }
 
   const data: GeminiBoardDesignResponse = await response.json();
-  console.log('🎨 Board design received:', data.name);
+  devLog('🎨 Board design received:', data.name);
 
   // Convert API response to BoardDesign
   const design: BoardDesign = {
@@ -961,7 +973,7 @@ export async function generateTypographyPoster(
   noteTitle: string,
   noteContent: string
 ): Promise<TypographyImageResponse> {
-  console.log(`✍️ Generating ${style} typography poster...`);
+  devLog(`✍️ Generating ${style} typography poster...`);
 
   const response = await fetch(TYPOGRAPHY_POSTER_API_URL, {
     method: 'POST',
@@ -987,7 +999,7 @@ export async function generateTypographyPoster(
   }
 
   const data: TypographyImageResponse = await response.json();
-  console.log(`✍️ Typography poster generated: ${style} style`);
+  devLog(`✍️ Typography poster generated: ${style} style`);
 
   return data;
 }
@@ -1001,7 +1013,7 @@ export async function generateCharacterMascot(
   noteTitle: string,
   noteContent: string
 ): Promise<CharacterMascotResponse> {
-  console.log(`🧸 Generating ${characterType} character mascot...`);
+  devLog(`🧸 Generating ${characterType} character mascot...`);
 
   const response = await fetch(CHARACTER_MASCOT_API_URL, {
     method: 'POST',
@@ -1027,7 +1039,7 @@ export async function generateCharacterMascot(
   }
 
   const data: CharacterMascotResponse = await response.json();
-  console.log(`🧸 Character mascot generated: ${characterType} style`);
+  devLog(`🧸 Character mascot generated: ${characterType} style`);
 
   return data;
 }
@@ -1055,7 +1067,7 @@ export async function saveTypographyPoster(
     encoding: LegacyFileSystem.EncodingType.Base64,
   });
 
-  console.log('✍️ Typography poster saved to:', posterPath);
+  devLog('✍️ Typography poster saved to:', posterPath);
   return posterPath;
 }
 
@@ -1082,7 +1094,7 @@ export async function saveCharacterMascot(
     encoding: LegacyFileSystem.EncodingType.Base64,
   });
 
-  console.log('🧸 Character mascot saved to:', mascotPath);
+  devLog('🧸 Character mascot saved to:', mascotPath);
   return mascotPath;
 }
 
@@ -1097,13 +1109,13 @@ const IMAGE_STICKER_API_URL = `${API_BASE_URL}/api/generate-image-sticker`;
  * Returns the URI of the saved sticker image, or null if failed
  */
 export async function generateStickerFromImage(imageUri: string): Promise<string | null> {
-  console.log('🎨 Generating sticker from image...');
+  devLog('🎨 Generating sticker from image...');
 
   // Convert image to base64
   const { base64, mimeType } = await imageUriToBase64(imageUri);
 
   try {
-    console.log('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
+    devLog('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
     const stickerResponse = await fetch(IMAGE_STICKER_API_URL, {
       method: 'POST',
       headers: {
@@ -1115,28 +1127,28 @@ export async function generateStickerFromImage(imageUri: string): Promise<string
       }),
     });
 
-    console.log('📡 Sticker API response status:', stickerResponse.status);
+    devLog('📡 Sticker API response status:', stickerResponse.status);
 
     if (stickerResponse.ok) {
       const stickerData = await stickerResponse.json();
-      console.log('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
+      devLog('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
 
       if (stickerData.stickerBase64) {
         // Save sticker to local storage
         const stickerUri = await saveStickerImage(stickerData.stickerBase64, stickerData.mimeType || 'image/png');
-        console.log('✅ Sticker generated and saved:', stickerUri);
+        devLog('✅ Sticker generated and saved:', stickerUri);
         return stickerUri;
       } else {
-        console.warn('⚠️ API returned OK but no stickerBase64 in response');
+        devWarn('⚠️ API returned OK but no stickerBase64 in response');
         return null;
       }
     } else {
       const errorText = await stickerResponse.text();
-      console.warn('❌ Sticker generation failed:', stickerResponse.status, errorText);
+      devWarn('❌ Sticker generation failed:', stickerResponse.status, errorText);
       return null;
     }
   } catch (error) {
-    console.warn('❌ Sticker generation error:', error);
+    devWarn('❌ Sticker generation error:', error);
     return null;
   }
 }
@@ -1146,7 +1158,7 @@ export async function generateStickerFromImage(imageUri: string): Promise<string
  * Creates a character sticker and uses the image as background
  */
 export async function generateImageDesign(imageUri: string): Promise<NoteDesign> {
-  console.log('🎨 Generating design from image...');
+  devLog('🎨 Generating design from image...');
 
   // Convert image to base64
   const { base64, mimeType } = await imageUriToBase64(imageUri);
@@ -1155,7 +1167,7 @@ export async function generateImageDesign(imageUri: string): Promise<NoteDesign>
   let stickerUri: string | undefined;
 
   try {
-    console.log('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
+    devLog('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
     const stickerResponse = await fetch(IMAGE_STICKER_API_URL, {
       method: 'POST',
       headers: {
@@ -1167,25 +1179,25 @@ export async function generateImageDesign(imageUri: string): Promise<NoteDesign>
       }),
     });
 
-    console.log('📡 Sticker API response status:', stickerResponse.status);
+    devLog('📡 Sticker API response status:', stickerResponse.status);
 
     if (stickerResponse.ok) {
       const stickerData = await stickerResponse.json();
-      console.log('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
+      devLog('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
 
       if (stickerData.stickerBase64) {
         // Save sticker to local storage
         stickerUri = await saveStickerImage(stickerData.stickerBase64, stickerData.mimeType || 'image/png');
-        console.log('✅ Sticker generated and saved:', stickerUri);
+        devLog('✅ Sticker generated and saved:', stickerUri);
       } else {
-        console.warn('⚠️ API returned OK but no stickerBase64 in response');
+        devWarn('⚠️ API returned OK but no stickerBase64 in response');
       }
     } else {
       const errorText = await stickerResponse.text();
-      console.warn('❌ Sticker generation failed:', stickerResponse.status, errorText);
+      devWarn('❌ Sticker generation failed:', stickerResponse.status, errorText);
     }
   } catch (error) {
-    console.warn('❌ Sticker generation error:', error);
+    devWarn('❌ Sticker generation error:', error);
   }
 
   // Create a design with neutral colors + image background
@@ -1224,7 +1236,7 @@ export async function generateImageDesign(imageUri: string): Promise<NoteDesign>
     designSummary: 'Custom design generated from uploaded image',
   };
 
-  console.log('🎨 Design created:', {
+  devLog('🎨 Design created:', {
     id: design.id,
     hasSticker: !!design.sticker?.imageUri,
     stickerUri: design.sticker?.imageUri,

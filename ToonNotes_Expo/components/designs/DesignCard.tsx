@@ -4,8 +4,7 @@
  * Features:
  * - Square aspect ratio (matches NoteCard)
  * - Clean iOS-style border and shadow
- * - Design name at TOP
- * - Sample text to preview title/body colors
+ * - Preview text to show title/body colors
  * - Sticker overlay
  * - Decorations (shoujo, etc.)
  * - Selection state support
@@ -52,34 +51,6 @@ export function DesignCard({
 
   return (
     <View style={styles.wrapper}>
-      {/* Design name above card */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-        <Text
-          style={[
-            styles.designName,
-            { color: isDark ? '#FFFFFF' : '#1F2937', fontSize: isCompact ? 11 : 13, marginBottom: 0 },
-          ]}
-          numberOfLines={1}
-        >
-          {design.name}
-        </Text>
-        {design.isSystemDefault && (
-          <View
-            style={{
-              marginLeft: 6,
-              paddingHorizontal: 4,
-              paddingVertical: 1,
-              borderRadius: 3,
-              backgroundColor: isDark ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.15)',
-            }}
-          >
-            <Text style={{ fontSize: 8, color: '#F59E0B', fontWeight: '600' }}>
-              ★
-            </Text>
-          </View>
-        )}
-      </View>
-
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
@@ -114,7 +85,7 @@ export function DesignCard({
             ]}
             numberOfLines={1}
           >
-            Sample Note
+            Title
           </Text>
           <Text
             style={[
@@ -123,7 +94,7 @@ export function DesignCard({
             ]}
             numberOfLines={isCompact ? 2 : 3}
           >
-            This is how your notes will look with this design applied.
+            Content
           </Text>
         </View>
 
@@ -168,11 +139,6 @@ const styles = StyleSheet.create({
     padding: 12,
     position: 'relative',
     overflow: 'hidden',
-  },
-  designName: {
-    fontWeight: '600',
-    marginBottom: 6,
-    paddingHorizontal: 2,
   },
   contentArea: {
     flex: 1,

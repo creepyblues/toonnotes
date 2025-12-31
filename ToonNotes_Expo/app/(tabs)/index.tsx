@@ -16,6 +16,7 @@ import { useNoteStore, useUserStore, useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note, NoteColor } from '@/types';
 import { useTheme } from '@/src/theme';
+import { LogoPreview } from '@/components/settings/LogoPreview';
 
 // Calculate item dimensions for consistent 2-column grid
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -170,21 +171,21 @@ export default function NotesScreen() {
         style={{ backgroundColor: colors.backgroundSecondary }}
       >
         <View className="flex-row items-center justify-between">
-          <Text
-            style={{
-              fontSize: 34,
-              fontWeight: '700',
-              color: colors.textPrimary,
-            }}
-          >
-            ToonNotes
-          </Text>
+          <LogoPreview
+            colorScheme="toonRainbow"
+            font="nunito"
+            size="large"
+            showLabel={false}
+            showBackground={false}
+          />
           <TouchableOpacity
             onPress={() => setIsSearching(!isSearching)}
             className="p-2 rounded-full"
             style={{
               backgroundColor: isSearching ? `${colors.accent}15` : 'transparent'
             }}
+            accessibilityLabel={isSearching ? "Close search" : "Search notes"}
+            accessibilityRole="button"
           >
             {isSearching ? (
               <X size={24} color={colors.accent} weight="regular" />
@@ -210,6 +211,8 @@ export default function NotesScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
+              accessibilityLabel="Search notes"
+              accessibilityHint="Type to search through your notes"
             />
           </View>
         )}
@@ -257,9 +260,12 @@ export default function NotesScreen() {
           shadowRadius: 12,
           elevation: 8,
         }}
+        accessibilityLabel="Create new note"
+        accessibilityRole="button"
       >
         <Plus size={28} color="#FFFFFF" weight="bold" />
       </TouchableOpacity>
+
     </SafeAreaView>
   );
 }

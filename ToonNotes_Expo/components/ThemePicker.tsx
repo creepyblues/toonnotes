@@ -307,11 +307,11 @@ export function ThemePicker({
   // Map old theme IDs to new preset IDs for backward compat
   const themeToPresetMap: Record<string, LabelPresetId> = {
     ghibli: 'inspiration',
-    manga: 'character',
-    webtoon: 'blog',
+    manga: 'brainstorm',
+    webtoon: 'draft',
     shoujo: 'memory',
     shonen: 'goals',
-    kawaii: 'favorites',
+    kawaii: 'wishlist',
     vintage: 'journal',
   };
 
@@ -381,11 +381,11 @@ export function CompactThemePicker({
 }: CompactThemePickerProps) {
   const themeToPresetMap: Record<string, LabelPresetId> = {
     ghibli: 'inspiration',
-    manga: 'character',
-    webtoon: 'blog',
+    manga: 'brainstorm',
+    webtoon: 'draft',
     shoujo: 'memory',
     shonen: 'goals',
-    kawaii: 'favorites',
+    kawaii: 'wishlist',
     vintage: 'journal',
   };
 

@@ -5,6 +5,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, createContext, useContext } from 'react';
 import 'react-native-reanimated';
 
@@ -77,8 +78,13 @@ import {
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { purchaseService } from '@/services/purchaseService';
+import { initSentry } from '@/services/sentry';
 
-export { ErrorBoundary } from 'expo-router';
+// Initialize Sentry for error monitoring
+initSentry();
+
+// Custom error boundary with ToonNotes styling
+export { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -192,14 +198,18 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="note/[id]"
           options={{
             presentation: 'modal',
             headerShown: false,
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
           }}
         />
         <Stack.Screen
@@ -230,7 +240,8 @@ function RootLayoutNav() {
             headerShown: false,
           }}
         />
-      </Stack>
-    </ThemeProvider>
+        </Stack>
+      </ThemeProvider>
+    </>
   );
 }

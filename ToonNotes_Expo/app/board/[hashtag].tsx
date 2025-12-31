@@ -4,7 +4,7 @@
  * Uses custom board design if available, otherwise preset colors.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -35,15 +35,19 @@ import {
   ImageSquare,
   Sparkle,
   PaintBrush,
+  Plus,
   IconProps,
 } from 'phosphor-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useNoteStore, useDesignStore, useBoardStore, useBoardDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
-import { Note } from '@/types';
+import { Note, NoteColor } from '@/types';
 import { getPresetForHashtag } from '@/constants/boardPresets';
 import { useTheme } from '@/src/theme';
+import { useFontsLoaded } from '@/app/_layout';
+import { getPresetFonts, PresetFontStyle, SYSTEM_FONT_FALLBACKS } from '@/constants/fonts';
+import { LabelPresetId, getPresetById } from '@/constants/labelPresets';
 
 // Phosphor icon mapping for board background (same as BoardCard)
 const BOARD_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
@@ -99,12 +103,13 @@ const GRID_GAP = 10;
 export default function BoardDetailScreen() {
   const router = useRouter();
   const { hashtag } = useLocalSearchParams<{ hashtag: string }>();
-  const { getNotesByLabel } = useNoteStore();
+  const { getNotesByLabel, addNote, addLabelToNote } = useNoteStore();
   const { getDesignById } = useDesignStore();
   const { getBoardByHashtag } = useBoardStore();
   const { getDesignById: getBoardDesignById } = useBoardDesignStore();
   const { colors, isDark } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
+  const fontsLoaded = useFontsLoaded();
 
   // Calculate item width based on current screen width (responsive)
   const itemWidth = (screenWidth - GRID_PADDING * 2 - GRID_GAP) / 2;
@@ -123,6 +128,22 @@ export default function BoardDetailScreen() {
 
   // Get preset for this hashtag as fallback
   const preset = getPresetForHashtag(decodedHashtag);
+
+  // Get font for this preset (from label preset which has fontStyle)
+  const getHashtagFont = () => {
+    if (preset) {
+      const labelPreset = getPresetById(preset.id as LabelPresetId);
+      const fontStyle = labelPreset?.fontStyle || 'sans-serif';
+
+      if (fontsLoaded) {
+        const fonts = getPresetFonts(preset.id as LabelPresetId, fontStyle as PresetFontStyle);
+        return fonts.titleFontFamily;
+      }
+      // Return system fallback while fonts load (Android loads fonts async)
+      return SYSTEM_FONT_FALLBACKS[fontStyle as PresetFontStyle] || 'System';
+    }
+    return undefined;
+  };
 
   // Use custom board design colors if available, otherwise fall back to preset or defaults
   const boardColors = useMemo(() => {
@@ -171,6 +192,20 @@ export default function BoardDetailScreen() {
     router.push(`/note/${note.id}`);
   };
 
+  const handleCreateNote = useCallback(() => {
+    const newNote = addNote({
+      title: '',
+      content: '',
+      color: NoteColor.White,
+      labels: [decodedHashtag],
+      isPinned: false,
+      isArchived: false,
+      isDeleted: false,
+    });
+    addLabelToNote(newNote.id, decodedHashtag);
+    router.push(`/note/${newNote.id}`);
+  }, [addNote, addLabelToNote, router, decodedHashtag]);
+
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyEmoji}>📝</Text>
@@ -209,8 +244,13 @@ export default function BoardDetailScreen() {
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            <Text style={[styles.hashtag, { color: textColor }]} numberOfLines={1}>
-              # {decodedHashtag}
+            <Text style={[
+              styles.hashtag,
+              { color: textColor, fontFamily: getHashtagFont() },
+              // Remove bold weight for custom fonts (Android can't synthesize weights)
+              getHashtagFont() && { fontWeight: 'normal' },
+            ]} numberOfLines={1}>
+              #{decodedHashtag}
             </Text>
           </View>
 
@@ -245,6 +285,19 @@ export default function BoardDetailScreen() {
             )}
           />
         )}
+
+        {/* FAB - Quick add note */}
+        <TouchableOpacity
+          onPress={handleCreateNote}
+          accessibilityLabel={`Create new note in ${decodedHashtag}`}
+          accessibilityRole="button"
+          style={[styles.fab, {
+            backgroundColor: accentColor,
+            shadowColor: accentColor,
+          }]}
+        >
+          <Plus size={28} color="#FFFFFF" weight="bold" />
+        </TouchableOpacity>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -318,5 +371,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 10,
   },
 });

@@ -52,7 +52,7 @@ interface UserState {
 const INITIAL_USER: User = {
   id: generateUUID(),
   freeDesignUsed: false,
-  coinBalance: 100, // Testing: start with 100 coins
+  coinBalance: 0, // Production: users start with 0 coins (1 free design available)
   createdAt: Date.now(),
 };
 

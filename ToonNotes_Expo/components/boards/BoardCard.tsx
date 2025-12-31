@@ -9,11 +9,14 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { BoardData } from '@/types';
 import { getPresetForHashtag } from '@/constants/boardPresets';
 import { useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
+import { useFontsLoaded } from '@/app/_layout';
+import { getPresetFonts, PresetFontStyle, SYSTEM_FONT_FALLBACKS } from '@/constants/fonts';
+import { LabelPresetId, getPresetById } from '@/constants/labelPresets';
 import {
   // Productivity
   CheckCircle,
@@ -79,7 +82,8 @@ interface BoardCardProps {
   onNotePress?: (noteId: string) => void;
 }
 
-const CARD_HEIGHT = 200;
+const CARD_HEIGHT = 260;
+const NOTE_SIZE = 150; // Square notes
 
 export function BoardCard({
   board,
@@ -90,6 +94,23 @@ export function BoardCard({
   // Get preset for this board's hashtag
   const preset = getPresetForHashtag(board.hashtag);
   const { getDesignById } = useDesignStore();
+  const fontsLoaded = useFontsLoaded();
+
+  // Get font for this preset (from label preset which has fontStyle)
+  const getHashtagFont = () => {
+    if (preset) {
+      const labelPreset = getPresetById(preset.id as LabelPresetId);
+      const fontStyle = labelPreset?.fontStyle || 'sans-serif';
+
+      if (fontsLoaded) {
+        const fonts = getPresetFonts(preset.id as LabelPresetId, fontStyle as PresetFontStyle);
+        return fonts.titleFontFamily;
+      }
+      // Return system fallback while fonts load (Android loads fonts async)
+      return SYSTEM_FONT_FALLBACKS[fontStyle as PresetFontStyle] || 'System';
+    }
+    return undefined;
+  };
 
   // Colors from preset or defaults
   const bgColor = preset?.colors.bg ?? (isDark ? '#2D3436' : '#F5F5F5');
@@ -101,8 +122,8 @@ export function BoardCard({
   const boardIconName = preset?.boardIcon ?? '';
   const IconComponent = boardIconName ? BOARD_ICON_MAP[boardIconName] : null;
 
-  // Get up to 3 preview notes
-  const previewNotes = board.previewNotes.slice(0, 3);
+  // Get all preview notes for horizontal scroll
+  const previewNotes = board.previewNotes;
 
   return (
     <View style={styles.shadowWrapper}>
@@ -124,8 +145,13 @@ export function BoardCard({
 
         {/* Header Row */}
         <View style={styles.header}>
-          <Text style={[styles.hashtag, { color: textColor }]} numberOfLines={1}>
-            # {board.hashtag}
+          <Text style={[
+            styles.hashtag,
+            { color: textColor, fontFamily: getHashtagFont() },
+            // Remove bold weight for custom fonts (Android can't synthesize weights)
+            getHashtagFont() && { fontWeight: 'normal' },
+          ]} numberOfLines={1}>
+            #{board.hashtag}
           </Text>
           <View style={[styles.badge, { backgroundColor: badgeBg }]}>
             <Text style={[styles.badgeText, { color: badgeTextColor }]}>
@@ -134,8 +160,13 @@ export function BoardCard({
           </View>
         </View>
 
-        {/* Note Previews Row */}
-        <View style={styles.notesRow}>
+        {/* Note Previews - Horizontal Scroll */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.notesScroll}
+          contentContainerStyle={styles.notesScrollContent}
+        >
           {previewNotes.map((note) => (
             <View key={note.id} style={styles.noteWrapper}>
               <NoteCard
@@ -148,13 +179,13 @@ export function BoardCard({
               />
             </View>
           ))}
-          {/* Fill empty slots with placeholder */}
-          {previewNotes.length < 3 &&
-            Array(3 - previewNotes.length).fill(null).map((_, i) => (
-              <View key={`empty-${i}`} style={styles.emptySlot} />
-            ))
-          }
-        </View>
+          {/* Show placeholder if no notes */}
+          {previewNotes.length === 0 && (
+            <View style={styles.emptySlot}>
+              <Text style={styles.emptyText}>No notes yet</Text>
+            </View>
+          )}
+        </ScrollView>
       </TouchableOpacity>
     </View>
   );
@@ -208,20 +239,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  notesRow: {
-    flexDirection: 'row',
+  notesScroll: {
     flex: 1,
-    gap: 10,
-    alignItems: 'stretch',
+    marginHorizontal: -24, // Extend to card edges
+    paddingHorizontal: 24,
+  },
+  notesScrollContent: {
+    gap: 12,
+    paddingRight: 24,
   },
   noteWrapper: {
-    flex: 1,
-    opacity: 0.8, // 20% transparent
+    width: NOTE_SIZE,
+    height: NOTE_SIZE,
+    opacity: 0.9,
   },
   emptySlot: {
-    flex: 1,
+    width: NOTE_SIZE,
+    height: NOTE_SIZE,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 12,
+    opacity: 0.5,
+    color: '#FFF',
   },
 });
 

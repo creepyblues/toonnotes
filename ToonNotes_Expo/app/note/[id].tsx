@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
   Image,
   NativeSyntheticEvent,
   TextInputSelectionChangeEventData,
+  BackHandler,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -48,8 +50,11 @@ import {
   Notebook,
   Camera,
   Palette,
+  ListBullets,
+  ImageSquare,
   IconProps,
 } from 'phosphor-react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 // Phosphor icon mapping for label icons
 const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
@@ -75,17 +80,23 @@ const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   Palette,
 };
 
-import { useNoteStore, useDesignStore, useUserStore } from '@/stores';
+import {
+  useNoteStore,
+  useDesignStore,
+  useUserStore,
+  useLabelSuggestionStore,
+  createPendingSuggestions,
+} from '@/stores';
 import { useTheme } from '@/src/theme';
 import { NoteColor, NoteDesign } from '@/types';
+import {
+  analyzeNoteContent,
+  LabelAnalysisResponse,
+} from '@/services/labelingEngine';
+import { LabelSuggestionToast, LabelSuggestionSheet } from '@/components/labels';
 import { composeStyle } from '@/services/designEngine';
 import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { DesignCard } from '@/components/designs/DesignCard';
-import {
-  CATEGORY_COLORS,
-  LabelPreset,
-  LABEL_PRESET_LIST,
-} from '@/constants/labelPresets';
 import { useFontsLoaded } from '@/app/_layout';
 import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
 
@@ -100,8 +111,23 @@ const NOTE_COLORS = [
   { name: 'Violet', value: NoteColor.Violet },
 ];
 
-// Helper to get tag color by index (cycles through available colors)
-const TAG_COLOR_KEYS = ['purple', 'blue', 'green', 'orange', 'pink', 'teal'] as const;
+// Label colors: darker grey for primary, lighter grey for rest
+const LABEL_COLORS = {
+  primary: {
+    light: { background: 'rgba(60, 60, 67, 0.12)', text: '#3C3C43' },
+    dark: { background: 'rgba(255, 255, 255, 0.16)', text: '#E5E5E7' },
+  },
+  secondary: {
+    light: { background: 'rgba(142, 142, 147, 0.08)', text: '#8E8E93' },
+    dark: { background: 'rgba(142, 142, 147, 0.12)', text: '#98989D' },
+  },
+};
+
+// Helper to get label color based on index
+const getLabelColor = (index: number, isDark: boolean) => {
+  const colorType = index === 0 ? 'primary' : 'secondary';
+  return isDark ? LABEL_COLORS[colorType].dark : LABEL_COLORS[colorType].light;
+};
 
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -121,7 +147,13 @@ export default function NoteEditorScreen() {
   } = useNoteStore();
   const { designs, getDesignById } = useDesignStore();
   const { settings } = useUserStore();
-  const { isDark, colors, tagColors } = useTheme();
+  const { isDark, colors } = useTheme();
+
+  // Label suggestion store hooks
+  const setPendingSuggestions = useLabelSuggestionStore((state) => state.setPendingSuggestions);
+  const showAutoApplyToast = useLabelSuggestionStore((state) => state.showAutoApplyToast);
+  const getSuggestionsForNote = useLabelSuggestionStore((state) => state.getSuggestionsForNote);
+  const clearSuggestions = useLabelSuggestionStore((state) => state.clearSuggestions);
 
   const note = getNoteById(id || '');
   const currentDesign = note?.designId ? getDesignById(note.designId) : null;
@@ -149,6 +181,34 @@ export default function NoteEditorScreen() {
   const [cursorPosition, setCursorPosition] = useState(0);
   const [hashtagInputValue, setHashtagInputValue] = useState('');
 
+  // Label suggestion state
+  const [showSuggestionSheet, setShowSuggestionSheet] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(false); // Track if we should navigate after label confirmation
+
+  // AI-analyzed suggestions for autocomplete
+  const [analyzedSuggestions, setAnalyzedSuggestions] = useState<string[]>([]);
+  const [isAnalyzingForAutocomplete, setIsAnalyzingForAutocomplete] = useState(false);
+
+  // Format menu state (checkbox, bullet, image)
+  const [showFormatMenu, setShowFormatMenu] = useState(false);
+  const [images, setImages] = useState<string[]>(note?.images || []);
+  const [focusLineIndex, setFocusLineIndex] = useState<number | null>(null);
+  const lineInputRefs = useRef<{ [key: number]: TextInput | null }>({});
+
+  // Track original content to detect changes for analysis
+  const originalContentRef = useRef({ title: note?.title || '', content: note?.content || '' });
+
+  // Focus the new line after Enter is pressed
+  useEffect(() => {
+    if (focusLineIndex !== null && lineInputRefs.current[focusLineIndex]) {
+      setTimeout(() => {
+        lineInputRefs.current[focusLineIndex]?.focus();
+        setFocusLineIndex(null);
+      }, 50);
+    }
+  }, [focusLineIndex, content]);
+
   // Get active design for styling
   const activeDesign = designId ? getDesignById(designId) : null;
 
@@ -169,24 +229,184 @@ export default function NoteEditorScreen() {
   };
 
   const getBodyFont = () => {
-    if (fontsLoaded && style.bodyFontFamily) {
-      return style.bodyFontFamily;
-    }
-    // Fallback to system font based on style category
-    const fontStyle = (style.fontStyle || 'sans-serif') as PresetFontStyle;
-    return SYSTEM_FONT_FALLBACKS[fontStyle] || 'System';
+    // Always use system font for content text
+    return 'System';
   };
 
-  // Auto-save on changes (use `id` from params to avoid stale closure with `note`)
+  // Track previous values to detect actual changes
+  const prevValuesRef = useRef({ title, content, color, designId });
+  const isInitialMount = useRef(true);
+
+  // Auto-save on changes (only when content actually changes)
   useEffect(() => {
-    if (!note || !id) return;
+    if (!id) return;
+
+    // Skip on initial mount to avoid unnecessary save
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const prev = prevValuesRef.current;
+    const hasChanges =
+      prev.title !== title ||
+      prev.content !== content ||
+      prev.color !== color ||
+      prev.designId !== designId;
+
+    // Only save if there are actual changes
+    if (!hasChanges) return;
 
     const timeout = setTimeout(() => {
       updateNote(id, { title, content, color, designId });
+      prevValuesRef.current = { title, content, color, designId };
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [id, note, title, content, color, designId, updateNote]);
+  }, [id, title, content, color, designId, updateNote]);
+
+  // Analyze note content for label suggestions when editor closes
+  // Returns true if suggestions popup is shown
+  const analyzeForLabels = async (): Promise<boolean> => {
+    if (!note || !id) return false;
+
+    // Skip if note already has labels
+    if (note.labels.length > 0) return false;
+
+    // Check if content has changed meaningfully
+    const originalTitle = originalContentRef.current.title;
+    const originalContent = originalContentRef.current.content;
+    const hasContentChanges =
+      title.trim() !== originalTitle.trim() ||
+      content.trim() !== originalContent.trim();
+
+    // Skip if no content changes or if content is too short
+    if (!hasContentChanges && !title.trim() && !content.trim()) return false;
+    if (title.trim().length < 3 && content.trim().length < 10) return false;
+
+    setIsAnalyzing(true);
+
+    try {
+      const existingLabelNames = labels.map((l) => l.name);
+      const result = await analyzeNoteContent({
+        noteTitle: title,
+        noteContent: content,
+        existingLabels: existingLabelNames,
+      });
+
+      // Combine all matched labels (high + medium confidence)
+      const allMatchedLabels = [...result.autoApplyLabels, ...result.suggestLabels];
+
+      // Show toast if we have any label recommendations
+      if (allMatchedLabels.length > 0) {
+        const labelNames = allMatchedLabels.map((m) => m.labelName);
+        showAutoApplyToast(id, labelNames);
+        return true; // Wait for user confirmation
+      }
+      return false; // No suggestions, allow navigation
+    } catch (error) {
+      console.warn('[NoteEditor] Label analysis failed:', error);
+      return false;
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Handle applying labels from suggestion sheet
+  const handleApplyLabelSuggestions = (labelNames: string[], newLabels: string[]) => {
+    if (!note) return;
+
+    // Add existing labels to note
+    labelNames.forEach((name) => {
+      addLabelToNote(note.id, name);
+    });
+
+    // Create and add new labels
+    newLabels.forEach((name) => {
+      addLabel(name);
+      addLabelToNote(note.id, name);
+    });
+
+    setShowSuggestionSheet(false);
+
+    // Navigate back if this was triggered during back navigation
+    if (pendingNavigation) {
+      setPendingNavigation(false);
+      router.back();
+    }
+  };
+
+  // Handle skipping all suggestions
+  const handleSkipSuggestions = () => {
+    if (!note) return;
+
+    // Assign uncategorized label as fallback
+    const assignUncategorized = useNoteStore.getState().assignUncategorizedLabel;
+    assignUncategorized(note.id);
+
+    setShowSuggestionSheet(false);
+
+    // Navigate back if this was triggered during back navigation
+    if (pendingNavigation) {
+      setPendingNavigation(false);
+      router.back();
+    }
+  };
+
+  // Handle closing suggestion sheet without action
+  const handleCloseSuggestionSheet = () => {
+    if (note) {
+      clearSuggestions(note.id);
+    }
+    setShowSuggestionSheet(false);
+
+    // Navigate back if this was triggered during back navigation
+    if (pendingNavigation) {
+      setPendingNavigation(false);
+      router.back();
+    }
+  };
+
+  // Analyze note content for label suggestions in autocomplete
+  const analyzeForAutocomplete = useCallback(async () => {
+    // Skip if already analyzing or no content
+    if (isAnalyzingForAutocomplete) return;
+    if (!title.trim() && !content.trim()) return;
+    if (title.trim().length < 2 && content.trim().length < 5) return;
+
+    setIsAnalyzingForAutocomplete(true);
+    setAnalyzedSuggestions([]);
+
+    try {
+      const existingLabelNames = labels.map((l) => l.name);
+      const result = await analyzeNoteContent({
+        noteTitle: title,
+        noteContent: content,
+        existingLabels: existingLabelNames,
+      });
+
+      // Combine all matched labels (high + medium confidence)
+      const allMatchedLabels = [...result.autoApplyLabels, ...result.suggestLabels];
+
+      // Filter out labels already applied to this note
+      const suggestions = allMatchedLabels
+        .map((m) => m.labelName)
+        .filter((name) => !note?.labels.includes(name));
+
+      setAnalyzedSuggestions(suggestions);
+    } catch (error) {
+      console.warn('[NoteEditor] Label analysis for autocomplete failed:', error);
+    } finally {
+      setIsAnalyzingForAutocomplete(false);
+    }
+  }, [title, content, labels, note?.labels, isAnalyzingForAutocomplete]);
+
+  // Handle "+Add label" button click - analyze and show autocomplete
+  const handleAddLabelPress = useCallback(() => {
+    setShowHashtagAutocomplete(true);
+    // Trigger AI analysis when opening autocomplete
+    analyzeForAutocomplete();
+  }, [analyzeForAutocomplete]);
 
   // Regex to detect hashtag being typed
   const HASHTAG_TYPING_REGEX = /#(\w*)$/;
@@ -211,7 +431,7 @@ export default function NoteEditorScreen() {
       });
   }, [labels, hashtagQuery, hashtagInputValue, note?.labels]);
 
-  // Handle content change with hashtag detection
+  // Handle content change with hashtag detection and auto-continue for checkbox/bullet
   const handleContentChange = (text: string) => {
     // Detect if user pressed Enter or Space while autocomplete is showing
     // This creates the hashtag automatically
@@ -224,6 +444,36 @@ export default function NoteEditorScreen() {
         // Create the hashtag
         handleCreateAndInsertHashtag(hashtagQuery);
         return; // Don't update content - handleCreateAndInsertHashtag will do it
+      }
+    }
+
+    // Auto-continue checkbox/bullet on Enter
+    if (text.length > content.length && text.endsWith('\n')) {
+      const lines = text.slice(0, -1).split('\n'); // Remove trailing newline for analysis
+      const prevLine = lines[lines.length - 1] || '';
+
+      // Check for checkbox pattern
+      if (prevLine.match(/^- \[[ x]\] ./)) {
+        // Previous line has content, continue with new checkbox
+        setContent(text + '- [ ] ');
+        return;
+      } else if (prevLine === '- [ ] ' || prevLine === '- [x] ') {
+        // Empty checkbox line - remove it and don't continue
+        const newContent = lines.slice(0, -1).join('\n') + (lines.length > 1 ? '\n' : '');
+        setContent(newContent);
+        return;
+      }
+
+      // Check for bullet pattern
+      if (prevLine.match(/^• .+/)) {
+        // Previous line has content, continue with new bullet
+        setContent(text + '• ');
+        return;
+      } else if (prevLine === '• ') {
+        // Empty bullet line - remove it and don't continue
+        const newContent = lines.slice(0, -1).join('\n') + (lines.length > 1 ? '\n' : '');
+        setContent(newContent);
+        return;
       }
     }
 
@@ -240,6 +490,7 @@ export default function NoteEditorScreen() {
     } else {
       setShowHashtagAutocomplete(false);
       setHashtagQuery('');
+      setAnalyzedSuggestions([]);
     }
   };
 
@@ -276,6 +527,7 @@ export default function NoteEditorScreen() {
     setShowHashtagAutocomplete(false);
     setHashtagQuery('');
     setHashtagInputValue('');
+    setAnalyzedSuggestions([]);
   };
 
   // Handle creating and inserting a new hashtag
@@ -291,7 +543,7 @@ export default function NoteEditorScreen() {
   if (!note) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <Text className="text-ink-light">Note not found</Text>
+        <Text className="text-system-textTertiary">Note not found</Text>
         <TouchableOpacity
           onPress={() => router.back()}
           className="mt-4 px-4 py-2 bg-primary-500 rounded-lg"
@@ -302,13 +554,36 @@ export default function NoteEditorScreen() {
     );
   }
 
-  const handleBack = () => {
+  // State to track if we're waiting for toast confirmation
+  const [waitingForToast, setWaitingForToast] = useState(false);
+
+  // Callback when toast is confirmed/dismissed
+  const handleToastComplete = useCallback(() => {
+    setWaitingForToast(false);
+    router.back();
+  }, [router]);
+
+  const handleBack = async () => {
+    // Dismiss keyboard first
+    Keyboard.dismiss();
+
     // Save before leaving (including designId to prevent design loss)
     updateNote(note.id, { title, content, color, designId });
 
     // If note is empty, delete it
     if (!title.trim() && !content.trim()) {
       deleteNote(note.id);
+      router.back();
+      return;
+    }
+
+    // Trigger label analysis if note has content but no labels
+    if (note.labels.length === 0 && (title.trim() || content.trim())) {
+      const hasSuggestions = await analyzeForLabels();
+      if (hasSuggestions) {
+        setWaitingForToast(true);
+        return; // Wait for toast confirmation before navigating
+      }
     }
 
     router.back();
@@ -346,6 +621,16 @@ export default function NoteEditorScreen() {
     );
   };
 
+  // Android hardware back button handler
+  useEffect(() => {
+    const backAction = () => {
+      handleBack();
+      return true; // Prevent default back behavior
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [title, content, color, designId, note?.labels]);
+
   const handleApplyDesign = (design: NoteDesign) => {
     setDesignId(design.id);
     setShowDesignPicker(false);
@@ -359,14 +644,65 @@ export default function NoteEditorScreen() {
     setShowDesignPicker(false);
   };
 
-  // Handle selecting a label preset design
-  const handleSelectLabelDesign = (labelName: string, preset: LabelPreset) => {
-    const presetDesignId = `label-preset-${preset.id}`;
-    setDesignId(presetDesignId);
-    if (note) {
-      setActiveDesignLabel(note.id, labelName);
+  // Toggle checkbox in content
+  const toggleCheckbox = (lineIndex: number) => {
+    const lines = content.split('\n');
+    const line = lines[lineIndex];
+
+    // Flexible matching for unchecked: - [ ], - [], -[ ], -[], [ ], []
+    const uncheckedPattern = /^(-?\s*)\[\s*\](\s*)/;
+    // Flexible matching for checked: - [x], - [X], -[x], etc.
+    const checkedPattern = /^(-?\s*)\[[xX]\](\s*)/;
+
+    if (uncheckedPattern.test(line)) {
+      // Toggle to checked - normalize to standard format
+      lines[lineIndex] = line.replace(uncheckedPattern, '- [x] ');
+    } else if (checkedPattern.test(line)) {
+      // Toggle to unchecked - normalize to standard format
+      lines[lineIndex] = line.replace(checkedPattern, '- [ ] ');
     }
-    setShowDesignPicker(false);
+
+    setContent(lines.join('\n'));
+  };
+
+  // Check if content has checkboxes (for rendering decision)
+  const hasCheckboxes = /\[[\sxX]*\]/.test(content);
+
+  // Format menu handlers
+  const handleAddCheckbox = () => {
+    const newContent = content + (content.endsWith('\n') || !content ? '' : '\n') + '- [ ] ';
+    setContent(newContent);
+    setShowFormatMenu(false);
+  };
+
+  const handleAddBullet = () => {
+    const newContent = content + (content.endsWith('\n') || !content ? '' : '\n') + '• ';
+    setContent(newContent);
+    setShowFormatMenu(false);
+  };
+
+  const handleAddImage = async () => {
+    setShowFormatMenu(false);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newImages = [...images, result.assets[0].uri];
+      setImages(newImages);
+      if (note) {
+        updateNote(note.id, { images: newImages });
+      }
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    if (note) {
+      updateNote(note.id, { images: newImages });
+    }
   };
 
   // Get sticker position styles
@@ -448,13 +784,23 @@ export default function NoteEditorScreen() {
 
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
-          <TouchableOpacity onPress={handleBack} className="p-2">
+          <TouchableOpacity
+            onPress={handleBack}
+            className="p-2"
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
             <CaretLeft size={24} color={style.titleColor} weight="regular" />
           </TouchableOpacity>
 
           <View className="flex-row items-center">
             {/* Pin button */}
-            <TouchableOpacity onPress={handlePin} className="p-2">
+            <TouchableOpacity
+              onPress={handlePin}
+              className="p-2"
+              accessibilityLabel={note.isPinned ? "Unpin note" : "Pin note"}
+              accessibilityRole="button"
+            >
               {note.isPinned ? (
                 <PushPinSlash size={22} color={style.titleColor} weight="regular" />
               ) : (
@@ -466,6 +812,9 @@ export default function NoteEditorScreen() {
             <TouchableOpacity
               onPress={() => setShowDesignPicker(true)}
               className="p-2"
+              accessibilityLabel={activeDesign ? "Change design" : "Add design"}
+              accessibilityHint="Opens design picker to style your note"
+              accessibilityRole="button"
             >
               <Sparkle size={22} color={activeDesign ? '#F59E0B' : style.titleColor} weight={activeDesign ? 'fill' : 'regular'} />
             </TouchableOpacity>
@@ -474,6 +823,8 @@ export default function NoteEditorScreen() {
             <TouchableOpacity
               onPress={() => setShowMenu(!showMenu)}
               className="p-2"
+              accessibilityLabel="More options"
+              accessibilityRole="button"
             >
               <DotsThreeVertical size={22} color={style.titleColor} weight="bold" />
             </TouchableOpacity>
@@ -510,6 +861,8 @@ export default function NoteEditorScreen() {
                 borderBottomWidth: 1,
                 borderBottomColor: isDark ? '#252136' : '#EDE9FE',
               }}
+              accessibilityLabel="Archive note"
+              accessibilityRole="button"
             >
               <Archive size={18} color="#10B981" weight="regular" />
               <Text style={{ marginLeft: 12, color: isDark ? '#F5F3FF' : '#1A1625' }}>Archive</Text>
@@ -522,6 +875,9 @@ export default function NoteEditorScreen() {
                 paddingHorizontal: 16,
                 paddingVertical: 14,
               }}
+              accessibilityLabel="Delete note"
+              accessibilityHint="Moves note to trash"
+              accessibilityRole="button"
             >
               <Trash size={18} color="#EF4444" weight="regular" />
               <Text style={{ marginLeft: 12, color: '#EF4444' }}>Delete</Text>
@@ -551,27 +907,190 @@ export default function NoteEditorScreen() {
             value={title}
             onChangeText={setTitle}
             multiline
+            accessibilityLabel="Note title"
+            accessibilityHint="Enter the title of your note"
           />
 
-          {/* Content */}
-          <TextInput
-            className="text-base flex-1 min-h-[300px]"
-            style={[
-              {
-                color: style.bodyColor,
-                fontFamily: getBodyFont(),
-              },
-              // Additional style adjustments per font category
-              style.fontStyle === 'mono' && { fontSize: 14 },
-            ]}
-            placeholder="Start typing... Use # to add labels"
-            placeholderTextColor={activeDesign ? `${style.bodyColor}80` : '#9CA3AF'}
-            value={content}
-            onChangeText={handleContentChange}
-            onSelectionChange={handleSelectionChange}
-            multiline
-            textAlignVertical="top"
-          />
+          {/* Content with interactive checkboxes */}
+          <View style={{ flex: 1, minHeight: 300 }}>
+            {/* Render lines with checkboxes */}
+            {content.split('\n').map((line, index) => {
+              // Flexible checkbox detection: - [ ], - [], -[ ], -[], [ ], []
+              const uncheckedMatch = line.match(/^-?\s*\[\s*\]\s*/);
+              const checkedMatch = line.match(/^-?\s*\[[xX]\]\s*/);
+              const isUnchecked = !!uncheckedMatch;
+              const isChecked = !!checkedMatch;
+              const isCheckbox = isUnchecked || isChecked;
+              // Flexible bullet detection: •, -, * at start of line
+              const bulletMatch = line.match(/^([•\-\*])\s+/);
+
+              if (isCheckbox) {
+                // Remove checkbox prefix using flexible pattern
+                const textAfterCheckbox = line.replace(/^-?\s*\[[xX\s]*\]\s*/, '');
+                return (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, minHeight: 28 }}>
+                    <TouchableOpacity
+                      onPress={() => toggleCheckbox(index)}
+                      style={{ marginRight: 10 }}
+                    >
+                      {isChecked ? (
+                        <View style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 4,
+                          backgroundColor: colors.accent,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <Check size={14} color="#FFF" weight="bold" />
+                        </View>
+                      ) : (
+                        <View style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 4,
+                          borderWidth: 2,
+                          borderColor: isDark ? '#666' : '#CCC',
+                        }} />
+                      )}
+                    </TouchableOpacity>
+                    <TextInput
+                      ref={(ref) => { lineInputRefs.current[index] = ref; }}
+                      style={[
+                        {
+                          flex: 1,
+                          color: isChecked ? (isDark ? '#888' : '#999') : style.bodyColor,
+                          fontFamily: getBodyFont(),
+                          fontSize: 16,
+                          textDecorationLine: isChecked ? 'line-through' : 'none',
+                          padding: 0,
+                          margin: 0,
+                        },
+                        style.fontStyle === 'mono' && { fontSize: 14 },
+                      ]}
+                      value={textAfterCheckbox}
+                      onChangeText={(text) => {
+                        const lines = content.split('\n');
+                        const prefix = isChecked ? '- [x] ' : '- [ ] ';
+                        // Handle Enter key - create new checkbox
+                        if (text.includes('\n')) {
+                          const parts = text.split('\n');
+                          lines[index] = prefix + parts[0];
+                          // Insert new checkbox line after current
+                          lines.splice(index + 1, 0, '- [ ] ' + parts.slice(1).join('\n'));
+                          setContent(lines.join('\n'));
+                          setFocusLineIndex(index + 1);
+                          return;
+                        }
+                        lines[index] = prefix + text;
+                        setContent(lines.join('\n'));
+                      }}
+                      onKeyPress={({ nativeEvent }) => {
+                        if (nativeEvent.key === 'Backspace' && textAfterCheckbox === '') {
+                          // Remove the checkbox line when backspace on empty
+                          const lines = content.split('\n');
+                          lines.splice(index, 1);
+                          setContent(lines.join('\n'));
+                        }
+                      }}
+                      multiline
+                      blurOnSubmit={false}
+                    />
+                  </View>
+                );
+              }
+
+              // Only treat as bullet if NOT a checkbox (avoid - [ ] matching as bullet)
+              const isBullet = bulletMatch && !isCheckbox;
+
+              if (isBullet) {
+                // Remove bullet prefix using flexible pattern
+                const textAfterBullet = line.replace(/^[•\-\*]\s+/, '');
+                return (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, minHeight: 28 }}>
+                    <Text style={{ color: style.bodyColor, fontSize: 20, marginRight: 10, width: 20, textAlign: 'center' }}>•</Text>
+                    <TextInput
+                      ref={(ref) => { lineInputRefs.current[index] = ref; }}
+                      style={[
+                        {
+                          flex: 1,
+                          color: style.bodyColor,
+                          fontFamily: getBodyFont(),
+                          fontSize: 16,
+                          padding: 0,
+                          margin: 0,
+                        },
+                        style.fontStyle === 'mono' && { fontSize: 14 },
+                      ]}
+                      value={textAfterBullet}
+                      onChangeText={(text) => {
+                        const lines = content.split('\n');
+                        // Handle Enter key - create new bullet
+                        if (text.includes('\n')) {
+                          const parts = text.split('\n');
+                          lines[index] = '• ' + parts[0];
+                          // Insert new bullet line after current
+                          lines.splice(index + 1, 0, '• ' + parts.slice(1).join('\n'));
+                          setContent(lines.join('\n'));
+                          setFocusLineIndex(index + 1);
+                          return;
+                        }
+                        lines[index] = '• ' + text;
+                        setContent(lines.join('\n'));
+                      }}
+                      onKeyPress={({ nativeEvent }) => {
+                        if (nativeEvent.key === 'Backspace' && textAfterBullet === '') {
+                          const lines = content.split('\n');
+                          lines.splice(index, 1);
+                          setContent(lines.join('\n'));
+                        }
+                      }}
+                      multiline
+                      blurOnSubmit={false}
+                    />
+                  </View>
+                );
+              }
+
+              // Regular text line - use TextInput for editing
+              return (
+                <TextInput
+                  key={index}
+                  ref={(ref) => { lineInputRefs.current[index] = ref; }}
+                  style={[
+                    {
+                      color: style.bodyColor,
+                      fontFamily: getBodyFont(),
+                      fontSize: 16,
+                      marginBottom: 4,
+                      padding: 0,
+                      margin: 0,
+                      minHeight: 24,
+                    },
+                    style.fontStyle === 'mono' && { fontSize: 14 },
+                  ]}
+                  placeholder={index === 0 && !content ? "Start typing... Use # to add labels" : ""}
+                  placeholderTextColor={activeDesign ? `${style.bodyColor}80` : '#9CA3AF'}
+                  value={line}
+                  onChangeText={(text) => {
+                    const lines = content.split('\n');
+                    // Handle newline insertion
+                    if (text.includes('\n')) {
+                      const newLines = text.split('\n');
+                      lines.splice(index, 1, ...newLines);
+                      setContent(lines.join('\n'));
+                      setFocusLineIndex(index + 1);
+                      return;
+                    }
+                    lines[index] = text;
+                    handleContentChange(lines.join('\n'));
+                  }}
+                  multiline
+                  blurOnSubmit={false}
+                />
+              );
+            })}
+          </View>
         </ScrollView>
 
         {/* Labels Panel - iOS Style */}
@@ -615,6 +1134,7 @@ export default function NoteEditorScreen() {
                 onPress={() => {
                   setShowHashtagAutocomplete(false);
                   setHashtagInputValue('');
+                  setAnalyzedSuggestions([]);
                 }}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -698,8 +1218,7 @@ export default function NoteEditorScreen() {
                   gap: 8,
                 }}>
                   {note.labels.map((label, index) => {
-                    const colorKey = TAG_COLOR_KEYS[index % TAG_COLOR_KEYS.length];
-                    const pillColor = tagColors[colorKey];
+                    const labelColor = getLabelColor(index, isDark);
 
                     return (
                       <View
@@ -707,14 +1226,14 @@ export default function NoteEditorScreen() {
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
-                          backgroundColor: pillColor.background,
+                          backgroundColor: labelColor.background,
                           paddingLeft: 10,
                           paddingRight: 6,
                           paddingVertical: 6,
                           borderRadius: 8,
                         }}
                       >
-                        <Text style={{ fontSize: 13, color: pillColor.text, fontWeight: '500' }}>
+                        <Text style={{ fontSize: 13, color: labelColor.text, fontWeight: '500' }}>
                           #{label}
                         </Text>
                         <TouchableOpacity
@@ -759,7 +1278,67 @@ export default function NoteEditorScreen() {
               </TouchableOpacity>
             )}
 
-            {/* Suggested labels */}
+            {/* AI Suggestions Section */}
+            {(isAnalyzingForAutocomplete || analyzedSuggestions.length > 0) && (
+              <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 8, marginHorizontal: 16 }}>
+                  <Sparkle size={14} color={colors.accent} weight="fill" style={{ marginRight: 4 }} />
+                  <Text style={{
+                    fontSize: 12,
+                    color: colors.accent,
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
+                    AI Suggestions
+                  </Text>
+                  {isAnalyzingForAutocomplete && (
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginLeft: 8 }}>
+                      Analyzing...
+                    </Text>
+                  )}
+                </View>
+
+                {analyzedSuggestions.length > 0 && (
+                  <View style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    paddingHorizontal: 16,
+                    paddingBottom: 8,
+                    gap: 8,
+                  }}>
+                    {analyzedSuggestions.map((labelName) => {
+                      const suggestionColor = getLabelColor(1, isDark); // Grey for suggestions
+
+                      return (
+                        <TouchableOpacity
+                          key={labelName}
+                          onPress={() => handleSelectHashtag(labelName)}
+                          style={{
+                            backgroundColor: suggestionColor.background,
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: colors.accent,
+                          }}
+                        >
+                          <Text style={{
+                            color: suggestionColor.text,
+                            fontSize: 13,
+                            fontWeight: '500',
+                          }}>
+                            #{labelName}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* All Labels Section */}
             {filteredLabels.length > 0 && (
               <Text style={{
                 fontSize: 12,
@@ -771,7 +1350,7 @@ export default function NoteEditorScreen() {
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
               }}>
-                Suggestions
+                All Labels
               </Text>
             )}
 
@@ -787,35 +1366,36 @@ export default function NoteEditorScreen() {
                 paddingBottom: 16,
                 gap: 8,
               }}>
-                {filteredLabels.map((label, index) => {
-                  const colorKey = TAG_COLOR_KEYS[index % TAG_COLOR_KEYS.length];
-                  const pillColor = tagColors[colorKey];
+                {filteredLabels
+                  .filter((label) => !analyzedSuggestions.includes(label.name)) // Don't show duplicates
+                  .map((label) => {
+                    const labelColor = getLabelColor(1, isDark); // Grey for picker options
 
-                  return (
-                    <TouchableOpacity
-                      key={label.id}
-                      onPress={() => handleSelectHashtag(label.name)}
-                      style={{
-                        backgroundColor: pillColor.background,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text style={{
-                        color: pillColor.text,
-                        fontSize: 13,
-                        fontWeight: '500',
-                      }}>
-                        #{label.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                    return (
+                      <TouchableOpacity
+                        key={label.id}
+                        onPress={() => handleSelectHashtag(label.name)}
+                        style={{
+                          backgroundColor: labelColor.background,
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{
+                          color: labelColor.text,
+                          fontSize: 13,
+                          fontWeight: '500',
+                        }}>
+                          #{label.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
               </View>
 
               {/* Empty state */}
-              {filteredLabels.length === 0 && labels.length === 0 && (
+              {filteredLabels.length === 0 && labels.length === 0 && !isAnalyzingForAutocomplete && analyzedSuggestions.length === 0 && (
                 <View style={{ padding: 20, alignItems: 'center' }}>
                   <Text style={{
                     color: colors.textSecondary,
@@ -830,54 +1410,172 @@ export default function NoteEditorScreen() {
           </View>
         )}
 
-        {/* Label pills in note area */}
-        <TouchableOpacity
-          onPress={() => setShowHashtagAutocomplete(true)}
-          activeOpacity={0.7}
-          style={{ paddingHorizontal: 16, paddingVertical: 8 }}
-        >
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 6 }}>
-            {note.labels.length > 0 ? (
-              note.labels.map((label, index) => {
-                const colorKey = TAG_COLOR_KEYS[index % TAG_COLOR_KEYS.length];
-                const pillColor = tagColors[colorKey];
+        {/* Images row */}
+        {images.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, paddingVertical: 8, gap: 8 }}>
+            {images.map((uri, index) => (
+              <View key={index} style={{ position: 'relative' }}>
+                <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+                <TouchableOpacity
+                  onPress={() => handleRemoveImage(index)}
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -6,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    backgroundColor: isDark ? '#444' : '#666',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={12} color="#FFF" weight="bold" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
 
-                return (
-                  <View
-                    key={label}
-                    style={{
-                      backgroundColor: pillColor.background,
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, color: pillColor.text, fontWeight: '500' }}>
-                      #{label}
-                    </Text>
-                  </View>
-                );
-              })
-            ) : (
-              <View
-                style={{
-                  backgroundColor: isDark ? colors.backgroundTertiary : '#EFEFF0',
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: 8,
-                }}
-              >
-                <Text style={{
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                  fontWeight: '500',
-                }}>
-                  + Add label
-                </Text>
+        {/* Label pills row with + button */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          zIndex: 100,
+        }}>
+          {/* Label pills on left */}
+          <TouchableOpacity
+            onPress={handleAddLabelPress}
+            activeOpacity={0.7}
+            style={{ flex: 1 }}
+          >
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 6 }}>
+              {note.labels.length > 0 ? (
+                note.labels.map((label, index) => {
+                  const labelColor = getLabelColor(index, isDark);
+
+                  return (
+                    <View
+                      key={label}
+                      style={{
+                        backgroundColor: labelColor.background,
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, color: labelColor.text, fontWeight: '500' }}>
+                        #{label}
+                      </Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: isDark ? colors.backgroundTertiary : '#EFEFF0',
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    fontWeight: '500',
+                  }}>
+                    + Add label
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* + button on right */}
+          <View style={{ position: 'relative', zIndex: 100 }}>
+            <TouchableOpacity
+              onPress={() => setShowFormatMenu(!showFormatMenu)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 6,
+                borderWidth: 1.5,
+                borderColor: isDark ? '#555' : '#CCC',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                marginLeft: 12,
+              }}
+            >
+              <Plus size={18} color={isDark ? '#AAA' : '#666'} />
+            </TouchableOpacity>
+
+            {/* Format menu popup */}
+            {showFormatMenu && (
+              <View style={{
+                position: 'absolute',
+                bottom: 40,
+                right: 0,
+                backgroundColor: isDark ? '#333' : '#FFF',
+                borderRadius: 12,
+                paddingVertical: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 10,
+                zIndex: 999,
+                minWidth: 140,
+              }}>
+                <TouchableOpacity
+                  onPress={handleAddCheckbox}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                >
+                  <CheckSquare size={20} color={isDark ? '#AAA' : '#666'} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: isDark ? '#EEE' : '#333' }}>
+                    Checkbox
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleAddBullet}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                >
+                  <ListBullets size={20} color={isDark ? '#AAA' : '#666'} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: isDark ? '#EEE' : '#333' }}>
+                    Bullet
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleAddImage}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                >
+                  <ImageSquare size={20} color={isDark ? '#AAA' : '#666'} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: isDark ? '#EEE' : '#333' }}>
+                    Image
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </View>
 
         </BackgroundLayer>
       </KeyboardAvoidingView>
@@ -1082,125 +1780,6 @@ export default function NoteEditorScreen() {
               </View>
             </View>
 
-            {/* All Label Styles Section - 20 presets to choose from */}
-            <View style={{ marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                <View
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: '#F59E0B',
-                    marginRight: 8,
-                  }}
-                />
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: isDark ? '#A8A8B8' : '#6B6B7B',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  All Label Styles
-                </Text>
-                <View
-                  style={{
-                    marginLeft: 8,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                    borderRadius: 4,
-                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.15)',
-                  }}
-                >
-                  <Text style={{ fontSize: 10, color: '#F59E0B', fontWeight: '500' }}>
-                    20 PRESETS
-                  </Text>
-                </View>
-              </View>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 4, gap: 8 }}
-              >
-                {LABEL_PRESET_LIST.map((preset) => {
-                  const presetDesignId = `label-preset-${preset.id}`;
-                  const isSelected = designId === presetDesignId;
-
-                  return (
-                    <TouchableOpacity
-                      key={preset.id}
-                      onPress={() => handleSelectLabelDesign(preset.name, preset)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 16,
-                        backgroundColor: isSelected
-                          ? preset.colors.primary
-                          : isDark
-                          ? 'rgba(255, 255, 255, 0.08)'
-                          : preset.colors.bg,
-                        borderWidth: isSelected ? 0 : 1,
-                        borderColor: isDark
-                          ? 'rgba(255, 255, 255, 0.1)'
-                          : 'rgba(0, 0, 0, 0.08)',
-                        marginRight: 8,
-                      }}
-                    >
-                      {/* Category dot */}
-                      <View
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: isSelected ? '#FFFFFF' : CATEGORY_COLORS[preset.category],
-                          marginRight: 6,
-                        }}
-                      />
-                      {/* Icon */}
-                      <Text style={{ fontSize: 14, marginRight: 4 }}>{preset.icon}</Text>
-                      {/* Label name */}
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '500',
-                          color: isSelected
-                            ? '#FFFFFF'
-                            : isDark
-                            ? '#F5F3FF'
-                            : preset.colors.text,
-                        }}
-                      >
-                        {preset.name}
-                      </Text>
-                      {/* Selected checkmark */}
-                      {isSelected && (
-                        <View style={{ marginLeft: 6 }}>
-                          <Check size={12} color="#FFFFFF" weight="bold" />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-
-              {/* Hint text */}
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: isDark ? '#6B6B7B' : '#9CA3AF',
-                  marginTop: 8,
-                  paddingHorizontal: 4,
-                }}
-              >
-                Tap any label to apply its design style
-              </Text>
-            </View>
-
             {/* My Designs Section */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
               <View
@@ -1263,6 +1842,9 @@ export default function NoteEditorScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Label suggestion toast - shows before closing note */}
+      <LabelSuggestionToast onComplete={handleToastComplete} />
 
     </SafeAreaView>
   );

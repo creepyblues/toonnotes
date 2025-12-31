@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { NotePencil, SquaresFour, Sparkle, Gear } from 'phosphor-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/src/theme';
 import type { IconWeight } from '@/src/components/Icon';
@@ -32,6 +33,11 @@ function TabIcon({
 
 export default function TabLayout() {
   const { isDark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // Calculate tab bar height dynamically based on safe area
+  const tabBarPaddingBottom = Math.max(insets.bottom, 8);
+  const tabBarHeight = 56 + tabBarPaddingBottom;
 
   return (
     <Tabs
@@ -42,9 +48,9 @@ export default function TabLayout() {
           backgroundColor: colors.backgroundPrimary,
           borderTopWidth: 0.5,
           borderTopColor: colors.separator,
-          height: 85,
+          height: tabBarHeight,
           paddingTop: 8,
-          paddingBottom: 28,
+          paddingBottom: tabBarPaddingBottom,
         },
         tabBarLabelStyle: {
           fontSize: 10,

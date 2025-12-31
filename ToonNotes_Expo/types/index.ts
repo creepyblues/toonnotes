@@ -102,6 +102,7 @@ export interface Note {
   backgroundOverride?: BackgroundOverride;  // Per-note background customization
   typographyPosterUri?: string;  // Typographic Poster generated text art image
   characterMascotUri?: string;   // Character Mascot generated character image
+  images?: string[];             // Array of image URIs attached to note
   isPinned: boolean;
   isArchived: boolean;
   isDeleted: boolean;
@@ -115,8 +116,51 @@ export interface Label {
   id: string;
   name: string;
   presetId?: string;  // Reference to LabelPresetId if this label has a design preset
+  customDesignId?: string; // Reference to AI-generated design for custom labels
+  isSystemLabel?: boolean; // True for system labels like 'uncategorized'
   createdAt: number;
   lastUsedAt?: number;  // Track when label was last added to a note (for sorting)
+}
+
+// ============================================
+// Auto-Labeling System Types
+// ============================================
+
+// A label matched from existing labels during note analysis
+export interface MatchedLabel {
+  labelName: string;
+  confidence: number;  // 0-1, how well this label matches the content
+  reason: string;      // Why this label was suggested
+}
+
+// A suggestion for a new label that doesn't exist yet
+export interface SuggestedNewLabel {
+  name: string;
+  category: string;    // productivity, planning, checklists, media, creative, personal
+  reason: string;      // Why this label is being suggested
+}
+
+// Result from analyzing note content for labels
+export interface LabelAnalysisResult {
+  matchedLabels: MatchedLabel[];
+  suggestedNewLabels: SuggestedNewLabel[];
+  analysis: {
+    topics: string[];
+    mood: string;
+    contentType: string;  // todo, journal, review, etc.
+  };
+}
+
+// A pending label suggestion shown to the user
+export interface LabelSuggestion {
+  id: string;
+  noteId: string;
+  labelName: string;
+  isNewLabel: boolean;  // True if this is a suggested new label
+  confidence: number;
+  reason: string;
+  category?: string;    // For new labels, the suggested category
+  status: 'pending' | 'accepted' | 'declined';
 }
 
 // User state and economy

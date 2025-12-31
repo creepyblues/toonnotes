@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Alert, TextInput, Modal, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -184,7 +184,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* Settings List */}
-      <View className="flex-1 px-4">
+      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
         {/* Account Section */}
         <View className="mt-6">
           <Text
@@ -401,7 +401,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* API Key Modal */}
       <Modal

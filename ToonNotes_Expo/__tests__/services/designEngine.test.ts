@@ -36,6 +36,14 @@ jest.mock('@/constants/fonts', () => ({
     titleFontFamily: 'Inter',
     bodyFontFamily: 'Inter',
   })),
+  getFontFamilyName: jest.fn((font: string) => font),
+  DEFAULT_FONT_BY_STYLE: {
+    'sans-serif': { title: 'Inter', body: 'Inter' },
+    'serif': { title: 'Merriweather', body: 'Merriweather' },
+    'display': { title: 'Oswald', body: 'Oswald' },
+    'handwritten': { title: 'Caveat', body: 'Caveat' },
+    'mono': { title: 'JetBrains Mono', body: 'JetBrains Mono' },
+  },
 }));
 
 const createMockDesign = (overrides?: Partial<NoteDesign>): NoteDesign => ({
@@ -266,9 +274,9 @@ describe('designEngine', () => {
     it('should use dark mode colors for white notes in dark mode', () => {
       const style = composeBasicStyle(NoteColor.White, 'detail', true);
 
-      expect(style.backgroundColor).toBe('#2D2D2D');
-      expect(style.titleColor).toBe('#FFFFFF');
-      expect(style.bodyColor).toBe('#D1D5DB');
+      expect(style.backgroundColor).toBe('#292524'); // neutral-800 (warm gray)
+      expect(style.titleColor).toBe('#FAFAF9');      // neutral-50
+      expect(style.bodyColor).toBe('#A8A29E');       // neutral-400
     });
 
     it('should use regular colors for colored notes in dark mode', () => {

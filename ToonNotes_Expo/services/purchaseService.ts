@@ -1,3 +1,4 @@
+import { devLog, devWarn } from '@/utils/devLog';
 /**
  * Purchase Service - RevenueCat Integration
  *
@@ -23,7 +24,7 @@ if (!isExpoGo) {
     Purchases = revenueCat.default;
     LOG_LEVEL = revenueCat.LOG_LEVEL;
   } catch (error) {
-    console.warn('RevenueCat not available:', error);
+    devWarn('RevenueCat not available:', error);
   }
 }
 
@@ -54,13 +55,13 @@ class PurchaseService {
    */
   async initialize(userId?: string): Promise<void> {
     if (this.initialized) {
-      console.log('RevenueCat already initialized');
+      devLog('RevenueCat already initialized');
       return;
     }
 
     // Skip initialization in Expo Go
     if (isExpoGo || !Purchases) {
-      console.log('RevenueCat skipped: Running in Expo Go or native module unavailable');
+      devLog('RevenueCat skipped: Running in Expo Go or native module unavailable');
       return;
     }
 
@@ -76,7 +77,7 @@ class PurchaseService {
 
       // Check if API key is configured
       if (apiKey.includes('YOUR_')) {
-        console.warn('RevenueCat API key not configured. Purchases will not work.');
+        devWarn('RevenueCat API key not configured. Purchases will not work.');
         return;
       }
 
@@ -86,7 +87,7 @@ class PurchaseService {
       });
 
       this.initialized = true;
-      console.log('RevenueCat initialized successfully');
+      devLog('RevenueCat initialized successfully');
     } catch (error) {
       console.error('Failed to initialize RevenueCat:', error);
     }
@@ -104,7 +105,7 @@ class PurchaseService {
    */
   async getOfferings(): Promise<import('react-native-purchases').PurchasesOffering | null> {
     if (!this.initialized || !Purchases) {
-      console.warn('RevenueCat not initialized');
+      devWarn('RevenueCat not initialized');
       return null;
     }
 
@@ -173,13 +174,13 @@ class PurchaseService {
    */
   async restorePurchases(): Promise<import('react-native-purchases').CustomerInfo | null> {
     if (!this.initialized || !Purchases) {
-      console.warn('RevenueCat not initialized');
+      devWarn('RevenueCat not initialized');
       return null;
     }
 
     try {
       const customerInfo = await Purchases.restorePurchases();
-      console.log('Purchases restored:', customerInfo);
+      devLog('Purchases restored:', customerInfo);
       return customerInfo;
     } catch (error) {
       console.error('Restore failed:', error);
@@ -212,7 +213,7 @@ class PurchaseService {
 
     try {
       await Purchases.logIn(userId);
-      console.log('User ID set:', userId);
+      devLog('User ID set:', userId);
     } catch (error) {
       console.error('Failed to set user ID:', error);
     }
@@ -227,7 +228,7 @@ class PurchaseService {
 
     try {
       await Purchases.logOut();
-      console.log('User logged out from RevenueCat');
+      devLog('User logged out from RevenueCat');
     } catch (error) {
       console.error('Failed to log out:', error);
     }

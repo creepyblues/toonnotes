@@ -902,6 +902,195 @@ Output a high-quality image.`;
         }
       }
     });
+  } else if (req.method === 'POST' && req.url === '/api/analyze-note-content') {
+    // Auto-labeling - Analyze note content for label suggestions
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { noteTitle, noteContent, existingLabels } = JSON.parse(body);
+
+        if (!noteTitle && !noteContent) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'noteTitle or noteContent is required' }));
+          return;
+        }
+
+        console.log(`🏷️ Analyzing note content for labels...`);
+        console.log(`   Title: "${noteTitle?.slice(0, 50) || '(none)'}"`);
+        console.log(`   Content: ${noteContent?.length || 0} chars`);
+        console.log(`   Existing labels: ${existingLabels?.length || 0}`);
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+
+        // 30 preset labels
+        const PRESET_LABELS = [
+          'todo', 'in-progress', 'done', 'waiting', 'priority',
+          'goals', 'meeting', 'planning', 'deadline', 'project',
+          'shopping', 'wishlist', 'packing', 'bucket-list', 'errands',
+          'reading', 'watchlist', 'bookmarks', 'review', 'recommendation',
+          'ideas', 'draft', 'brainstorm', 'inspiration', 'research',
+          'journal', 'memory', 'reflection', 'gratitude', 'quotes'
+        ];
+
+        const analysisPrompt = `You are a note organization assistant. You understand content in ANY language (Korean, Japanese, Chinese, Spanish, French, German, etc.). Analyze notes regardless of their language and suggest appropriate English labels.
+
+NOTE TITLE: "${noteTitle || '(untitled)'}"
+
+NOTE CONTENT:
+${noteContent || '(empty)'}
+
+AVAILABLE PRESET LABELS (prefer these when they match):
+${PRESET_LABELS.join(', ')}
+
+USER'S EXISTING CUSTOM LABELS:
+${existingLabels?.length > 0 ? existingLabels.join(', ') : '(none)'}
+
+TASK:
+1. Identify 1-3 labels that best describe this note's purpose/content
+2. For each label, provide a confidence score (0.0-1.0) based on how well it matches
+3. If no preset or existing labels fit well, suggest 1 NEW label name
+
+CONFIDENCE GUIDELINES:
+- 0.85-1.0: Very clear match (e.g., "shopping list" content → "shopping" label)
+- 0.50-0.84: Likely match but needs user confirmation
+- Below 0.50: Don't include
+
+IMPORTANT: Use exact label names from PRESET LABELS (e.g., "goals" not "goal", "ideas" not "idea", "shopping" not "shoppings")
+
+Return a JSON object:
+{
+  "matchedLabels": [
+    { "labelName": "label-name", "confidence": 0.0-1.0, "reason": "Brief explanation" }
+  ],
+  "suggestedNewLabels": [
+    { "name": "new-label", "category": "productivity|planning|checklists|media|creative|personal", "reason": "Why this label would be useful" }
+  ],
+  "analysis": {
+    "topics": ["topic1", "topic2"],
+    "mood": "calm|energetic|serious|playful|dreamy",
+    "contentType": "list|notes|journal|plan|reference"
+  }
+}
+
+Return ONLY the JSON object.`;
+
+        const result = await model.generateContent(analysisPrompt);
+        const response = await result.response;
+        let text = response.text();
+
+        // Clean up the response
+        text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        console.log('🏷️ Analysis response:', text.slice(0, 200) + '...');
+
+        const analysisData = JSON.parse(text);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(analysisData));
+
+      } catch (error) {
+        console.error('Error analyzing note content:', error);
+
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+          res.writeHead(429, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'Rate limit exceeded',
+            retryAfter: 60
+          }));
+        } else {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
+        }
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/generate-label-design') {
+    // Generate design for a new custom label
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { labelName, context } = JSON.parse(body);
+
+        if (!labelName) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'labelName is required' }));
+          return;
+        }
+
+        console.log(`🎨 Generating design for label "${labelName}"...`);
+
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+
+        const designPrompt = `Design a visual theme for a label/hashtag in a note-taking app.
+
+LABEL NAME: #${labelName}
+${context ? `CONTEXT: ${context}` : ''}
+
+Create a cohesive design that:
+1. Matches the semantic meaning of "${labelName}"
+2. Appeals to manga/anime fans (the app's target audience)
+3. Works well as a note card theme
+
+Return a JSON object with this structure:
+{
+  "id": "${labelName}",
+  "name": "${labelName}",
+  "category": "productivity|planning|checklists|media|creative|personal",
+  "icon": "emoji that represents this label",
+  "mood": "energetic|calm|playful|serious|dreamy",
+  "colors": {
+    "bg": "#HEX (light background for note card)",
+    "primary": "#HEX (main accent color)",
+    "text": "#HEX (title text color)",
+    "body": "#HEX (body text color)",
+    "border": "#HEX (border color)"
+  },
+  "noteIcon": "Phosphor icon name (CheckSquare|Star|Target|BookOpen|Television|ChatCircleText|HeartStraight|Lightbulb|Brain|UserCircle|Heart|PencilLine|NotePencil|Quotes|MagnifyingGlass|Notebook|Camera|Sparkle|Palette)",
+  "fontStyle": "sans-serif|serif|rounded|handwritten|mono|display",
+  "borderStyle": "solid|dashed|dotted|thick"
+}
+
+Make the design feel unique and tailored to this specific label.
+Return ONLY the JSON object.`;
+
+        const result = await model.generateContent(designPrompt);
+        const response = await result.response;
+        let text = response.text();
+
+        // Clean up the response
+        text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        console.log('🎨 Design response:', text);
+
+        const designData = JSON.parse(text);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(designData));
+
+      } catch (error) {
+        console.error('Error generating label design:', error);
+
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+          res.writeHead(429, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'Rate limit exceeded',
+            retryAfter: 60
+          }));
+        } else {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message || 'Internal server error' }));
+        }
+      }
+    });
   } else if (req.method === 'POST' && req.url === '/api/generate-character-mascot') {
     // Character Mascot - Generate anime character appearing to present the text
     let body = '';
@@ -1070,4 +1259,6 @@ server.listen(PORT, () => {
   console.log('  POST /api/generate-board-design - 🎨 Board Design: Generate design for board');
   console.log('  POST /api/generate-typography-poster - ✍️ Typography Poster: Generate hand-lettered text art');
   console.log('  POST /api/generate-character-mascot - 🧸 Character Mascot: Generate anime character presenter');
+  console.log('  POST /api/analyze-note-content - 🏷️ Auto-labeling: Analyze note for label suggestions');
+  console.log('  POST /api/generate-label-design - 🎨 Auto-labeling: Generate design for custom label');
 });

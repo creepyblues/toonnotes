@@ -1,12 +1,14 @@
 /**
  * Label-Based Design Presets
  *
- * 20 unique label presets organized by category:
- * - Productivity: Todo, Important, Archive, Goals
- * - Reading: Reading, Watchlist, Review, Recommendation
- * - Creative: Ideas, Theory, Character, Favorites
- * - Content: Blog, Draft, Quotes, Research
- * - Personal: Journal, Memory, Inspiration, Art
+ * 30 unique label presets organized by category:
+ * - Productivity (5): Todo, In-Progress, Done, Waiting, Priority
+ * - Planning (5): Goals, Meeting, Planning, Deadline, Project
+ * - Checklists (5): Shopping, Wishlist, Packing, Bucket-List, Errands
+ * - Media (5): Reading, Watchlist, Bookmarks, Review, Recommendation
+ * - Creative (5): Ideas, Draft, Brainstorm, Inspiration, Research
+ * - Personal (5): Journal, Memory, Reflection, Gratitude, Quotes
+ * - System (1): Uncategorized (fallback for unmatched notes)
  *
  * Each preset defines a complete visual design that auto-applies
  * when the corresponding label is added to a note.
@@ -19,38 +21,53 @@ import { StickerPosition } from '@/types';
 // ============================================
 
 export type LabelPresetId =
-  // Productivity
+  // Productivity (5)
   | 'todo'
-  | 'important'
-  | 'archive'
+  | 'in-progress'
+  | 'done'
+  | 'waiting'
+  | 'priority'
+  // Planning (5)
   | 'goals'
-  // Reading
+  | 'meeting'
+  | 'planning'
+  | 'deadline'
+  | 'project'
+  // Checklists (5)
+  | 'shopping'
+  | 'wishlist'
+  | 'packing'
+  | 'bucket-list'
+  | 'errands'
+  // Media (5)
   | 'reading'
   | 'watchlist'
+  | 'bookmarks'
   | 'review'
   | 'recommendation'
-  // Creative
+  // Creative (5)
   | 'ideas'
-  | 'theory'
-  | 'character'
-  | 'favorites'
-  // Content
-  | 'blog'
   | 'draft'
-  | 'quotes'
+  | 'brainstorm'
+  | 'inspiration'
   | 'research'
-  // Personal
+  // Personal (5)
   | 'journal'
   | 'memory'
-  | 'inspiration'
-  | 'art';
+  | 'reflection'
+  | 'gratitude'
+  | 'quotes'
+  // System (1)
+  | 'uncategorized';
 
 export type LabelCategory =
   | 'productivity'
-  | 'reading'
+  | 'planning'
+  | 'checklists'
+  | 'media'
   | 'creative'
-  | 'content'
-  | 'personal';
+  | 'personal'
+  | 'system';
 
 export type PresetBgStyle = 'solid' | 'gradient' | 'pattern' | 'texture' | 'illustration';
 
@@ -79,6 +96,7 @@ export interface LabelPreset {
   noteIcon: string;        // Phosphor icon name for notes (small, crisp)
   mood: PresetMood;
   description: string;
+  isSystemLabel?: boolean; // True for system labels like 'uncategorized'
 
   colors: {
     primary: string; // Main accent color
@@ -109,30 +127,34 @@ export interface LabelPreset {
 
 export const CATEGORY_COLORS: Record<LabelCategory, string> = {
   productivity: '#FF6B6B',
-  reading: '#6C5CE7',
-  creative: '#00CEC9',
-  content: '#0984E3',
-  personal: '#FDCB6E',
+  planning: '#E17055',
+  checklists: '#00CEC9',
+  media: '#6C5CE7',
+  creative: '#FDCB6E',
+  personal: '#FD79A8',
+  system: '#636E72',
 };
 
 export const CATEGORY_LABELS: Record<LabelCategory, string> = {
   productivity: 'Productivity',
-  reading: 'Reading',
+  planning: 'Planning',
+  checklists: 'Checklists',
+  media: 'Media',
   creative: 'Creative',
-  content: 'Content',
   personal: 'Personal',
+  system: 'System',
 };
 
 // ============================================
-// 20 Label Presets
+// 31 Label Presets (30 user + 1 system)
 // ============================================
 
 export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
   // ==========================================
-  // PRODUCTIVITY (4 presets)
+  // PRODUCTIVITY (5 presets)
   // ==========================================
 
-  todo: {
+  'todo': {
     id: 'todo',
     name: 'Todo',
     category: 'productivity',
@@ -156,14 +178,85 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     artStyle: 'cute chibi character holding a pencil or checklist, anime style',
   },
 
-  important: {
-    id: 'important',
-    name: 'Important',
+  'in-progress': {
+    id: 'in-progress',
+    name: 'In Progress',
+    category: 'productivity',
+    icon: '🔄⚡',
+    noteIcon: 'Spinner',
+    mood: 'energetic',
+    description: 'Currently working on',
+    colors: {
+      primary: '#0984E3',
+      secondary: '#74B9FF',
+      bg: '#E8F4FD',
+      text: '#2D3436',
+    },
+    bgStyle: 'gradient',
+    bgGradient: ['#E8F4FD', '#D0E8FC'],
+    fontStyle: 'sans-serif',
+    stickerType: 'floating',
+    stickerEmoji: '⚡',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['working', 'active', 'progress', 'momentum'],
+    artStyle: 'dynamic anime character in motion, working energetically, blue energy aura',
+  },
+
+  'done': {
+    id: 'done',
+    name: 'Done',
+    category: 'productivity',
+    icon: '✔️🎉',
+    noteIcon: 'CheckCircle',
+    mood: 'calm',
+    description: 'Completed tasks',
+    colors: {
+      primary: '#00B894',
+      secondary: '#55EFC4',
+      bg: '#E8FDF5',
+      text: '#2D3436',
+    },
+    bgStyle: 'solid',
+    fontStyle: 'sans-serif',
+    stickerType: 'stamp',
+    stickerEmoji: '🏆',
+    stickerPosition: 'bottom-right',
+    aiPromptHints: ['completed', 'success', 'achievement', 'finished'],
+    artStyle: 'proud anime character with trophy, celebrating accomplishment, green sparkles',
+  },
+
+  'waiting': {
+    id: 'waiting',
+    name: 'Waiting',
+    category: 'productivity',
+    icon: '⏳💭',
+    noteIcon: 'Hourglass',
+    mood: 'calm',
+    description: 'Blocked or pending',
+    colors: {
+      primary: '#FDCB6E',
+      secondary: '#F8E9C7',
+      bg: '#FFFDF5',
+      text: '#5D4E37',
+    },
+    bgStyle: 'pattern',
+    bgPattern: 'dots-small',
+    fontStyle: 'sans-serif',
+    stickerType: 'floating',
+    stickerEmoji: '⏳',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['waiting', 'pending', 'paused', 'patient'],
+    artStyle: 'patient anime character with hourglass, calm expression, soft yellow tones',
+  },
+
+  'priority': {
+    id: 'priority',
+    name: 'Priority',
     category: 'productivity',
     icon: '⭐🔥',
     noteIcon: 'Star',
     mood: 'bold',
-    description: 'Priority & urgent notes',
+    description: 'High priority items',
     colors: {
       primary: '#E17055',
       secondary: '#FDCB6E',
@@ -177,42 +270,21 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🔥',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['important', 'priority', 'urgent', 'attention'],
-    artStyle:
-      'dynamic anime character with exclamation mark, bold pose, energetic',
+    artStyle: 'dynamic anime character with exclamation mark, bold pose, energetic',
   },
 
-  archive: {
-    id: 'archive',
-    name: 'Archive',
-    category: 'productivity',
-    icon: '📦💫',
-    noteIcon: 'Archive',
-    mood: 'calm',
-    description: 'Completed & stored',
-    colors: {
-      primary: '#636E72',
-      secondary: '#B2BEC3',
-      bg: '#F5F6F7',
-      text: '#2D3436',
-    },
-    bgStyle: 'texture',
-    bgPattern: 'paper-subtle',
-    fontStyle: 'serif',
-    stickerType: 'none',
-    stickerEmoji: '📦',
-    stickerPosition: 'bottom-right',
-    aiPromptHints: ['archive', 'stored', 'completed', 'organized'],
-    artStyle: 'minimalist anime character organizing boxes, calm expression',
-  },
+  // ==========================================
+  // PLANNING (5 presets)
+  // ==========================================
 
-  goals: {
+  'goals': {
     id: 'goals',
     name: 'Goals',
-    category: 'productivity',
+    category: 'planning',
     icon: '🎯✨',
     noteIcon: 'Target',
     mood: 'energetic',
-    description: 'Personal goals & challenges',
+    description: 'Personal goals & milestones',
     colors: {
       primary: '#00B894',
       secondary: '#55EFC4',
@@ -226,22 +298,238 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🏔️',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['goals', 'achievement', 'motivation', 'success'],
-    artStyle:
-      'determined anime character reaching for the top, mountain backdrop',
+    artStyle: 'determined anime character reaching for the top, mountain backdrop',
+  },
+
+  'meeting': {
+    id: 'meeting',
+    name: 'Meeting',
+    category: 'planning',
+    icon: '👥📋',
+    noteIcon: 'Users',
+    mood: 'serious',
+    description: 'Meeting notes & agendas',
+    colors: {
+      primary: '#636E72',
+      secondary: '#B2BEC3',
+      bg: '#F5F6F7',
+      text: '#2D3436',
+    },
+    bgStyle: 'solid',
+    fontStyle: 'sans-serif',
+    stickerType: 'corner',
+    stickerEmoji: '📋',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['meeting', 'discussion', 'agenda', 'team', 'notes'],
+    artStyle: 'professional anime character with clipboard, meeting room setting',
+  },
+
+  'planning': {
+    id: 'planning',
+    name: 'Planning',
+    category: 'planning',
+    icon: '📅🗓️',
+    noteIcon: 'Calendar',
+    mood: 'calm',
+    description: 'Plans & schedules',
+    colors: {
+      primary: '#6C5CE7',
+      secondary: '#A29BFE',
+      bg: '#F3F0FF',
+      text: '#2D3436',
+    },
+    bgStyle: 'pattern',
+    bgPattern: 'grid',
+    fontStyle: 'sans-serif',
+    stickerType: 'corner',
+    stickerEmoji: '📅',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['planning', 'schedule', 'organize', 'calendar'],
+    artStyle: 'organized anime character with planner, thoughtful expression, purple tones',
+  },
+
+  'deadline': {
+    id: 'deadline',
+    name: 'Deadline',
+    category: 'planning',
+    icon: '⏰🚨',
+    noteIcon: 'Alarm',
+    mood: 'bold',
+    description: 'Time-sensitive tasks',
+    colors: {
+      primary: '#D63031',
+      secondary: '#FF7675',
+      bg: '#FFEBEE',
+      text: '#2D3436',
+    },
+    bgStyle: 'gradient',
+    bgGradient: ['#FFEBEE', '#FFCDD2'],
+    fontStyle: 'display',
+    stickerType: 'stamp',
+    stickerEmoji: '⏰',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['deadline', 'urgent', 'time', 'countdown'],
+    artStyle: 'anime character racing against clock, dynamic speed lines, red urgency',
+  },
+
+  'project': {
+    id: 'project',
+    name: 'Project',
+    category: 'planning',
+    icon: '📁🔧',
+    noteIcon: 'Folder',
+    mood: 'serious',
+    description: 'Project documentation',
+    colors: {
+      primary: '#E17055',
+      secondary: '#FAB1A0',
+      bg: '#FFF5F2',
+      text: '#2D3436',
+    },
+    bgStyle: 'solid',
+    fontStyle: 'sans-serif',
+    stickerType: 'corner',
+    stickerEmoji: '📁',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['project', 'work', 'documentation', 'organized'],
+    artStyle: 'focused anime character managing files, professional workspace',
   },
 
   // ==========================================
-  // READING (4 presets)
+  // CHECKLISTS (5 presets)
   // ==========================================
 
-  reading: {
+  'shopping': {
+    id: 'shopping',
+    name: 'Shopping',
+    category: 'checklists',
+    icon: '🛒🛍️',
+    noteIcon: 'ShoppingCart',
+    mood: 'playful',
+    description: 'Shopping & grocery lists',
+    colors: {
+      primary: '#00CEC9',
+      secondary: '#81ECEC',
+      bg: '#E8FFFE',
+      text: '#2D3436',
+    },
+    bgStyle: 'pattern',
+    bgPattern: 'lines-horizontal',
+    fontStyle: 'sans-serif',
+    stickerType: 'floating',
+    stickerEmoji: '🛒',
+    stickerPosition: 'bottom-right',
+    aiPromptHints: ['shopping', 'groceries', 'buy', 'store', 'list'],
+    artStyle: 'cheerful anime character with shopping cart, colorful bags, teal accents',
+  },
+
+  'wishlist': {
+    id: 'wishlist',
+    name: 'Wishlist',
+    category: 'checklists',
+    icon: '⭐💝',
+    noteIcon: 'Star',
+    mood: 'dreamy',
+    description: 'Things you want',
+    colors: {
+      primary: '#FD79A8',
+      secondary: '#FDCCE5',
+      bg: '#FFF0F6',
+      text: '#2D3436',
+    },
+    bgStyle: 'gradient',
+    bgGradient: ['#FFF0F6', '#FFE4EE'],
+    fontStyle: 'handwritten',
+    stickerType: 'floating',
+    stickerEmoji: '💫',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['wishlist', 'want', 'dream', 'desire', 'hope'],
+    artStyle: 'dreamy anime character gazing at stars, soft pink sparkles, hopeful',
+  },
+
+  'packing': {
+    id: 'packing',
+    name: 'Packing',
+    category: 'checklists',
+    icon: '🧳✈️',
+    noteIcon: 'Suitcase',
+    mood: 'energetic',
+    description: 'Travel packing lists',
+    colors: {
+      primary: '#0984E3',
+      secondary: '#74B9FF',
+      bg: '#E8F4FD',
+      text: '#2D3436',
+    },
+    bgStyle: 'pattern',
+    bgPattern: 'lines-horizontal',
+    fontStyle: 'sans-serif',
+    stickerType: 'corner',
+    stickerEmoji: '✈️',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['packing', 'travel', 'trip', 'suitcase', 'vacation'],
+    artStyle: 'excited anime character with suitcase, adventure awaits, blue sky backdrop',
+  },
+
+  'bucket-list': {
+    id: 'bucket-list',
+    name: 'Bucket List',
+    category: 'checklists',
+    icon: '🌟🗺️',
+    noteIcon: 'MapPin',
+    mood: 'dreamy',
+    description: 'Life goals & experiences',
+    colors: {
+      primary: '#F8B500',
+      secondary: '#FFEAA7',
+      bg: '#FFFEF0',
+      text: '#2D3436',
+    },
+    bgStyle: 'illustration',
+    bgIllustration: 'world-map',
+    fontStyle: 'display',
+    stickerType: 'floating',
+    stickerEmoji: '🌍',
+    stickerPosition: 'bottom-right',
+    aiPromptHints: ['bucket-list', 'dreams', 'adventures', 'experiences', 'life'],
+    artStyle: 'adventurous anime character with map, starry eyes, golden glow',
+  },
+
+  'errands': {
+    id: 'errands',
+    name: 'Errands',
+    category: 'checklists',
+    icon: '🏃📍',
+    noteIcon: 'MapTrifold',
+    mood: 'energetic',
+    description: 'Tasks to do outside',
+    colors: {
+      primary: '#00B894',
+      secondary: '#55EFC4',
+      bg: '#E8FDF5',
+      text: '#2D3436',
+    },
+    bgStyle: 'solid',
+    fontStyle: 'sans-serif',
+    stickerType: 'corner',
+    stickerEmoji: '🏃',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['errands', 'tasks', 'outside', 'run', 'quick'],
+    artStyle: 'active anime character running with checklist, city background, green energy',
+  },
+
+  // ==========================================
+  // MEDIA (5 presets)
+  // ==========================================
+
+  'reading': {
     id: 'reading',
     name: 'Reading',
-    category: 'reading',
+    category: 'media',
     icon: '📚✨',
     noteIcon: 'BookOpen',
     mood: 'calm',
-    description: 'Manga & book notes',
+    description: 'Books & manga notes',
     colors: {
       primary: '#6C5CE7',
       secondary: '#A29BFE',
@@ -255,18 +543,17 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '📚',
     stickerPosition: 'top-right',
     aiPromptHints: ['reading', 'books', 'manga', 'literature', 'cozy'],
-    artStyle:
-      'cozy anime character reading a book, soft lighting, peaceful mood',
+    artStyle: 'cozy anime character reading a book, soft lighting, peaceful mood',
   },
 
-  watchlist: {
+  'watchlist': {
     id: 'watchlist',
     name: 'Watchlist',
-    category: 'reading',
+    category: 'media',
     icon: '📺🍿',
     noteIcon: 'Television',
     mood: 'playful',
-    description: 'Anime to watch',
+    description: 'Shows & anime to watch',
     colors: {
       primary: '#0984E3',
       secondary: '#74B9FF',
@@ -280,18 +567,40 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🍿',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['anime', 'watchlist', 'entertainment', 'excited'],
-    artStyle:
-      'excited anime character with popcorn watching screen, glowing eyes',
+    artStyle: 'excited anime character with popcorn watching screen, glowing eyes',
   },
 
-  review: {
+  'bookmarks': {
+    id: 'bookmarks',
+    name: 'Bookmarks',
+    category: 'media',
+    icon: '🔖🔗',
+    noteIcon: 'BookmarkSimple',
+    mood: 'calm',
+    description: 'Saved links & references',
+    colors: {
+      primary: '#9B59B6',
+      secondary: '#D7BDE2',
+      bg: '#F5EEF8',
+      text: '#2D3436',
+    },
+    bgStyle: 'solid',
+    fontStyle: 'sans-serif',
+    stickerType: 'corner',
+    stickerEmoji: '🔖',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['bookmarks', 'saved', 'links', 'reference', 'collection'],
+    artStyle: 'organized anime character with bookmarks floating around, purple theme',
+  },
+
+  'review': {
     id: 'review',
     name: 'Review',
-    category: 'reading',
+    category: 'media',
     icon: '⭐💭',
     noteIcon: 'ChatCircleText',
     mood: 'serious',
-    description: 'Series reviews & ratings',
+    description: 'Reviews & ratings',
     colors: {
       primary: '#FDCB6E',
       secondary: '#F39C12',
@@ -304,18 +613,17 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🏆',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['review', 'rating', 'critique', 'thoughtful'],
-    artStyle:
-      'anime character as critic with notepad, contemplative expression',
+    artStyle: 'anime character as critic with notepad, contemplative expression',
   },
 
-  recommendation: {
+  'recommendation': {
     id: 'recommendation',
     name: 'Recommendation',
-    category: 'reading',
+    category: 'media',
     icon: '💝✨',
     noteIcon: 'HeartStraight',
     mood: 'playful',
-    description: 'Series to share',
+    description: 'Things to share',
     colors: {
       primary: '#FD79A8',
       secondary: '#FDCCE5',
@@ -329,22 +637,21 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '💌',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['recommendation', 'sharing', 'love', 'enthusiasm'],
-    artStyle:
-      'cheerful anime character holding a heart, sharing excitement, shoujo style',
+    artStyle: 'cheerful anime character holding a heart, sharing excitement, shoujo style',
   },
 
   // ==========================================
-  // CREATIVE (4 presets)
+  // CREATIVE (5 presets)
   // ==========================================
 
-  ideas: {
+  'ideas': {
     id: 'ideas',
     name: 'Ideas',
     category: 'creative',
     icon: '💡✨',
     noteIcon: 'Lightbulb',
     mood: 'energetic',
-    description: 'Story concepts & inspiration',
+    description: 'Concepts & inspiration',
     colors: {
       primary: '#FFEAA7',
       secondary: '#FDCB6E',
@@ -358,117 +665,13 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '✨',
     stickerPosition: 'top-right',
     aiPromptHints: ['ideas', 'creativity', 'inspiration', 'lightbulb', 'spark'],
-    artStyle:
-      'imaginative anime character with lightbulb above head, sparkling eyes',
+    artStyle: 'imaginative anime character with lightbulb above head, sparkling eyes',
   },
 
-  theory: {
-    id: 'theory',
-    name: 'Theory',
-    category: 'creative',
-    icon: '🔮🌀',
-    noteIcon: 'Brain',
-    mood: 'dreamy',
-    description: 'Fan theories & predictions',
-    colors: {
-      primary: '#9B59B6',
-      secondary: '#8E44AD',
-      bg: '#F5EEFF',
-      text: '#2D3436',
-    },
-    bgStyle: 'gradient',
-    bgGradient: ['#F5EEFF', '#E8DAFF'],
-    fontStyle: 'mono',
-    stickerType: 'corner',
-    stickerEmoji: '🔍',
-    stickerPosition: 'top-right',
-    aiPromptHints: ['theory', 'mystery', 'detective', 'thinking', 'analysis'],
-    artStyle:
-      'mysterious anime character with magnifying glass, detective vibe, purple aura',
-  },
-
-  character: {
-    id: 'character',
-    name: 'Character',
-    category: 'creative',
-    icon: '👤🎭',
-    noteIcon: 'UserCircle',
-    mood: 'serious',
-    description: 'Character analysis',
-    colors: {
-      primary: '#00CEC9',
-      secondary: '#81ECEC',
-      bg: '#E8FFFE',
-      text: '#2D3436',
-    },
-    bgStyle: 'solid',
-    fontStyle: 'sans-serif',
-    stickerType: 'stamp',
-    stickerEmoji: '🎭',
-    stickerPosition: 'bottom-right',
-    aiPromptHints: ['character', 'analysis', 'personality', 'depth'],
-    artStyle:
-      'anime character with theatrical masks, dual personality visual, expressive',
-  },
-
-  favorites: {
-    id: 'favorites',
-    name: 'Favorites',
-    category: 'creative',
-    icon: '❤️‍🔥',
-    noteIcon: 'Heart',
-    mood: 'playful',
-    description: 'Favorite moments',
-    colors: {
-      primary: '#E84393',
-      secondary: '#FD79A8',
-      bg: '#FFEBF5',
-      text: '#2D3436',
-    },
-    bgStyle: 'pattern',
-    bgPattern: 'dots-large',
-    fontStyle: 'display',
-    stickerType: 'floating',
-    stickerEmoji: '💖',
-    stickerPosition: 'bottom-right',
-    aiPromptHints: ['favorites', 'love', 'best', 'treasured', 'collection'],
-    artStyle:
-      'happy anime character hugging a heart pillow, surrounded by sparkles',
-  },
-
-  // ==========================================
-  // CONTENT (4 presets)
-  // ==========================================
-
-  blog: {
-    id: 'blog',
-    name: 'Blog',
-    category: 'content',
-    icon: '✍️✨',
-    noteIcon: 'PencilLine',
-    mood: 'calm',
-    description: 'Content for posting',
-    colors: {
-      primary: '#2D3436',
-      secondary: '#636E72',
-      bg: '#FDF8F3',
-      text: '#2D3436',
-    },
-    bgStyle: 'texture',
-    bgPattern: 'paper-rough',
-    fontStyle: 'serif',
-    stickerType: 'corner',
-    stickerEmoji: '📝',
-    stickerPosition: 'top-right',
-    aiPromptHints: ['blog', 'writing', 'content', 'creative', 'author'],
-    artStyle:
-      'thoughtful anime character typing on laptop, coffee nearby, cozy workspace',
-  },
-
-  draft: {
+  'draft': {
     id: 'draft',
     name: 'Draft',
-    category: 'content',
+    category: 'creative',
     icon: '📝💭',
     noteIcon: 'NotePencil',
     mood: 'calm',
@@ -486,40 +689,62 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🚧',
     stickerPosition: 'top-right',
     aiPromptHints: ['draft', 'wip', 'sketching', 'brainstorming'],
-    artStyle:
-      'anime character surrounded by scattered papers, pencil in hand, focused',
+    artStyle: 'anime character surrounded by scattered papers, pencil in hand, focused',
   },
 
-  quotes: {
-    id: 'quotes',
-    name: 'Quotes',
-    category: 'content',
-    icon: '💬✨',
-    noteIcon: 'Quotes',
-    mood: 'dreamy',
-    description: 'Memorable lines',
+  'brainstorm': {
+    id: 'brainstorm',
+    name: 'Brainstorm',
+    category: 'creative',
+    icon: '🧠⚡',
+    noteIcon: 'Brain',
+    mood: 'energetic',
+    description: 'Mind maps & free thinking',
     colors: {
-      primary: '#DFE6E9',
-      secondary: '#B2BEC3',
-      bg: '#FAFBFC',
+      primary: '#9B59B6',
+      secondary: '#8E44AD',
+      bg: '#F5EEFF',
       text: '#2D3436',
     },
-    bgStyle: 'illustration',
-    bgIllustration: 'quote-marks',
-    fontStyle: 'serif',
-    stickerType: 'border',
-    stickerEmoji: '✨',
-    stickerPosition: 'bottom-right',
-    aiPromptHints: ['quotes', 'words', 'meaningful', 'profound', 'elegant'],
-    artStyle:
-      'elegant anime character in contemplative pose, surrounded by floating text',
+    bgStyle: 'gradient',
+    bgGradient: ['#F5EEFF', '#E8DAFF'],
+    fontStyle: 'sans-serif',
+    stickerType: 'floating',
+    stickerEmoji: '⚡',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['brainstorm', 'thinking', 'ideas', 'creative', 'mind'],
+    artStyle: 'anime character with thought bubbles swirling around, electric purple energy',
   },
 
-  research: {
+  'inspiration': {
+    id: 'inspiration',
+    name: 'Inspiration',
+    category: 'creative',
+    icon: '✨🌈',
+    noteIcon: 'Sparkle',
+    mood: 'dreamy',
+    description: 'Mood boards & references',
+    colors: {
+      primary: '#F8B500',
+      secondary: '#FFEAA7',
+      bg: '#FFFEF0',
+      text: '#2D3436',
+    },
+    bgStyle: 'gradient',
+    bgGradient: ['#FFFEF0', '#FFF9D6', '#FFEAA7'],
+    fontStyle: 'display',
+    stickerType: 'floating',
+    stickerEmoji: '🌟',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['inspiration', 'motivation', 'spark', 'creativity', 'glow'],
+    artStyle: 'inspired anime character reaching toward a star, glowing aura, hopeful',
+  },
+
+  'research': {
     id: 'research',
     name: 'Research',
-    category: 'content',
-    icon: '🔬🧪',
+    category: 'creative',
+    icon: '🔬🔍',
     noteIcon: 'MagnifyingGlass',
     mood: 'serious',
     description: 'Deep dives & analysis',
@@ -535,15 +760,14 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🔬',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['research', 'analysis', 'data', 'scientific', 'detailed'],
-    artStyle:
-      'focused anime character with glasses, surrounded by charts and data',
+    artStyle: 'focused anime character with glasses, surrounded by charts and data',
   },
 
   // ==========================================
-  // PERSONAL (4 presets)
+  // PERSONAL (5 presets)
   // ==========================================
 
-  journal: {
+  'journal': {
     id: 'journal',
     name: 'Journal',
     category: 'personal',
@@ -564,11 +788,10 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🔒',
     stickerPosition: 'top-right',
     aiPromptHints: ['journal', 'diary', 'personal', 'reflective', 'intimate'],
-    artStyle:
-      'serene anime character writing in diary, soft golden lighting, peaceful',
+    artStyle: 'serene anime character writing in diary, soft golden lighting, peaceful',
   },
 
-  memory: {
+  'memory': {
     id: 'memory',
     name: 'Memory',
     category: 'personal',
@@ -589,58 +812,107 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     stickerEmoji: '🌸',
     stickerPosition: 'bottom-right',
     aiPromptHints: ['memory', 'nostalgia', 'past', 'cherished', 'wistful'],
-    artStyle:
-      'wistful anime character looking at polaroid photos, cherry blossoms falling',
+    artStyle: 'wistful anime character looking at polaroid photos, cherry blossoms falling',
   },
 
-  inspiration: {
-    id: 'inspiration',
-    name: 'Inspiration',
+  'reflection': {
+    id: 'reflection',
+    name: 'Reflection',
     category: 'personal',
-    icon: '✨🌈',
-    noteIcon: 'Sparkle',
-    mood: 'energetic',
-    description: 'Mood boards & references',
+    icon: '🪞💭',
+    noteIcon: 'SunHorizon',
+    mood: 'calm',
+    description: 'Self-reflection & thoughts',
     colors: {
-      primary: '#F8B500',
-      secondary: '#FFEAA7',
-      bg: '#FFFEF0',
+      primary: '#81ECEC',
+      secondary: '#00CEC9',
+      bg: '#E8FFFE',
       text: '#2D3436',
     },
     bgStyle: 'gradient',
-    bgGradient: ['#FFFEF0', '#FFF9D6', '#FFEAA7'],
-    fontStyle: 'display',
-    stickerType: 'floating',
-    stickerEmoji: '🌟',
-    stickerPosition: 'top-right',
-    aiPromptHints: ['inspiration', 'motivation', 'spark', 'creativity', 'glow'],
-    artStyle:
-      'inspired anime character reaching toward a star, glowing aura, hopeful',
+    bgGradient: ['#E8FFFE', '#D4FFFE'],
+    fontStyle: 'serif',
+    stickerType: 'none',
+    stickerEmoji: '🪞',
+    stickerPosition: 'bottom-right',
+    aiPromptHints: ['reflection', 'thinking', 'introspection', 'peaceful', 'mindful'],
+    artStyle: 'contemplative anime character by water, serene reflection, soft teal tones',
   },
 
-  art: {
-    id: 'art',
-    name: 'Art',
+  'gratitude': {
+    id: 'gratitude',
+    name: 'Gratitude',
     category: 'personal',
-    icon: '🎨🖌️',
-    noteIcon: 'Palette',
-    mood: 'playful',
-    description: 'Visual references',
+    icon: '🙏💖',
+    noteIcon: 'Heart',
+    mood: 'calm',
+    description: 'Things to be thankful for',
     colors: {
-      primary: '#E17055',
+      primary: '#FF7675',
       secondary: '#FAB1A0',
-      bg: '#FFF5F2',
+      bg: '#FFF5F5',
       text: '#2D3436',
     },
     bgStyle: 'pattern',
-    bgPattern: 'watercolor-wash',
-    fontStyle: 'display',
+    bgPattern: 'dots-small',
+    fontStyle: 'handwritten',
+    stickerType: 'floating',
+    stickerEmoji: '💖',
+    stickerPosition: 'top-right',
+    aiPromptHints: ['gratitude', 'thankful', 'appreciation', 'blessing', 'warm'],
+    artStyle: 'warm anime character with hands together, soft pink glow, grateful expression',
+  },
+
+  'quotes': {
+    id: 'quotes',
+    name: 'Quotes',
+    category: 'personal',
+    icon: '💬✨',
+    noteIcon: 'Quotes',
+    mood: 'dreamy',
+    description: 'Memorable lines',
+    colors: {
+      primary: '#DFE6E9',
+      secondary: '#B2BEC3',
+      bg: '#FAFBFC',
+      text: '#2D3436',
+    },
+    bgStyle: 'illustration',
+    bgIllustration: 'quote-marks',
+    fontStyle: 'serif',
     stickerType: 'border',
-    stickerEmoji: '🖌️',
+    stickerEmoji: '✨',
     stickerPosition: 'bottom-right',
-    aiPromptHints: ['art', 'creative', 'colorful', 'expressive', 'artistic'],
-    artStyle:
-      'artistic anime character holding paintbrush, colorful paint splatters around',
+    aiPromptHints: ['quotes', 'words', 'meaningful', 'profound', 'elegant'],
+    artStyle: 'elegant anime character in contemplative pose, surrounded by floating text',
+  },
+
+  // ==========================================
+  // SYSTEM (1 preset)
+  // ==========================================
+
+  'uncategorized': {
+    id: 'uncategorized',
+    name: 'Uncategorized',
+    category: 'system',
+    icon: '📥',
+    noteIcon: 'Tray',
+    mood: 'calm',
+    description: 'Notes awaiting organization',
+    isSystemLabel: true,
+    colors: {
+      primary: '#636E72',
+      secondary: '#B2BEC3',
+      bg: '#F5F6F7',
+      text: '#636E72',
+    },
+    bgStyle: 'solid',
+    fontStyle: 'sans-serif',
+    stickerType: 'none',
+    stickerEmoji: '📥',
+    stickerPosition: 'bottom-right',
+    aiPromptHints: ['inbox', 'unsorted', 'new', 'organize'],
+    artStyle: 'minimal anime character with inbox tray, neutral expression, gray tones',
   },
 };
 
@@ -649,18 +921,26 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
 // ============================================
 
 /**
- * Get all presets as an array
+ * Get all presets as an array (excluding system labels by default)
  */
-export const LABEL_PRESET_LIST: LabelPreset[] = Object.values(LABEL_PRESETS);
+export const LABEL_PRESET_LIST: LabelPreset[] = Object.values(LABEL_PRESETS).filter(
+  (p) => !p.isSystemLabel
+);
 
 /**
- * Get presets grouped by category
+ * Get all presets including system labels
  */
-export const PRESETS_BY_CATEGORY: Record<LabelCategory, LabelPreset[]> = {
+export const ALL_LABEL_PRESETS: LabelPreset[] = Object.values(LABEL_PRESETS);
+
+/**
+ * Get presets grouped by category (excluding system)
+ */
+export const PRESETS_BY_CATEGORY: Record<Exclude<LabelCategory, 'system'>, LabelPreset[]> = {
   productivity: LABEL_PRESET_LIST.filter((p) => p.category === 'productivity'),
-  reading: LABEL_PRESET_LIST.filter((p) => p.category === 'reading'),
+  planning: LABEL_PRESET_LIST.filter((p) => p.category === 'planning'),
+  checklists: LABEL_PRESET_LIST.filter((p) => p.category === 'checklists'),
+  media: LABEL_PRESET_LIST.filter((p) => p.category === 'media'),
   creative: LABEL_PRESET_LIST.filter((p) => p.category === 'creative'),
-  content: LABEL_PRESET_LIST.filter((p) => p.category === 'content'),
   personal: LABEL_PRESET_LIST.filter((p) => p.category === 'personal'),
 };
 
@@ -688,19 +968,28 @@ export function hasPresetForLabel(labelName: string): boolean {
 }
 
 /**
- * Get all preset IDs
+ * Check if a label is a system label
  */
-export const ALL_PRESET_IDS: LabelPresetId[] = Object.keys(
-  LABEL_PRESETS
+export function isSystemLabel(labelName: string): boolean {
+  const preset = getPresetForLabel(labelName);
+  return preset?.isSystemLabel === true;
+}
+
+/**
+ * Get all preset IDs (excluding system labels)
+ */
+export const ALL_PRESET_IDS: LabelPresetId[] = Object.keys(LABEL_PRESETS).filter(
+  (id) => !LABEL_PRESETS[id as LabelPresetId].isSystemLabel
 ) as LabelPresetId[];
 
 /**
- * Get all category names in display order
+ * Get all category names in display order (excluding system)
  */
-export const CATEGORY_ORDER: LabelCategory[] = [
+export const CATEGORY_ORDER: Exclude<LabelCategory, 'system'>[] = [
   'productivity',
-  'reading',
+  'planning',
+  'checklists',
+  'media',
   'creative',
-  'content',
   'personal',
 ];

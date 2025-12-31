@@ -5,8 +5,8 @@
  * Each board shows actual note content/design previews.
  */
 
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Hash } from 'phosphor-react-native';
@@ -31,13 +31,26 @@ export default function BoardsScreen() {
     return computeBoardsFromNotes(notes, boardCustomizations);
   }, [notes, boardCustomizations]);
 
-  const handleBoardPress = (hashtag: string) => {
+  const handleBoardPress = useCallback((hashtag: string) => {
     router.push(`/board/${encodeURIComponent(hashtag)}`);
-  };
+  }, [router]);
 
-  const handleNotePress = (noteId: string) => {
+  const handleNotePress = useCallback((noteId: string) => {
     router.push(`/note/${noteId}`);
-  };
+  }, [router]);
+
+  // Memoized keyExtractor for FlatList
+  const keyExtractor = useCallback((item: BoardData) => item.hashtag, []);
+
+  // Memoized renderItem for FlatList
+  const renderBoard = useCallback(({ item }: { item: BoardData }) => (
+    <BoardCard
+      board={item}
+      isDark={isDark}
+      onPress={() => handleBoardPress(item.hashtag)}
+      onNotePress={handleNotePress}
+    />
+  ), [isDark, handleBoardPress, handleNotePress]);
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
@@ -53,26 +66,6 @@ export default function BoardsScreen() {
     </View>
   );
 
-  // If no boards, show empty state
-  if (allBoards.length === 0) {
-    return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}
-        edges={['top']}
-      >
-        <View style={[styles.header, { backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Boards
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Organize notes with hashtags
-          </Text>
-        </View>
-        {renderEmpty()}
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}
@@ -84,25 +77,30 @@ export default function BoardsScreen() {
           Boards
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {allBoards.length} {allBoards.length === 1 ? 'board' : 'boards'}
+          {allBoards.length > 0
+            ? `${allBoards.length} ${allBoards.length === 1 ? 'board' : 'boards'}`
+            : 'Organize notes with hashtags'}
         </Text>
       </View>
 
-      {/* Single Column Board List */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      {/* Single Column Board List - Optimized with FlatList */}
+      <FlatList
+        data={allBoards}
+        keyExtractor={keyExtractor}
+        renderItem={renderBoard}
+        contentContainerStyle={[
+          styles.scrollContent,
+          allBoards.length === 0 && styles.emptyListContent,
+        ]}
         showsVerticalScrollIndicator={false}
-      >
-        {allBoards.map((board) => (
-          <BoardCard
-            key={board.hashtag}
-            board={board}
-            isDark={isDark}
-            onPress={() => handleBoardPress(board.hashtag)}
-            onNotePress={handleNotePress}
-          />
-        ))}
-      </ScrollView>
+        ListEmptyComponent={renderEmpty}
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={50}
+        windowSize={5}
+        initialNumToRender={4}
+      />
     </SafeAreaView>
   );
 }
@@ -126,6 +124,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     gap: 16,
+  },
+  emptyListContent: {
+    flex: 1,
   },
   emptyContainer: {
     flex: 1,
