@@ -76,17 +76,18 @@ export interface BoardPreset {
 
 export const BOARD_PRESETS: BoardPreset[] = [
   // ============================================
-  // PRODUCTIVITY (4)
+  // PRODUCTIVITY (4) - Muted/Professional
+  // Slate and gray tones - serious, focused, gets-things-done vibe
   // ============================================
   {
     id: 'todo',
     name: 'Todo',
     category: 'Productivity',
     colors: {
-      bg: '#2D3436',
-      bgSecondary: '#636E72',
-      accent: '#FF6B6B',
-      badge: '#FF6B6B',
+      bg: '#475569', // slate-600
+      bgSecondary: '#64748B', // slate-500
+      accent: '#F87171', // red-400
+      badge: '#F87171',
       badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#FFF5F5',
@@ -94,7 +95,7 @@ export const BOARD_PRESETS: BoardPreset[] = [
     bgStyle: 'checklist',
     decorations: ['✓', '○'],
     decorationStyle: 'scattered-checks',
-    description: 'Dark slate with checklist pattern',
+    description: 'Professional slate with checklist pattern',
     boardIcon: 'CheckCircle',
   },
   {
@@ -102,18 +103,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Important',
     category: 'Productivity',
     colors: {
-      bg: '#E17055',
-      bgSecondary: '#D63031',
-      accent: '#FDCB6E',
-      badge: '#FDCB6E',
-      badgeText: '#2D3436',
+      bg: '#7C2D12', // orange-900
+      bgSecondary: '#9A3412', // orange-800
+      accent: '#FDBA74', // orange-300
+      badge: '#FDBA74',
+      badgeText: '#7C2D12',
       labelText: '#FFFFFF',
       notePreview: '#FEF3E2',
     },
     bgStyle: 'gradient-warm',
     decorations: ['🔥', '⚡'],
     decorationStyle: 'floating-emoji',
-    description: 'Warm orange gradient with fire accents',
+    description: 'Deep burnt orange with urgency accents',
     boardIcon: 'StarFour',
   },
   {
@@ -121,18 +122,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Archive',
     category: 'Productivity',
     colors: {
-      bg: '#DFE6E9',
-      bgSecondary: '#B2BEC3',
-      accent: '#636E72',
-      badge: '#636E72',
+      bg: '#64748B', // slate-500
+      bgSecondary: '#94A3B8', // slate-400
+      accent: '#CBD5E1', // slate-300
+      badge: '#94A3B8',
       badgeText: '#FFFFFF',
-      labelText: '#2D3436',
+      labelText: '#F1F5F9',
       notePreview: '#FFFFFF',
     },
     bgStyle: 'paper-stack',
     decorations: [],
     decorationStyle: 'none',
-    description: 'Clean gray with paper texture',
+    description: 'Muted slate with paper texture',
     boardIcon: 'Archive',
   },
   {
@@ -140,41 +141,42 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Goals',
     category: 'Productivity',
     colors: {
-      bg: '#00B894',
-      bgSecondary: '#00CEC9',
-      accent: '#55EFC4',
-      badge: '#FFFFFF',
-      badgeText: '#00B894',
+      bg: '#065F46', // emerald-800
+      bgSecondary: '#047857', // emerald-700
+      accent: '#6EE7B7', // emerald-300
+      badge: '#34D399', // emerald-400
+      badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#E8FDF5',
     },
     bgStyle: 'gradient-mint',
     decorations: ['⛰️', '🎯', '✨'],
     decorationStyle: 'corner-cluster',
-    description: 'Fresh mint gradient with achievement icons',
+    description: 'Deep emerald with achievement icons',
     boardIcon: 'Crosshair',
   },
 
   // ============================================
-  // READING & WATCHING (4)
+  // READING & WATCHING (4) - Rich/Immersive
+  // Deep purples and blues - cozy, literary, cinematic feel
   // ============================================
   {
     id: 'reading',
     name: 'Reading',
     category: 'Reading',
     colors: {
-      bg: '#6C5CE7',
-      bgSecondary: '#A29BFE',
-      accent: '#DDA0DD',
-      badge: '#FFFFFF',
-      badgeText: '#6C5CE7',
+      bg: '#5B21B6', // violet-800
+      bgSecondary: '#6D28D9', // violet-700
+      accent: '#C4B5FD', // violet-300
+      badge: '#A78BFA', // violet-400
+      badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#F3F0FF',
     },
     bgStyle: 'bookshelf',
     decorations: ['📖', '📚'],
     decorationStyle: 'bottom-row',
-    description: 'Purple with book spine pattern',
+    description: 'Deep violet with book spine pattern',
     boardIcon: 'Books',
   },
   {
@@ -182,10 +184,10 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Watchlist',
     category: 'Reading',
     colors: {
-      bg: '#2D3436',
-      bgSecondary: '#0984E3',
-      accent: '#74B9FF',
-      badge: '#74B9FF',
+      bg: '#1E3A8A', // blue-900
+      bgSecondary: '#1E40AF', // blue-800
+      accent: '#93C5FD', // blue-300
+      badge: '#60A5FA', // blue-400
       badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#E8F4FD',
@@ -193,7 +195,7 @@ export const BOARD_PRESETS: BoardPreset[] = [
     bgStyle: 'cinema',
     decorations: ['🎬', '🍿', '📺'],
     decorationStyle: 'floating-emoji',
-    description: 'Dark theater with screen glow',
+    description: 'Deep navy theater with screen glow',
     boardIcon: 'FilmSlate',
   },
   {
@@ -201,18 +203,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Review',
     category: 'Reading',
     colors: {
-      bg: '#FDCB6E',
-      bgSecondary: '#F39C12',
-      accent: '#E17055',
-      badge: '#2D3436',
-      badgeText: '#FDCB6E',
-      labelText: '#2D3436',
+      bg: '#854D0E', // yellow-800
+      bgSecondary: '#A16207', // yellow-700
+      accent: '#FDE047', // yellow-300
+      badge: '#FACC15', // yellow-400
+      badgeText: '#FFFFFF',
+      labelText: '#FFFFFF',
       notePreview: '#FFFBF0',
     },
     bgStyle: 'stars-rating',
     decorations: ['⭐', '⭐', '⭐'],
     decorationStyle: 'top-row',
-    description: 'Golden with star rating decoration',
+    description: 'Rich amber with star rating decoration',
     boardIcon: 'ChatTeardrop',
   },
   {
@@ -220,41 +222,42 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Recommendation',
     category: 'Reading',
     colors: {
-      bg: '#FD79A8',
-      bgSecondary: '#E84393',
-      accent: '#FDCCE5',
-      badge: '#FFFFFF',
-      badgeText: '#FD79A8',
+      bg: '#9D174D', // pink-800
+      bgSecondary: '#BE185D', // pink-700
+      accent: '#F9A8D4', // pink-300
+      badge: '#F472B6', // pink-400
+      badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#FFF0F6',
     },
     bgStyle: 'hearts',
     decorations: ['💝', '💌', '✨'],
     decorationStyle: 'scattered',
-    description: 'Pink with floating hearts',
+    description: 'Deep rose with floating hearts',
     boardIcon: 'HeartHalf',
   },
 
   // ============================================
-  // CREATIVE & FANDOM (4)
+  // CREATIVE & FANDOM (4) - Vibrant/Dynamic
+  // Bold, saturated colors - energetic, expressive, artistic
   // ============================================
   {
     id: 'ideas',
     name: 'Ideas',
     category: 'Creative',
     colors: {
-      bg: '#2D3436',
-      bgSecondary: '#FFEAA7',
-      accent: '#FDCB6E',
-      badge: '#FFEAA7',
-      badgeText: '#2D3436',
-      labelText: '#FFEAA7',
+      bg: '#0891B2', // cyan-600
+      bgSecondary: '#06B6D4', // cyan-500
+      accent: '#FBBF24', // amber-400
+      badge: '#FCD34D', // amber-300
+      badgeText: '#0891B2',
+      labelText: '#FFFFFF',
       notePreview: '#FFFEF5',
     },
     bgStyle: 'lightbulb-glow',
     decorations: ['💡', '✨', '⚡'],
     decorationStyle: 'radial-burst',
-    description: 'Dark with glowing lightbulb center',
+    description: 'Vibrant cyan with golden sparks',
     boardIcon: 'LightbulbFilament',
   },
   {
@@ -262,18 +265,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Theory',
     category: 'Creative',
     colors: {
-      bg: '#2D3436',
-      bgSecondary: '#9B59B6',
-      accent: '#8E44AD',
-      badge: '#9B59B6',
+      bg: '#7C3AED', // violet-600
+      bgSecondary: '#8B5CF6', // violet-500
+      accent: '#FCA5A5', // red-300
+      badge: '#F87171', // red-400
       badgeText: '#FFFFFF',
-      labelText: '#DDA0DD',
+      labelText: '#FFFFFF',
       notePreview: '#F5EEFF',
     },
     bgStyle: 'constellation',
     decorations: ['🔮', '🔍', '❓'],
     decorationStyle: 'mystery-scatter',
-    description: 'Dark with constellation lines',
+    description: 'Electric violet with mystery accents',
     boardIcon: 'Atom',
   },
   {
@@ -281,18 +284,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Character',
     category: 'Creative',
     colors: {
-      bg: '#00CEC9',
-      bgSecondary: '#81ECEC',
-      accent: '#00B894',
-      badge: '#FFFFFF',
-      badgeText: '#00CEC9',
+      bg: '#0D9488', // teal-600
+      bgSecondary: '#14B8A6', // teal-500
+      accent: '#5EEAD4', // teal-300
+      badge: '#2DD4BF', // teal-400
+      badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#E8FFFE',
     },
     bgStyle: 'profile-cards',
     decorations: ['🎭', '👤'],
     decorationStyle: 'corner-accent',
-    description: 'Teal with silhouette motif',
+    description: 'Rich teal with character silhouettes',
     boardIcon: 'UsersFour',
   },
   {
@@ -300,41 +303,42 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Favorites',
     category: 'Creative',
     colors: {
-      bg: '#E84393',
-      bgSecondary: '#FD79A8',
-      accent: '#FDCCE5',
-      badge: '#FFFFFF',
-      badgeText: '#E84393',
+      bg: '#DB2777', // pink-600
+      bgSecondary: '#EC4899', // pink-500
+      accent: '#FDE68A', // amber-200
+      badge: '#FBBF24', // amber-400
+      badgeText: '#DB2777',
       labelText: '#FFFFFF',
       notePreview: '#FFEBF5',
     },
     bgStyle: 'sparkle-burst',
     decorations: ['💖', '⭐', '✨'],
     decorationStyle: 'celebration',
-    description: 'Magenta with sparkle explosion',
+    description: 'Hot pink with golden sparkles',
     boardIcon: 'HeartBreak',
   },
 
   // ============================================
-  // CONTENT & WRITING (4)
+  // CONTENT & WRITING (4) - Warm/Writerly
+  // Earth tones - craft paper, coffee shop, writing desk
   // ============================================
   {
     id: 'blog',
     name: 'Blog',
     category: 'Content',
     colors: {
-      bg: '#FDF8F3',
-      bgSecondary: '#E8D5C4',
-      accent: '#2D3436',
-      badge: '#2D3436',
-      badgeText: '#FDF8F3',
-      labelText: '#2D3436',
+      bg: '#78716C', // stone-500
+      bgSecondary: '#A8A29E', // stone-400
+      accent: '#FDE68A', // amber-200
+      badge: '#D6D3D1', // stone-300
+      badgeText: '#44403C',
+      labelText: '#FFFFFF',
       notePreview: '#FFFFFF',
     },
     bgStyle: 'kraft-paper',
     decorations: ['✍️', '📝'],
     decorationStyle: 'corner-doodle',
-    description: 'Kraft paper with pen doodles',
+    description: 'Warm stone with pen doodles',
     boardIcon: 'Feather',
   },
   {
@@ -342,18 +346,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Draft',
     category: 'Content',
     colors: {
-      bg: '#F0F8FF',
-      bgSecondary: '#A3DAFF',
-      accent: '#74B9FF',
-      badge: '#74B9FF',
+      bg: '#2563EB', // blue-600
+      bgSecondary: '#3B82F6', // blue-500
+      accent: '#BFDBFE', // blue-200
+      badge: '#93C5FD', // blue-300
       badgeText: '#FFFFFF',
-      labelText: '#636E72',
+      labelText: '#FFFFFF',
       notePreview: '#FFFFFF',
     },
     bgStyle: 'sketch-lines',
     decorations: ['🚧', '📋'],
     decorationStyle: 'wip-banner',
-    description: 'Light blue with sketch grid',
+    description: 'Blueprint blue with sketch grid',
     boardIcon: 'FileText',
   },
   {
@@ -361,18 +365,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Quotes',
     category: 'Content',
     colors: {
-      bg: '#2D3436',
-      bgSecondary: '#636E72',
-      accent: '#DFE6E9',
-      badge: '#DFE6E9',
-      badgeText: '#2D3436',
+      bg: '#374151', // gray-700
+      bgSecondary: '#4B5563', // gray-600
+      accent: '#E5E7EB', // gray-200
+      badge: '#9CA3AF', // gray-400
+      badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#FAFBFC',
     },
     bgStyle: 'quote-marks',
     decorations: ['"', '"'],
     decorationStyle: 'large-quotes',
-    description: 'Dark with elegant quote marks',
+    description: 'Sophisticated gray with elegant quotes',
     boardIcon: 'ChatCenteredDots',
   },
   {
@@ -380,41 +384,42 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Research',
     category: 'Content',
     colors: {
-      bg: '#0984E3',
-      bgSecondary: '#74B9FF',
-      accent: '#FFFFFF',
-      badge: '#FFFFFF',
-      badgeText: '#0984E3',
+      bg: '#0369A1', // sky-700
+      bgSecondary: '#0284C7', // sky-600
+      accent: '#7DD3FC', // sky-300
+      badge: '#38BDF8', // sky-400
+      badgeText: '#FFFFFF',
       labelText: '#FFFFFF',
       notePreview: '#EDF5FC',
     },
     bgStyle: 'data-grid',
     decorations: ['🔬', '📊', '🔎'],
     decorationStyle: 'corner-icons',
-    description: 'Blue with data visualization pattern',
+    description: 'Deep sky blue with data patterns',
     boardIcon: 'Flask',
   },
 
   // ============================================
-  // PERSONAL & REFLECTION (4)
+  // PERSONAL & REFLECTION (4) - Warm/Cozy
+  // Warm amber, terracotta, rose - intimate, nostalgic, heartfelt
   // ============================================
   {
     id: 'journal',
     name: 'Journal',
     category: 'Personal',
     colors: {
-      bg: '#D4A574',
-      bgSecondary: '#C49A6C',
-      accent: '#8B7355',
-      badge: '#5D4E37',
-      badgeText: '#F8E9C7',
-      labelText: '#5D4E37',
+      bg: '#92400E', // amber-800
+      bgSecondary: '#B45309', // amber-700
+      accent: '#FDE68A', // amber-200
+      badge: '#FBBF24', // amber-400
+      badgeText: '#FFFFFF',
+      labelText: '#FFFFFF',
       notePreview: '#FFFDF5',
     },
     bgStyle: 'leather-texture',
     decorations: ['🔒', '📔'],
     decorationStyle: 'diary-lock',
-    description: 'Leather journal texture',
+    description: 'Rich leather journal texture',
     boardIcon: 'BookBookmark',
   },
   {
@@ -422,18 +427,18 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Memory',
     category: 'Personal',
     colors: {
-      bg: '#F9FAFB',
-      bgSecondary: '#DFE6E9',
-      accent: '#B2BEC3',
-      badge: '#636E72',
+      bg: '#6D28D9', // violet-700
+      bgSecondary: '#7C3AED', // violet-600
+      accent: '#DDD6FE', // violet-200
+      badge: '#A78BFA', // violet-400
       badgeText: '#FFFFFF',
-      labelText: '#636E72',
+      labelText: '#FFFFFF',
       notePreview: '#FFFFFF',
     },
     bgStyle: 'polaroid-scatter',
     decorations: ['📷', '🌸', '✨'],
     decorationStyle: 'photo-corners',
-    description: 'Soft gray with polaroid frames',
+    description: 'Dreamy violet with polaroid frames',
     boardIcon: 'ImageSquare',
   },
   {
@@ -441,11 +446,11 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Inspiration',
     category: 'Personal',
     colors: {
-      bg: '#2D3436',
-      bgSecondary: '#4A4A4A',
-      accent: '#F8B500',
-      badge: '#F8B500',
-      badgeText: '#2D3436',
+      bg: '#1F2937', // gray-800
+      bgSecondary: '#374151', // gray-700
+      accent: '#FCD34D', // amber-300
+      badge: '#FBBF24', // amber-400
+      badgeText: '#1F2937',
       labelText: '#FFFFFF',
       notePreview: '#FFFEF0',
     },
@@ -460,21 +465,176 @@ export const BOARD_PRESETS: BoardPreset[] = [
     name: 'Art',
     category: 'Personal',
     colors: {
-      bg: '#FFFFFF',
-      bgSecondary: '#FFF5F2',
-      accent: '#E17055',
-      badge: '#E17055',
+      bg: '#EA580C', // orange-600
+      bgSecondary: '#F97316', // orange-500
+      accent: '#FED7AA', // orange-200
+      badge: '#FB923C', // orange-400
       badgeText: '#FFFFFF',
-      labelText: '#2D3436',
+      labelText: '#FFFFFF',
       notePreview: '#FFF5F2',
     },
     bgStyle: 'paint-splatter',
     decorations: ['🎨', '🖌️', '🖼️'],
     decorationStyle: 'artistic-splash',
-    description: 'White canvas with paint splatters',
+    description: 'Vibrant orange canvas with paint splatters',
     boardIcon: 'PaintBrush',
   },
 ];
+
+// ============================================
+// Auto-Generated Board Themes
+// For hashtags that don't match any preset
+// ============================================
+
+// Keyword categories that map common words to color themes
+const KEYWORD_THEMES: Record<string, string[]> = {
+  warm: ['food', 'recipe', 'cooking', 'baking', 'dinner', 'lunch', 'breakfast', 'meal', 'kitchen', 'chef', 'restaurant', 'cafe', 'coffee', 'tea', 'shopping', 'grocery', 'groceries', 'shop', 'store', 'market'],
+  cool: ['tech', 'code', 'coding', 'programming', 'dev', 'software', 'app', 'web', 'data', 'ai', 'computer', 'digital', 'cyber'],
+  nature: ['nature', 'outdoor', 'outdoors', 'hiking', 'garden', 'gardening', 'plant', 'plants', 'travel', 'adventure', 'camping', 'beach', 'mountain', 'forest', 'ocean', 'wildlife'],
+  creative: ['music', 'design', 'photo', 'photography', 'craft', 'crafts', 'diy', 'draw', 'drawing', 'paint', 'painting', 'sketch', 'illustration', 'anime', 'manga', 'webtoon', 'comic'],
+  health: ['fitness', 'workout', 'workouts', 'gym', 'health', 'healthy', 'yoga', 'running', 'exercise', 'diet', 'nutrition', 'wellness', 'meditation', 'sports', 'sport'],
+  finance: ['money', 'finance', 'financial', 'budget', 'budgeting', 'savings', 'saving', 'invest', 'investing', 'investment', 'crypto', 'stocks', 'trading', 'expense', 'expenses'],
+  social: ['family', 'friends', 'party', 'birthday', 'wedding', 'event', 'events', 'celebration', 'holiday', 'holidays', 'vacation', 'dating', 'relationship', 'love', 'kids', 'baby'],
+  learning: ['study', 'studying', 'learn', 'learning', 'school', 'class', 'course', 'courses', 'education', 'homework', 'exam', 'exams', 'test', 'university', 'college', 'language', 'math', 'science'],
+};
+
+// Curated color palettes for each theme
+const GENERATED_PALETTES: Record<string, BoardPresetColors> = {
+  warm: {
+    bg: '#C2410C', // orange-700
+    bgSecondary: '#EA580C', // orange-600
+    accent: '#FDBA74', // orange-300
+    badge: '#FB923C', // orange-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#FFF7ED',
+  },
+  cool: {
+    bg: '#1D4ED8', // blue-700
+    bgSecondary: '#2563EB', // blue-600
+    accent: '#93C5FD', // blue-300
+    badge: '#60A5FA', // blue-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#EFF6FF',
+  },
+  nature: {
+    bg: '#047857', // emerald-700
+    bgSecondary: '#059669', // emerald-600
+    accent: '#6EE7B7', // emerald-300
+    badge: '#34D399', // emerald-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#ECFDF5',
+  },
+  creative: {
+    bg: '#7C3AED', // violet-600
+    bgSecondary: '#8B5CF6', // violet-500
+    accent: '#C4B5FD', // violet-300
+    badge: '#A78BFA', // violet-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#F5F3FF',
+  },
+  health: {
+    bg: '#15803D', // green-700
+    bgSecondary: '#16A34A', // green-600
+    accent: '#86EFAC', // green-300
+    badge: '#4ADE80', // green-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#F0FDF4',
+  },
+  finance: {
+    bg: '#A16207', // yellow-700
+    bgSecondary: '#CA8A04', // yellow-600
+    accent: '#FDE047', // yellow-300
+    badge: '#FACC15', // yellow-400
+    badgeText: '#422006',
+    labelText: '#FFFFFF',
+    notePreview: '#FEFCE8',
+  },
+  social: {
+    bg: '#BE185D', // pink-700
+    bgSecondary: '#DB2777', // pink-600
+    accent: '#F9A8D4', // pink-300
+    badge: '#F472B6', // pink-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#FDF2F8',
+  },
+  learning: {
+    bg: '#0E7490', // cyan-700
+    bgSecondary: '#0891B2', // cyan-600
+    accent: '#67E8F9', // cyan-300
+    badge: '#22D3EE', // cyan-400
+    badgeText: '#FFFFFF',
+    labelText: '#FFFFFF',
+    notePreview: '#ECFEFF',
+  },
+};
+
+// Icons for each theme (multiple options for variety)
+const THEME_ICONS: Record<string, string[]> = {
+  warm: ['ForkKnife', 'CookingPot', 'Coffee', 'Hamburger', 'BowlFood'],
+  cool: ['Desktop', 'Code', 'Cpu', 'DeviceMobile', 'CloudArrowUp'],
+  nature: ['Tree', 'Leaf', 'Mountains', 'Compass', 'Sun'],
+  creative: ['MusicNotes', 'Palette', 'Camera', 'PencilLine', 'Microphone'],
+  health: ['Heartbeat', 'Barbell', 'PersonSimpleRun', 'Heart', 'Bicycle'],
+  finance: ['CurrencyDollar', 'PiggyBank', 'ChartLineUp', 'Wallet', 'Coins'],
+  social: ['Users', 'Gift', 'Confetti', 'HandHeart', 'ChatCircle'],
+  learning: ['GraduationCap', 'BookOpen', 'Brain', 'Student', 'Notebook'],
+};
+
+// Deterministic string hash function
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+// Generate a board preset for unknown hashtags
+function generateBoardForHashtag(hashtag: string): BoardPreset {
+  const normalized = hashtag.replace(/^#/, '').toLowerCase();
+
+  // Find matching keyword theme
+  let themeName: string | null = null;
+  for (const [theme, keywords] of Object.entries(KEYWORD_THEMES)) {
+    if (keywords.some(kw => normalized.includes(kw))) {
+      themeName = theme;
+      break;
+    }
+  }
+
+  // If no keyword match, use hash to pick theme deterministically
+  if (!themeName) {
+    const themes = Object.keys(GENERATED_PALETTES);
+    themeName = themes[hashString(normalized) % themes.length];
+  }
+
+  const colors = GENERATED_PALETTES[themeName];
+  const displayName = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+
+  // Pick icon deterministically from theme's icon set
+  const icons = THEME_ICONS[themeName];
+  const iconIndex = hashString(normalized + 'icon') % icons.length;
+  const boardIcon = icons[iconIndex];
+
+  return {
+    id: `auto-${normalized}`,
+    name: displayName,
+    category: 'Personal',
+    colors,
+    bgStyle: 'gradient-warm',
+    decorations: [],
+    decorationStyle: 'none',
+    description: `Auto-generated board for #${normalized}`,
+    boardIcon,
+  };
+}
 
 // ============================================
 // Helper Functions
@@ -487,9 +647,16 @@ export const getBoardPresetByName = (name: string): BoardPreset | undefined =>
   BOARD_PRESETS.find((p) => p.name.toLowerCase() === name.toLowerCase());
 
 // Match hashtag to preset (case-insensitive, handles "#" prefix)
-export const getPresetForHashtag = (hashtag: string): BoardPreset | undefined => {
+// Always returns a preset - generates one if no exact match found
+export const getPresetForHashtag = (hashtag: string): BoardPreset => {
   const normalized = hashtag.replace(/^#/, '').toLowerCase();
-  return BOARD_PRESETS.find((p) => p.name.toLowerCase() === normalized);
+
+  // Try exact preset match first
+  const exactMatch = BOARD_PRESETS.find((p) => p.name.toLowerCase() === normalized);
+  if (exactMatch) return exactMatch;
+
+  // Generate deterministic preset for unknown hashtags
+  return generateBoardForHashtag(hashtag);
 };
 
 export const getBoardPresetsByCategory = (category: BoardCategory): BoardPreset[] =>
