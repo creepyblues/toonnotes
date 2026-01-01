@@ -9,10 +9,34 @@ import {
   maskApiKey,
 } from '@/services/secureStorage';
 import { debouncedStorage } from './debouncedStorage';
+import { CoachMarkId } from '@/constants/onboardingConfig';
+
+// ============================================================================
+// Onboarding State Types
+// ============================================================================
+
+interface OnboardingState {
+  /** Whether user has completed the welcome carousel */
+  hasCompletedWelcome: boolean;
+  /** IDs of coach marks that have been shown */
+  seenCoachMarks: string[];
+  /** Version of onboarding config user has seen (for cache invalidation) */
+  onboardingVersion: number;
+  /** Number of notes user has created (for progressive disclosure) */
+  notesCreatedCount: number;
+}
+
+const INITIAL_ONBOARDING: OnboardingState = {
+  hasCompletedWelcome: false,
+  seenCoachMarks: [],
+  onboardingVersion: 0,
+  notesCreatedCount: 0,
+};
 
 interface UserState {
   user: User;
   settings: AppSettings;
+  onboarding: OnboardingState;
   // API key is stored in memory only (loaded from SecureStore)
   apiKeyLoaded: boolean;
   apiKeyMasked: string | null;
@@ -47,6 +71,14 @@ interface UserState {
   saveGeminiApiKey: (key: string) => Promise<boolean>;
   clearGeminiApiKey: () => Promise<boolean>;
   hasApiKey: () => boolean;
+
+  // Onboarding actions
+  completeWelcome: () => void;
+  markCoachMarkSeen: (id: CoachMarkId | string) => void;
+  hasSeenCoachMark: (id: CoachMarkId | string) => boolean;
+  incrementNotesCreated: () => void;
+  resetOnboarding: () => void; // For testing/debugging
+  setOnboardingVersion: (version: number) => void;
 }
 
 const INITIAL_USER: User = {
@@ -66,6 +98,7 @@ export const useUserStore = create<UserState>()(
     (set, get) => ({
       user: INITIAL_USER,
       settings: INITIAL_SETTINGS,
+      onboarding: INITIAL_ONBOARDING,
       apiKeyLoaded: false,
       apiKeyMasked: null,
 
@@ -228,6 +261,55 @@ export const useUserStore = create<UserState>()(
         const { settings } = get();
         return !!settings.geminiApiKey;
       },
+
+      // ========================================================================
+      // Onboarding Actions
+      // ========================================================================
+
+      completeWelcome: () => {
+        set((state) => ({
+          onboarding: { ...state.onboarding, hasCompletedWelcome: true },
+        }));
+      },
+
+      markCoachMarkSeen: (id: CoachMarkId | string) => {
+        set((state) => {
+          // Don't add duplicates
+          if (state.onboarding.seenCoachMarks.includes(id)) {
+            return state;
+          }
+          return {
+            onboarding: {
+              ...state.onboarding,
+              seenCoachMarks: [...state.onboarding.seenCoachMarks, id],
+            },
+          };
+        });
+      },
+
+      hasSeenCoachMark: (id: CoachMarkId | string) => {
+        const { onboarding } = get();
+        return onboarding.seenCoachMarks.includes(id);
+      },
+
+      incrementNotesCreated: () => {
+        set((state) => ({
+          onboarding: {
+            ...state.onboarding,
+            notesCreatedCount: state.onboarding.notesCreatedCount + 1,
+          },
+        }));
+      },
+
+      resetOnboarding: () => {
+        set({ onboarding: INITIAL_ONBOARDING });
+      },
+
+      setOnboardingVersion: (version: number) => {
+        set((state) => ({
+          onboarding: { ...state.onboarding, onboardingVersion: version },
+        }));
+      },
     }),
     {
       name: 'toonnotes-user',
@@ -236,6 +318,7 @@ export const useUserStore = create<UserState>()(
       partialize: (state) => ({
         user: state.user,
         purchases: state.purchases,
+        onboarding: state.onboarding,
         settings: {
           darkMode: state.settings.darkMode,
           defaultNoteColor: state.settings.defaultNoteColor,

@@ -32,6 +32,10 @@ const PRESET_LABELS = [
   'journal', 'memory', 'reflection', 'gratitude', 'quotes',
 ];
 
+// Valid mood values that match the client-side Zod schema
+const VALID_MOODS = ['energetic', 'calm', 'playful', 'serious', 'dreamy', 'bold'] as const;
+type ValidMood = typeof VALID_MOODS[number];
+
 // Category mapping for new label suggestions
 const LABEL_CATEGORIES = {
   productivity: ['todo', 'in-progress', 'done', 'waiting', 'priority'],
@@ -212,7 +216,10 @@ Return a JSON object with this exact structure:
         .slice(0, 2),
       analysis: {
         topics: analysisResult.analysis?.topics || [],
-        mood: analysisResult.analysis?.mood || 'calm',
+        // Validate mood against allowed values, default to 'calm' if invalid
+        mood: VALID_MOODS.includes(analysisResult.analysis?.mood as ValidMood)
+          ? analysisResult.analysis.mood
+          : 'calm',
         contentType: analysisResult.analysis?.contentType || 'notes',
       },
     };

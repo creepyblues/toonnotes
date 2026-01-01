@@ -204,8 +204,10 @@ export const NoteColors = {
   cream: NeutralScale[50],       // warm white
   mint: TealScale[50],           // teal-50
   peach: CoralScale[50],         // coral-50
-  lavender: '#EDE9FE',           // keep purple option
-  sky: '#E0F2FE',                // light blue
+  lavender: '#EDE9FE',           // purple, creative/dreamy
+  sky: '#E0F2FE',                // light blue, open/spacious
+  lemon: '#FEF9C3',              // amber-100, energetic/attention
+  blush: '#FCE7F3',              // pink-100, soft/personal
 };
 
 // =============================================================================

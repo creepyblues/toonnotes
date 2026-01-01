@@ -52,8 +52,8 @@ export function NotePreview({ note, onPress, isDark }: NotePreviewProps) {
 
   // Compose style for preview context (memoized to prevent expensive recalculations)
   const style = useMemo(
-    () => composeStyle(design ?? null, note.color || NoteColor.White, 'grid', isDark),
-    [design, note.color, isDark]
+    () => composeStyle(design ?? null, note.color || NoteColor.White, 'grid', isDark, note.labels),
+    [design, note.color, isDark, note.labels]
   );
 
   // Parse content lines

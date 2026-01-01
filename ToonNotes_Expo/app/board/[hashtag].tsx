@@ -279,7 +279,6 @@ export default function BoardDetailScreen() {
                   onPress={() => handleNotePress(item)}
                   isDark={isDark}
                   context="grid"
-                  hideIcon
                 />
               </View>
             )}

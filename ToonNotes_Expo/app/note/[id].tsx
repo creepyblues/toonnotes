@@ -15,6 +15,7 @@ import {
   TextInputSelectionChangeEventData,
   BackHandler,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -52,9 +53,12 @@ import {
   Palette,
   ListBullets,
   ImageSquare,
+  // Fallback for custom labels
+  Tag,
   IconProps,
 } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { normalizeLabel } from '@/utils/labelNormalization';
 
 // Phosphor icon mapping for label icons
 const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
@@ -78,6 +82,8 @@ const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   Camera,
   Sparkle,
   Palette,
+  // Fallback for custom labels
+  Tag,
 };
 
 import {
@@ -87,6 +93,20 @@ import {
   useLabelSuggestionStore,
   createPendingSuggestions,
 } from '@/stores';
+import {
+  useEditorContent,
+  toggleCheckboxAtLine,
+  insertCheckboxAtCursor,
+  insertBulletAtCursor,
+} from '@/hooks/editor';
+import {
+  CheckboxEditor,
+  BulletEditor,
+  ChecklistEditor,
+  parseChecklistFromContent,
+  checklistToContent,
+  type ChecklistItem,
+} from '@/components/editor';
 import { useTheme } from '@/src/theme';
 import { NoteColor, NoteDesign } from '@/types';
 import {
@@ -99,6 +119,7 @@ import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { DesignCard } from '@/components/designs/DesignCard';
 import { useFontsLoaded } from '@/app/_layout';
 import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
+import { generateUUID } from '@/utils/uuid';
 
 // Note color options for the color picker
 const NOTE_COLORS = [
@@ -193,21 +214,77 @@ export default function NoteEditorScreen() {
   // Format menu state (checkbox, bullet, image)
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [images, setImages] = useState<string[]>(note?.images || []);
-  const [focusLineIndex, setFocusLineIndex] = useState<number | null>(null);
-  const lineInputRefs = useRef<{ [key: number]: TextInput | null }>({});
+
+  // Editor mode state (normal, checklist, bullet)
+  type EditorMode = 'normal' | 'checklist' | 'bullet';
+  const [editorMode, setEditorMode] = useState<EditorMode>('normal');
+
+  // Checklist items state (only used in checklist mode)
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+
+  // Keyboard height tracking for button animation
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
+
+  // Auto-detect editor mode from existing content on mount
+  useEffect(() => {
+    if (note?.content) {
+      const lines = note.content.split('\n');
+      const hasCheckboxes = lines.some(l => l.match(/^-?\s*\[[ xX]\]/));
+      const hasBullets = lines.some(l => l.match(/^[•\-\*]\s/));
+      if (hasCheckboxes) {
+        setEditorMode('checklist');
+        setChecklistItems(parseChecklistFromContent(note.content));
+      } else if (hasBullets) {
+        setEditorMode('bullet');
+      }
+    }
+  }, []); // Only run on mount
+
+  // Animate button row above keyboard
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        Animated.timing(keyboardHeight, {
+          toValue: e.endCoordinates.height,
+          duration: Platform.OS === 'ios' ? 250 : 0,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.timing(keyboardHeight, {
+          toValue: 0,
+          duration: Platform.OS === 'ios' ? 250 : 0,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, [keyboardHeight]);
+
+  // Sync checklist items to content when items change
+  const handleChecklistChange = useCallback((newItems: ChecklistItem[]) => {
+    setChecklistItems(newItems);
+    setContent(checklistToContent(newItems));
+  }, []);
+
+  // Single TextInput cursor management (replaces per-line refs)
+  const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
+  const contentInputRef = useRef<TextInput | null>(null);
 
   // Track original content to detect changes for analysis
   const originalContentRef = useRef({ title: note?.title || '', content: note?.content || '' });
 
-  // Focus the new line after Enter is pressed
-  useEffect(() => {
-    if (focusLineIndex !== null && lineInputRefs.current[focusLineIndex]) {
-      setTimeout(() => {
-        lineInputRefs.current[focusLineIndex]?.focus();
-        setFocusLineIndex(null);
-      }, 50);
-    }
-  }, [focusLineIndex, content]);
+  // Use the editor content hook for parsing
+  const { parsedLines, checkboxLines } = useEditorContent(content);
 
   // Get active design for styling
   const activeDesign = designId ? getDesignById(designId) : null;
@@ -215,8 +292,8 @@ export default function NoteEditorScreen() {
   // Check if the active design is from a label preset
   const activeDesignLabelName = note?.activeDesignLabelId;
 
-  // Compose style using DesignEngine for detail context
-  const style = composeStyle(activeDesign ?? null, color, 'detail', isDark);
+  // Compose style using DesignEngine for detail context (pass labels for icon matching)
+  const style = composeStyle(activeDesign ?? null, color, 'detail', isDark, note?.labels);
 
   // Get font family with fallback
   const getTitleFont = () => {
@@ -270,8 +347,8 @@ export default function NoteEditorScreen() {
   const analyzeForLabels = async (): Promise<boolean> => {
     if (!note || !id) return false;
 
-    // Skip if note already has labels
-    if (note.labels.length > 0) return false;
+    // NOTE: We no longer skip if note has labels - we want to suggest ADDITIONAL labels
+    // even for notes created from boards that already have the board's label
 
     // Check if content has changed meaningfully
     const originalTitle = originalContentRef.current.title;
@@ -294,16 +371,25 @@ export default function NoteEditorScreen() {
         existingLabels: existingLabelNames,
       });
 
-      // Combine all matched labels (high + medium confidence)
-      const allMatchedLabels = [...result.autoApplyLabels, ...result.suggestLabels];
+      // Filter out labels already applied to this note
+      const normalizedNoteLabels = note.labels.map((l) => normalizeLabel(l));
+      const filteredAutoApply = result.autoApplyLabels.filter(
+        (l) => !normalizedNoteLabels.includes(normalizeLabel(l.labelName))
+      );
+      const filteredSuggest = result.suggestLabels.filter(
+        (l) => !normalizedNoteLabels.includes(normalizeLabel(l.labelName))
+      );
 
-      // Show toast if we have any label recommendations
+      // Combine filtered matched labels (high + medium confidence)
+      const allMatchedLabels = [...filteredAutoApply, ...filteredSuggest];
+
+      // Show toast if we have any NEW label recommendations
       if (allMatchedLabels.length > 0) {
         const labelNames = allMatchedLabels.map((m) => m.labelName);
         showAutoApplyToast(id, labelNames);
         return true; // Wait for user confirmation
       }
-      return false; // No suggestions, allow navigation
+      return false; // No new suggestions, allow navigation
     } catch (error) {
       console.warn('[NoteEditor] Label analysis failed:', error);
       return false;
@@ -431,7 +517,8 @@ export default function NoteEditorScreen() {
       });
   }, [labels, hashtagQuery, hashtagInputValue, note?.labels]);
 
-  // Handle content change with hashtag detection and auto-continue for checkbox/bullet
+  // Handle content change with hashtag detection
+  // Note: Auto-continue for bullets/checkboxes removed - use format menu (+) instead
   const handleContentChange = (text: string) => {
     // Detect if user pressed Enter or Space while autocomplete is showing
     // This creates the hashtag automatically
@@ -447,41 +534,12 @@ export default function NoteEditorScreen() {
       }
     }
 
-    // Auto-continue checkbox/bullet on Enter
-    if (text.length > content.length && text.endsWith('\n')) {
-      const lines = text.slice(0, -1).split('\n'); // Remove trailing newline for analysis
-      const prevLine = lines[lines.length - 1] || '';
-
-      // Check for checkbox pattern
-      if (prevLine.match(/^- \[[ x]\] ./)) {
-        // Previous line has content, continue with new checkbox
-        setContent(text + '- [ ] ');
-        return;
-      } else if (prevLine === '- [ ] ' || prevLine === '- [x] ') {
-        // Empty checkbox line - remove it and don't continue
-        const newContent = lines.slice(0, -1).join('\n') + (lines.length > 1 ? '\n' : '');
-        setContent(newContent);
-        return;
-      }
-
-      // Check for bullet pattern
-      if (prevLine.match(/^• .+/)) {
-        // Previous line has content, continue with new bullet
-        setContent(text + '• ');
-        return;
-      } else if (prevLine === '• ') {
-        // Empty bullet line - remove it and don't continue
-        const newContent = lines.slice(0, -1).join('\n') + (lines.length > 1 ? '\n' : '');
-        setContent(newContent);
-        return;
-      }
-    }
-
+    // Simple: just set the content directly
     setContent(text);
 
     // Check if user is typing a hashtag
-    const adjustedCursor = cursorPosition + (text.length - content.length);
-    const textBeforeCursor = text.slice(0, adjustedCursor);
+    const cursor = selection?.start ?? text.length;
+    const textBeforeCursor = text.slice(0, cursor);
     const match = textBeforeCursor.match(HASHTAG_TYPING_REGEX);
 
     if (match) {
@@ -494,11 +552,13 @@ export default function NoteEditorScreen() {
     }
   };
 
-  // Track cursor position
+  // Track cursor position and selection
   const handleSelectionChange = (
     event: NativeSyntheticEvent<TextInputSelectionChangeEventData>
   ) => {
-    setCursorPosition(event.nativeEvent.selection.end);
+    const newSelection = event.nativeEvent.selection;
+    setSelection(newSelection);
+    setCursorPosition(newSelection.end);
   };
 
   // Handle hashtag selection from autocomplete
@@ -577,8 +637,9 @@ export default function NoteEditorScreen() {
       return;
     }
 
-    // Trigger label analysis if note has content but no labels
-    if (note.labels.length === 0 && (title.trim() || content.trim())) {
+    // Trigger label analysis if note has content (even if it already has labels)
+    // This allows suggesting additional labels for notes created from boards
+    if (title.trim() || content.trim()) {
       const hasSuggestions = await analyzeForLabels();
       if (hasSuggestions) {
         setWaitingForToast(true);
@@ -644,40 +705,37 @@ export default function NoteEditorScreen() {
     setShowDesignPicker(false);
   };
 
-  // Toggle checkbox in content
-  const toggleCheckbox = (lineIndex: number) => {
-    const lines = content.split('\n');
-    const line = lines[lineIndex];
+  // Note: Checkbox toggling is now handled by the useEditorContent hook
+  // The toggleCheckboxAtLine function is imported and can be used if needed
 
-    // Flexible matching for unchecked: - [ ], - [], -[ ], -[], [ ], []
-    const uncheckedPattern = /^(-?\s*)\[\s*\](\s*)/;
-    // Flexible matching for checked: - [x], - [X], -[x], etc.
-    const checkedPattern = /^(-?\s*)\[[xX]\](\s*)/;
-
-    if (uncheckedPattern.test(line)) {
-      // Toggle to checked - normalize to standard format
-      lines[lineIndex] = line.replace(uncheckedPattern, '- [x] ');
-    } else if (checkedPattern.test(line)) {
-      // Toggle to unchecked - normalize to standard format
-      lines[lineIndex] = line.replace(checkedPattern, '- [ ] ');
-    }
-
-    setContent(lines.join('\n'));
-  };
-
-  // Check if content has checkboxes (for rendering decision)
-  const hasCheckboxes = /\[[\sxX]*\]/.test(content);
-
-  // Format menu handlers
+  // Format menu handlers - toggle editor mode
   const handleAddCheckbox = () => {
-    const newContent = content + (content.endsWith('\n') || !content ? '' : '\n') + '- [ ] ';
-    setContent(newContent);
+    // Toggle checklist mode
+    if (editorMode === 'checklist') {
+      setEditorMode('normal');
+    } else {
+      setEditorMode('checklist');
+      // Initialize checklist items from content or start fresh
+      if (content.trim()) {
+        setChecklistItems(parseChecklistFromContent(content));
+      } else {
+        setChecklistItems([{ id: generateUUID(), text: '', checked: false }]);
+      }
+    }
     setShowFormatMenu(false);
   };
 
   const handleAddBullet = () => {
-    const newContent = content + (content.endsWith('\n') || !content ? '' : '\n') + '• ';
-    setContent(newContent);
+    // Toggle bullet mode
+    if (editorMode === 'bullet') {
+      setEditorMode('normal');
+    } else {
+      setEditorMode('bullet');
+      // If content is empty, initialize with a bullet
+      if (!content.trim()) {
+        setContent('• ');
+      }
+    }
     setShowFormatMenu(false);
   };
 
@@ -911,186 +969,53 @@ export default function NoteEditorScreen() {
             accessibilityHint="Enter the title of your note"
           />
 
-          {/* Content with interactive checkboxes */}
-          <View style={{ flex: 1, minHeight: 300 }}>
-            {/* Render lines with checkboxes */}
-            {content.split('\n').map((line, index) => {
-              // Flexible checkbox detection: - [ ], - [], -[ ], -[], [ ], []
-              const uncheckedMatch = line.match(/^-?\s*\[\s*\]\s*/);
-              const checkedMatch = line.match(/^-?\s*\[[xX]\]\s*/);
-              const isUnchecked = !!uncheckedMatch;
-              const isChecked = !!checkedMatch;
-              const isCheckbox = isUnchecked || isChecked;
-              // Flexible bullet detection: •, -, * at start of line
-              const bulletMatch = line.match(/^([•\-\*])\s+/);
+          {/* Content - Mode-based rendering */}
+          {editorMode === 'normal' && (
+            <TextInput
+              ref={contentInputRef}
+              style={[
+                {
+                  color: style.bodyColor,
+                  fontFamily: getBodyFont(),
+                  fontSize: 16,
+                  padding: 0,
+                  margin: 0,
+                  minHeight: 300,
+                  textAlignVertical: 'top',
+                },
+                style.fontStyle === 'mono' && { fontSize: 14 },
+              ]}
+              placeholder="Start typing... Use # to add labels"
+              placeholderTextColor={activeDesign ? `${style.bodyColor}80` : '#9CA3AF'}
+              value={content}
+              onChangeText={handleContentChange}
+              onSelectionChange={handleSelectionChange}
+              selection={selection}
+              multiline
+              scrollEnabled={false}
+              textAlignVertical="top"
+              accessibilityLabel="Note content"
+              accessibilityHint="Enter your note content. Use # to add labels."
+            />
+          )}
 
-              if (isCheckbox) {
-                // Remove checkbox prefix using flexible pattern
-                const textAfterCheckbox = line.replace(/^-?\s*\[[xX\s]*\]\s*/, '');
-                return (
-                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, minHeight: 28 }}>
-                    <TouchableOpacity
-                      onPress={() => toggleCheckbox(index)}
-                      style={{ marginRight: 10 }}
-                    >
-                      {isChecked ? (
-                        <View style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 4,
-                          backgroundColor: colors.accent,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}>
-                          <Check size={14} color="#FFF" weight="bold" />
-                        </View>
-                      ) : (
-                        <View style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 4,
-                          borderWidth: 2,
-                          borderColor: isDark ? '#666' : '#CCC',
-                        }} />
-                      )}
-                    </TouchableOpacity>
-                    <TextInput
-                      ref={(ref) => { lineInputRefs.current[index] = ref; }}
-                      style={[
-                        {
-                          flex: 1,
-                          color: isChecked ? (isDark ? '#888' : '#999') : style.bodyColor,
-                          fontFamily: getBodyFont(),
-                          fontSize: 16,
-                          textDecorationLine: isChecked ? 'line-through' : 'none',
-                          padding: 0,
-                          margin: 0,
-                        },
-                        style.fontStyle === 'mono' && { fontSize: 14 },
-                      ]}
-                      value={textAfterCheckbox}
-                      onChangeText={(text) => {
-                        const lines = content.split('\n');
-                        const prefix = isChecked ? '- [x] ' : '- [ ] ';
-                        // Handle Enter key - create new checkbox
-                        if (text.includes('\n')) {
-                          const parts = text.split('\n');
-                          lines[index] = prefix + parts[0];
-                          // Insert new checkbox line after current
-                          lines.splice(index + 1, 0, '- [ ] ' + parts.slice(1).join('\n'));
-                          setContent(lines.join('\n'));
-                          setFocusLineIndex(index + 1);
-                          return;
-                        }
-                        lines[index] = prefix + text;
-                        setContent(lines.join('\n'));
-                      }}
-                      onKeyPress={({ nativeEvent }) => {
-                        if (nativeEvent.key === 'Backspace' && textAfterCheckbox === '') {
-                          // Remove the checkbox line when backspace on empty
-                          const lines = content.split('\n');
-                          lines.splice(index, 1);
-                          setContent(lines.join('\n'));
-                        }
-                      }}
-                      multiline
-                      blurOnSubmit={false}
-                    />
-                  </View>
-                );
-              }
+          {editorMode === 'checklist' && (
+            <ChecklistEditor
+              items={checklistItems}
+              onItemsChange={handleChecklistChange}
+              style={style}
+              isDark={isDark}
+            />
+          )}
 
-              // Only treat as bullet if NOT a checkbox (avoid - [ ] matching as bullet)
-              const isBullet = bulletMatch && !isCheckbox;
-
-              if (isBullet) {
-                // Remove bullet prefix using flexible pattern
-                const textAfterBullet = line.replace(/^[•\-\*]\s+/, '');
-                return (
-                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, minHeight: 28 }}>
-                    <Text style={{ color: style.bodyColor, fontSize: 20, marginRight: 10, width: 20, textAlign: 'center' }}>•</Text>
-                    <TextInput
-                      ref={(ref) => { lineInputRefs.current[index] = ref; }}
-                      style={[
-                        {
-                          flex: 1,
-                          color: style.bodyColor,
-                          fontFamily: getBodyFont(),
-                          fontSize: 16,
-                          padding: 0,
-                          margin: 0,
-                        },
-                        style.fontStyle === 'mono' && { fontSize: 14 },
-                      ]}
-                      value={textAfterBullet}
-                      onChangeText={(text) => {
-                        const lines = content.split('\n');
-                        // Handle Enter key - create new bullet
-                        if (text.includes('\n')) {
-                          const parts = text.split('\n');
-                          lines[index] = '• ' + parts[0];
-                          // Insert new bullet line after current
-                          lines.splice(index + 1, 0, '• ' + parts.slice(1).join('\n'));
-                          setContent(lines.join('\n'));
-                          setFocusLineIndex(index + 1);
-                          return;
-                        }
-                        lines[index] = '• ' + text;
-                        setContent(lines.join('\n'));
-                      }}
-                      onKeyPress={({ nativeEvent }) => {
-                        if (nativeEvent.key === 'Backspace' && textAfterBullet === '') {
-                          const lines = content.split('\n');
-                          lines.splice(index, 1);
-                          setContent(lines.join('\n'));
-                        }
-                      }}
-                      multiline
-                      blurOnSubmit={false}
-                    />
-                  </View>
-                );
-              }
-
-              // Regular text line - use TextInput for editing
-              return (
-                <TextInput
-                  key={index}
-                  ref={(ref) => { lineInputRefs.current[index] = ref; }}
-                  style={[
-                    {
-                      color: style.bodyColor,
-                      fontFamily: getBodyFont(),
-                      fontSize: 16,
-                      marginBottom: 4,
-                      padding: 0,
-                      margin: 0,
-                      minHeight: 24,
-                    },
-                    style.fontStyle === 'mono' && { fontSize: 14 },
-                  ]}
-                  placeholder={index === 0 && !content ? "Start typing... Use # to add labels" : ""}
-                  placeholderTextColor={activeDesign ? `${style.bodyColor}80` : '#9CA3AF'}
-                  value={line}
-                  onChangeText={(text) => {
-                    const lines = content.split('\n');
-                    // Handle newline insertion
-                    if (text.includes('\n')) {
-                      const newLines = text.split('\n');
-                      lines.splice(index, 1, ...newLines);
-                      setContent(lines.join('\n'));
-                      setFocusLineIndex(index + 1);
-                      return;
-                    }
-                    lines[index] = text;
-                    handleContentChange(lines.join('\n'));
-                  }}
-                  multiline
-                  blurOnSubmit={false}
-                />
-              );
-            })}
-          </View>
+          {editorMode === 'bullet' && (
+            <BulletEditor
+              content={content}
+              onContentChange={setContent}
+              style={style}
+              isDark={isDark}
+            />
+          )}
         </ScrollView>
 
         {/* Labels Panel - iOS Style */}
@@ -1437,14 +1362,15 @@ export default function NoteEditorScreen() {
           </View>
         )}
 
-        {/* Label pills row with + button */}
-        <View style={{
+        {/* Label pills row with + button - animated above keyboard */}
+        <Animated.View style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
           paddingVertical: 8,
           zIndex: 100,
+          transform: [{ translateY: Animated.multiply(keyboardHeight, -1) }],
         }}>
           {/* Label pills on left */}
           <TouchableOpacity
@@ -1537,11 +1463,12 @@ export default function NoteEditorScreen() {
                     alignItems: 'center',
                     paddingHorizontal: 16,
                     paddingVertical: 12,
+                    backgroundColor: editorMode === 'checklist' ? (isDark ? '#444' : '#E8E8E8') : 'transparent',
                   }}
                 >
-                  <CheckSquare size={20} color={isDark ? '#AAA' : '#666'} />
-                  <Text style={{ marginLeft: 12, fontSize: 14, color: isDark ? '#EEE' : '#333' }}>
-                    Checkbox
+                  <CheckSquare size={20} color={editorMode === 'checklist' ? '#10B981' : (isDark ? '#AAA' : '#666')} weight={editorMode === 'checklist' ? 'fill' : 'regular'} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: editorMode === 'checklist' ? '#10B981' : (isDark ? '#EEE' : '#333') }}>
+                    Checklist {editorMode === 'checklist' ? '✓' : ''}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1551,11 +1478,12 @@ export default function NoteEditorScreen() {
                     alignItems: 'center',
                     paddingHorizontal: 16,
                     paddingVertical: 12,
+                    backgroundColor: editorMode === 'bullet' ? (isDark ? '#444' : '#E8E8E8') : 'transparent',
                   }}
                 >
-                  <ListBullets size={20} color={isDark ? '#AAA' : '#666'} />
-                  <Text style={{ marginLeft: 12, fontSize: 14, color: isDark ? '#EEE' : '#333' }}>
-                    Bullet
+                  <ListBullets size={20} color={editorMode === 'bullet' ? '#10B981' : (isDark ? '#AAA' : '#666')} weight={editorMode === 'bullet' ? 'fill' : 'regular'} />
+                  <Text style={{ marginLeft: 12, fontSize: 14, color: editorMode === 'bullet' ? '#10B981' : (isDark ? '#EEE' : '#333') }}>
+                    Bullet {editorMode === 'bullet' ? '✓' : ''}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1575,7 +1503,7 @@ export default function NoteEditorScreen() {
               </View>
             )}
           </View>
-        </View>
+        </Animated.View>
 
         </BackgroundLayer>
       </KeyboardAvoidingView>

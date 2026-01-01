@@ -960,6 +960,84 @@ export function getPresetForLabel(labelName: string): LabelPreset | undefined {
   return LABEL_PRESETS[normalized as LabelPresetId];
 }
 
+// ============================================
+// Fuzzy/Keyword Matching for Custom Labels
+// ============================================
+
+const FUZZY_MATCH_THRESHOLD = 0.3;
+
+/**
+ * Split a label name into matchable tokens
+ */
+function tokenizeLabel(name: string): string[] {
+  return name
+    .toLowerCase()
+    .split(/[-_\s]+/)
+    .filter((token) => token.length >= 2);
+}
+
+/**
+ * Calculate fuzzy match score between label tokens and a preset
+ */
+function calculatePresetScore(tokens: string[], preset: LabelPreset): number {
+  let score = 0;
+  const presetId = preset.id;
+  const hints = preset.aiPromptHints.map((h) => h.toLowerCase());
+
+  for (const token of tokens) {
+    // Match against preset ID (e.g., "shopping" in "my-shopping-list")
+    if (presetId.includes(token) || token.includes(presetId)) {
+      score += 0.5;
+    }
+    // Exact match in aiPromptHints
+    if (hints.includes(token)) {
+      score += 0.35;
+    } else if (hints.some((h) => h.includes(token) || token.includes(h))) {
+      // Partial match in hints
+      score += 0.2;
+    }
+  }
+
+  return Math.min(score, 1.0);
+}
+
+/**
+ * Get a preset for a label using fuzzy keyword matching
+ * First tries exact match, then falls back to keyword matching
+ */
+export function getPresetForLabelFuzzy(labelName: string): LabelPreset | undefined {
+  // First try exact match
+  const exactMatch = getPresetForLabel(labelName);
+  if (exactMatch) return exactMatch;
+
+  // Tokenize the label
+  const tokens = tokenizeLabel(labelName);
+  if (tokens.length === 0) return undefined;
+
+  // Score each preset
+  let best: LabelPreset | undefined;
+  let bestScore = 0;
+
+  for (const preset of LABEL_PRESET_LIST) {
+    const score = calculatePresetScore(tokens, preset);
+    if (score > bestScore && score >= FUZZY_MATCH_THRESHOLD) {
+      bestScore = score;
+      best = preset;
+    }
+  }
+
+  return best;
+}
+
+/**
+ * Get the icon name for a label (for rendering)
+ * Returns 'Tag' as fallback for unmatched labels
+ */
+export function getIconForLabel(labelName: string): string {
+  const preset = getPresetForLabelFuzzy(labelName);
+  return preset?.noteIcon || 'Tag';
+}
+
 /**
  * Check if a label name has a matching preset
  */

@@ -5,7 +5,7 @@
  * Each board shows actual note content/design previews.
  */
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,12 +19,31 @@ import {
 import { BoardCard } from '@/components/boards/BoardCard';
 import { BoardData } from '@/types';
 import { useTheme } from '@/src/theme';
+import { useBoardsTabCoachMark } from '@/hooks/useCoachMark';
+import { CoachMarkTooltip } from '@/components/onboarding';
 
 export default function BoardsScreen() {
   const router = useRouter();
   const { notes } = useNoteStore();
   const { boards: boardCustomizations } = useBoardStore();
   const { colors, isDark } = useTheme();
+
+  // Coach mark for first visit
+  const { shouldShow: showCoachMark, dismiss: dismissCoachMark } = useBoardsTabCoachMark();
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Show coach mark after a delay on first visit
+  useEffect(() => {
+    if (showCoachMark) {
+      const timer = setTimeout(() => setShowTooltip(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [showCoachMark]);
+
+  const handleDismissTooltip = () => {
+    setShowTooltip(false);
+    dismissCoachMark();
+  };
 
   // Compute boards from notes (sorted by most recent activity)
   const allBoards = useMemo((): BoardData[] => {
@@ -100,6 +119,15 @@ export default function BoardsScreen() {
         updateCellsBatchingPeriod={50}
         windowSize={5}
         initialNumToRender={4}
+      />
+
+      {/* Coach Mark Tooltip */}
+      <CoachMarkTooltip
+        title="Your boards live here"
+        description="Add #hashtags to notes and they'll automatically organize into boards"
+        visible={showTooltip}
+        onDismiss={handleDismissTooltip}
+        accentColor="#8B5CF6"
       />
     </SafeAreaView>
   );

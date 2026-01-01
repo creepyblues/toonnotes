@@ -86,6 +86,7 @@ export function BulletEditor({
 
             {/* Text Input */}
             <TextInput
+              multiline={true}
               ref={(ref) => { inputRefs.current[index] = ref; }}
               style={[
                 styles.textInput,

@@ -62,8 +62,8 @@ export function StickyNote({
 
   // Get composed style if design exists (memoized to prevent expensive recalculations)
   const composedStyle = useMemo(
-    () => (design ? composeStyle(design, note.color, 'grid', isDark) : null),
-    [design, note.color, isDark]
+    () => (design ? composeStyle(design, note.color, 'grid', isDark, note.labels) : null),
+    [design, note.color, isDark, note.labels]
   );
 
   // Get transforms based on note ID

@@ -12,11 +12,9 @@ import {
   ValidatedLuckyThemeResponse,
 } from '@/utils/validation/apiResponse';
 
-// API endpoints - localhost for dev, Vercel for production
-// __DEV__ is true in Expo dev mode, false in production builds
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:3001'
-  : 'https://toonnotes-api.vercel.app';
+// API endpoint - always use production Vercel API
+// (localhost doesn't work on physical devices for testing)
+const API_BASE_URL = 'https://toonnotes-api.vercel.app';
 const THEME_API_URL = `${API_BASE_URL}/api/generate-theme`;
 const STICKER_API_URL = `${API_BASE_URL}/api/generate-sticker`;
 const LUCKY_THEME_API_URL = `${API_BASE_URL}/api/generate-lucky-theme`;

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, Sparkle } from 'phosphor-react-native';
@@ -7,12 +7,31 @@ import { useNoteStore, useDesignStore } from '@/stores';
 import { NoteColor, NoteDesign } from '@/types';
 import { useTheme } from '@/src/theme';
 import { DesignCard } from '@/components/designs/DesignCard';
+import { useDesignsTabCoachMark } from '@/hooks/useCoachMark';
+import { CoachMarkTooltip } from '@/components/onboarding';
 
 export default function DesignsScreen() {
   const router = useRouter();
   const { addNote } = useNoteStore();
-  const { designs } = useDesignStore();
+  const { designs, deleteDesign } = useDesignStore();
   const { colors, isDark } = useTheme();
+
+  // Coach mark for first visit
+  const { shouldShow: showCoachMark, dismiss: dismissCoachMark } = useDesignsTabCoachMark();
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Show coach mark after a delay on first visit
+  useEffect(() => {
+    if (showCoachMark) {
+      const timer = setTimeout(() => setShowTooltip(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [showCoachMark]);
+
+  const handleDismissTooltip = () => {
+    setShowTooltip(false);
+    dismissCoachMark();
+  };
 
   const handleDesignPress = (design: NoteDesign) => {
     // Create a new note with this design applied
@@ -33,11 +52,27 @@ export default function DesignsScreen() {
     router.push('/design/create');
   };
 
+  const handleDeleteDesign = (design: NoteDesign) => {
+    Alert.alert(
+      'Delete Design',
+      'Are you sure you want to delete this design?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteDesign(design.id),
+        },
+      ]
+    );
+  };
+
   const renderDesignCard = ({ item }: { item: NoteDesign }) => (
     <View style={{ flex: 1, margin: 6, maxWidth: '50%' }}>
       <DesignCard
         design={item}
         onPress={() => handleDesignPress(item)}
+        onLongPress={() => handleDeleteDesign(item)}
         isDark={isDark}
         size="compact"
       />
@@ -165,6 +200,15 @@ export default function DesignsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Coach Mark Tooltip */}
+      <CoachMarkTooltip
+        title="Your first design is free!"
+        description="Create a custom note theme from any image using AI"
+        visible={showTooltip}
+        onDismiss={handleDismissTooltip}
+        accentColor="#8B5CF6"
+      />
     </SafeAreaView>
   );
 }

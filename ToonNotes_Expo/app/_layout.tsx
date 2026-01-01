@@ -6,8 +6,12 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, createContext, useContext } from 'react';
+import { useEffect, createContext, useContext, useState } from 'react';
 import 'react-native-reanimated';
+
+// Onboarding imports
+import { useUserStore } from '@/stores';
+import { WelcomeCarousel, CoachMarksProvider } from '@/components/onboarding';
 
 // Google Fonts imports - Sans-serif
 import {
@@ -196,51 +200,71 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const { onboarding, completeWelcome } = useUserStore();
+  const [showOnboarding, setShowOnboarding] = useState(!onboarding.hasCompletedWelcome);
+
+  // Handle onboarding completion
+  const handleOnboardingComplete = () => {
+    completeWelcome();
+    setShowOnboarding(false);
+  };
+
+  // Show welcome carousel if user hasn't completed onboarding
+  if (showOnboarding) {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <WelcomeCarousel onComplete={handleOnboardingComplete} />
+      </>
+    );
+  }
 
   return (
     <>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="note/[id]"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-            gestureEnabled: true,
-            fullScreenGestureEnabled: true,
-          }}
-        />
-        <Stack.Screen
-          name="design/create"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="board/[hashtag]"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="archive"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="trash"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        </Stack>
+        <CoachMarksProvider>
+          <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="note/[id]"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+              gestureEnabled: true,
+              fullScreenGestureEnabled: true,
+            }}
+          />
+          <Stack.Screen
+            name="design/create"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="board/[hashtag]"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="archive"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="trash"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+          </Stack>
+        </CoachMarksProvider>
       </ThemeProvider>
     </>
   );

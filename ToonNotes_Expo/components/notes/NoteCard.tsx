@@ -57,6 +57,8 @@ import {
   Palette,
   SunHorizon,
   Tray,
+  // Fallback
+  Tag,
   IconProps,
 } from 'phosphor-react-native';
 
@@ -103,6 +105,8 @@ const NOTE_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
   Palette,
   SunHorizon,
   Tray,
+  // Fallback for custom labels
+  Tag,
 };
 
 interface NoteCardProps {
@@ -202,8 +206,8 @@ function NoteCardComponent({
 
   const hasMore = note.content.length > 200 || note.content.split('\n').length > (compact ? 4 : 6);
 
-  // Compose style using DesignEngine
-  const style = composeStyle(design, note.color, context, isDark);
+  // Compose style using DesignEngine (pass labels for icon matching)
+  const style = composeStyle(design, note.color, context, isDark, note.labels);
 
   // Get font family with fallback
   const getTitleFont = () => {

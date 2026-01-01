@@ -11,6 +11,7 @@ import {
   Key,
   X,
   Palette,
+  ArrowCounterClockwise,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 
@@ -35,6 +36,8 @@ export default function SettingsScreen() {
     isPurchaseSheetOpen,
     openPurchaseSheet,
     closePurchaseSheet,
+    resetOnboarding,
+    onboarding,
   } = useUserStore();
   const { getArchivedNotes, getDeletedNotes, clearUnpinnedNotes, getActiveNotes } = useNoteStore();
   const { designs, clearAllDesigns } = useDesignStore();
@@ -390,6 +393,7 @@ export default function SettingsScreen() {
             <TouchableOpacity
               onPress={handleClearAllDesigns}
               className="flex-row items-center justify-between px-4 py-3"
+              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
             >
               <View className="flex-row items-center">
                 <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 149, 0, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
@@ -398,6 +402,39 @@ export default function SettingsScreen() {
                 <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear All Designs</Text>
               </View>
               <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert(
+                  'Reset Onboarding',
+                  'This will show the welcome carousel and coach marks again on next app launch.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Reset',
+                      onPress: () => {
+                        resetOnboarding();
+                        Alert.alert('Done', 'Onboarding reset. Restart the app to see the welcome screen again.');
+                      },
+                    },
+                  ]
+                );
+              }}
+              className="flex-row items-center justify-between px-4 py-3"
+            >
+              <View className="flex-row items-center">
+                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(88, 86, 214, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <ArrowCounterClockwise size={20} color="#5856D6" weight="regular" />
+                </View>
+                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Reset Onboarding</Text>
+              </View>
+              <View className="flex-row items-center">
+                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 13 }}>
+                  {onboarding.hasCompletedWelcome ? 'Completed' : 'Not started'}
+                </Text>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+              </View>
             </TouchableOpacity>
           </View>
         </View>

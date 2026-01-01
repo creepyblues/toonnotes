@@ -63,6 +63,10 @@ ToonNotes_Expo/
 │   │   └── NoteCard.tsx      # Memoized note card with accessibility
 │   ├── boards/
 │   │   └── BoardCard.tsx     # Board preview card
+│   ├── editor/
+│   │   ├── ChecklistEditor.tsx  # Google Keep style checklist (stable IDs)
+│   │   ├── BulletEditor.tsx     # Bullet list editor
+│   │   └── index.ts             # Editor component exports
 │   ├── ErrorBoundary.tsx     # Global error fallback UI
 │   ├── Themed.tsx            # Theme-aware Text/View components
 │   └── useColorScheme.ts     # Dark mode hook
@@ -98,7 +102,8 @@ ToonNotes_Expo/
 ├── constants/
 │   ├── themes.ts             # Pre-made design themes
 │   ├── patterns.ts           # Background patterns
-│   └── boardPresets.ts       # Board styling presets
+│   ├── boardPresets.ts       # Board styling presets (20 category-based)
+│   └── labelPresets.ts       # Label/note styling presets (30 presets)
 ├── tailwind.config.js        # Tailwind theme (iOS HIG colors)
 ├── global.css                # Tailwind imports
 └── metro.config.js           # Metro + NativeWind
@@ -120,6 +125,35 @@ const { colors, semantic, tagColors, isDark } = useTheme();
 ```
 
 **DO NOT** use `constants/Colors.ts` (deleted) - all colors come from `src/theme/`.
+
+### Color Scheme Architecture
+
+The app uses a layered color system with distinct purposes:
+
+```
+┌─────────────────────────────────┐
+│  BOARD (Rich/Visible Color)    │  ← Container backdrop
+│  ┌───────────────────────────┐ │
+│  │  NOTE (Light Pastel)      │ │  ← Paper-like cards
+│  │  └── TEXT (Dark)          │ │  ← Readable content
+│  └───────────────────────────┘ │
+└─────────────────────────────────┘
+```
+
+**Board Colors** (`constants/boardPresets.ts`): 20 presets with category-based moods
+| Category | Mood | Colors |
+|----------|------|--------|
+| Productivity | Muted/Professional | Slate, emerald |
+| Reading | Rich/Immersive | Violet, blue, pink |
+| Creative | Vibrant/Dynamic | Cyan, teal, pink |
+| Content | Warm/Writerly | Stone, blue, gray |
+| Personal | Warm/Cozy | Amber, violet, orange |
+
+**Note Colors** (`src/theme/tokens/colors.ts`): Light pastels for text readability
+- `white`, `cream`, `mint`, `peach`, `lavender`, `sky`, `lemon`, `blush`
+
+**Label Presets** (`constants/labelPresets.ts`): 30 presets that style notes (not boards)
+- Use light backgrounds since they apply to note cards
 
 ### State Management
 
@@ -178,6 +212,35 @@ All interactive components must have accessibility labels:
   accessibilityHint="Opens the note editor"
 >
 ```
+
+### Checklist Editor (Google Keep Style)
+
+The note editor supports checklist mode with a Google Keep-inspired implementation. Key pattern:
+
+```typescript
+// IMPORTANT: Use stable UUIDs, NOT array indices
+interface ChecklistItem {
+  id: string;        // Stable UUID - never changes
+  text: string;
+  checked: boolean;
+}
+
+// Use Map for refs, NOT array
+const inputRefs = useRef<Map<string, TextInput>>(new Map());
+
+// Focus after render completes
+const focusItem = (itemId: string) => {
+  requestAnimationFrame(() => {
+    inputRefs.current.get(itemId)?.focus();
+  });
+};
+```
+
+**Why this pattern?** React Native TextInput has cursor/focus issues when:
+- Using array indices as keys (refs shift on insert/delete)
+- Calling focus() immediately after setState (render not complete)
+
+See `components/editor/ChecklistEditor.tsx` for full implementation.
 
 ## Data Models
 
@@ -259,6 +322,8 @@ eas build --platform ios --profile development
 - [x] Error boundary with recovery
 - [x] Accessibility support
 - [x] Performance optimized lists
+- [x] Checklist mode (Google Keep style with visual checkboxes)
+- [x] Bullet list mode
 
 ## Quality Score: 85/100
 
@@ -279,7 +344,6 @@ Last assessed: December 2024
 
 - [ ] Configure RevenueCat API keys (when ready for IAP)
 - [ ] Add Sentry DSN for production monitoring
-- [ ] Implement rich text editing
 - [ ] Add share as image functionality
 - [ ] Background removal for stickers
 - [ ] Daily rewards system

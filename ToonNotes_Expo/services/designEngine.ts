@@ -94,10 +94,11 @@ export function composeStyle(
   design: NoteDesign | null,
   fallbackColor: NoteColor,
   context: DesignViewContext,
-  isDark: boolean
+  isDark: boolean,
+  labelNames?: string[]
 ): ComposedStyle {
   if (!design) {
-    return composeBasicStyle(fallbackColor, context, isDark);
+    return composeBasicStyle(fallbackColor, context, isDark, labelNames);
   }
 
   const contextRules = CONTEXT_RULES[context];
@@ -124,7 +125,11 @@ export function composeStyle(
     ? getPresetById(design.labelPresetId as any)
     : undefined;
   const labelIcon = preset?.icon;
-  const noteIcon = preset?.noteIcon;
+  // Use preset icon, or fall back to fuzzy matching for custom labels
+  let noteIcon = preset?.noteIcon;
+  if (!noteIcon && labelNames && labelNames.length > 0) {
+    noteIcon = getIconForLabel(labelNames[0]);
+  }
 
   // Get font families based on preset or default font style
   const validFontStyle = (fontStyle as PresetFontStyle) in DEFAULT_FONT_BY_STYLE
@@ -225,7 +230,8 @@ export function composeStyle(
 export function composeBasicStyle(
   color: NoteColor,
   context: DesignViewContext,
-  isDark: boolean
+  isDark: boolean,
+  labelNames?: string[]
 ): ComposedStyle {
   const contextRules = CONTEXT_RULES[context];
 
@@ -240,6 +246,11 @@ export function composeBasicStyle(
 
   // Default fonts for basic style
   const defaultFonts = DEFAULT_FONT_BY_STYLE['sans-serif'];
+
+  // Get icon from labels using fuzzy matching
+  const noteIcon = labelNames && labelNames.length > 0
+    ? getIconForLabel(labelNames[0])
+    : undefined;
 
   return {
     backgroundColor,
@@ -269,6 +280,10 @@ export function composeBasicStyle(
     stickerPosition: 'bottom-right',
 
     decorations: { type: 'none' },
+
+    // Label icons from fuzzy matching
+    noteIcon,
+    labelIcon: undefined,
   };
 }
 
@@ -445,7 +460,7 @@ export function getThemeAccents(
 // Label Preset Style Composition
 // ============================================
 
-import { LabelPreset, getPresetById, LabelPresetId } from '@/constants/labelPresets';
+import { LabelPreset, getPresetById, LabelPresetId, getIconForLabel } from '@/constants/labelPresets';
 import { getPresetFonts, PresetFontStyle, getFontFamilyName, DEFAULT_FONT_BY_STYLE } from '@/constants/fonts';
 
 /**

@@ -32,10 +32,10 @@ if (!isExpoGo) {
 export type { PurchasesOffering, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 type PurchasesError = import('react-native-purchases').PurchasesError;
 
-// RevenueCat API Keys - Replace with your keys from RevenueCat dashboard
+// RevenueCat API Keys - Set via environment variables
 // These are public API keys (safe to include in client code)
-const REVENUECAT_IOS_KEY = 'appl_YOUR_IOS_API_KEY';
-const REVENUECAT_ANDROID_KEY = 'goog_YOUR_ANDROID_API_KEY';
+const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || 'appl_YOUR_IOS_API_KEY';
+const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || 'goog_YOUR_ANDROID_API_KEY';
 
 export interface PurchaseResult {
   success: boolean;

@@ -155,6 +155,7 @@ export function ChecklistEditor({
 
           {/* Text Input */}
           <TextInput
+            multiline={true}
             ref={(ref) => setItemRef(item.id, ref)}
             style={[
               styles.textInput,

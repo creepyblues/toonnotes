@@ -3,10 +3,9 @@
  *
  * Features:
  * - Square aspect ratio (matches NoteCard)
- * - Clean iOS-style border and shadow
- * - Preview text to show title/body colors
- * - Sticker overlay
- * - Decorations (shoujo, etc.)
+ * - Background image preview
+ * - Large sticker display
+ * - Color scheme swatches
  * - Selection state support
  */
 
@@ -18,6 +17,7 @@ import { composeStyle } from '@/services/designEngine';
 interface DesignCardProps {
   design: NoteDesign;
   onPress?: () => void;
+  onLongPress?: () => void;
   isDark?: boolean;
   isSelected?: boolean;
   size?: 'normal' | 'compact';
@@ -26,12 +26,16 @@ interface DesignCardProps {
 export function DesignCard({
   design,
   onPress,
+  onLongPress,
   isDark = false,
   isSelected = false,
   size = 'normal',
 }: DesignCardProps) {
   // Compose style using DesignEngine
   const style = composeStyle(design, NoteColor.White, 'grid', isDark);
+
+  // Get background image URI
+  const backgroundImageUri = design.background?.imageUri || design.sourceImageUri;
 
   // Get decoration emoji for shoujo style
   const getDecorations = () => {
@@ -49,84 +53,85 @@ export function DesignCard({
   const isCompact = size === 'compact';
   const minHeight = isCompact ? 100 : 150;
 
+  // Sticker size is 2x bigger (base 80/120 instead of 40/60)
+  const stickerBaseSize = isCompact ? 80 : 120;
+
+  // Background opacity same as note edit page (0.15)
+  const backgroundOpacity = design.background?.opacity ?? 0.15;
+
+  const cardContent = (
+    <>
+      {/* Decorations */}
+      {getDecorations()}
+
+      {/* Sticker - bottom right, 2x bigger */}
+      {style.showSticker && style.stickerUri && (
+        <Image
+          source={{ uri: style.stickerUri }}
+          style={[
+            styles.sticker,
+            {
+              width: stickerBaseSize * style.stickerScale,
+              height: stickerBaseSize * style.stickerScale,
+            },
+          ]}
+          resizeMode="contain"
+        />
+      )}
+
+      {/* Color scheme swatches at bottom */}
+      <View style={styles.colorSwatches}>
+        <View style={[styles.colorSwatch, { backgroundColor: design.background?.primaryColor || style.backgroundColor }]} />
+        <View style={[styles.colorSwatch, { backgroundColor: design.colors?.accent || style.accentColor }]} />
+        <View style={[styles.colorSwatch, { backgroundColor: design.colors?.titleText || style.titleColor }]} />
+      </View>
+
+      {/* Selected checkmark */}
+      {isSelected && (
+        <View style={styles.checkmark}>
+          <Text style={styles.checkmarkText}>✓</Text>
+        </View>
+      )}
+    </>
+  );
+
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={500}
         activeOpacity={0.7}
         style={[
           styles.container,
           {
-            backgroundColor: style.backgroundColor,
             borderRadius: 16,
             minHeight,
             // iOS-style shadow
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
+            shadowOpacity: 0.1,
             shadowRadius: 8,
-            elevation: 2,
+            elevation: 3,
             // Clean border
             borderWidth: isSelected ? 2 : 1,
-            borderColor: isSelected ? '#F59E0B' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+            borderColor: isSelected ? '#F59E0B' : (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'),
+            overflow: 'hidden',
           },
         ]}
       >
-
-        {/* Decorations */}
-        {getDecorations()}
-
-        {/* Sample text preview */}
-        <View style={styles.contentArea}>
-          <Text
-            style={[
-              styles.sampleTitle,
-              { color: style.titleColor, fontSize: isCompact ? 11 : 13 },
-            ]}
-            numberOfLines={1}
-          >
-            Title
-          </Text>
-          <Text
-            style={[
-              styles.sampleBody,
-              { color: style.bodyColor, fontSize: isCompact ? 9 : 11 },
-            ]}
-            numberOfLines={isCompact ? 2 : 3}
-          >
-            Content
-          </Text>
+        {/* Background color base */}
+        <View style={[styles.backgroundFallback, { backgroundColor: style.backgroundColor }]}>
+          {/* Background image with opacity (same as note edit page) */}
+          {backgroundImageUri && (
+            <Image
+              source={{ uri: backgroundImageUri }}
+              style={[StyleSheet.absoluteFill, { opacity: backgroundOpacity, borderRadius: 15 }]}
+              resizeMode="cover"
+            />
+          )}
+          {cardContent}
         </View>
-
-        {/* Sticker overlay */}
-        {style.showSticker && style.stickerUri && (
-          <Image
-            source={{ uri: style.stickerUri }}
-            style={[
-              styles.sticker,
-              {
-                width: (isCompact ? 40 : 60) * style.stickerScale,
-                height: (isCompact ? 40 : 60) * style.stickerScale,
-              },
-            ]}
-            resizeMode="contain"
-          />
-        )}
-
-        {/* Design indicator bar at bottom */}
-        <View
-          style={[
-            styles.designIndicator,
-            { backgroundColor: style.accentColor },
-          ]}
-        />
-
-        {/* Selected checkmark */}
-        {isSelected && (
-          <View style={styles.checkmark}>
-            <Text style={styles.checkmarkText}>✓</Text>
-          </View>
-        )}
       </TouchableOpacity>
     </View>
   );
@@ -136,63 +141,68 @@ const styles = StyleSheet.create({
   wrapper: {},
   container: {
     aspectRatio: 1,
-    padding: 12,
     position: 'relative',
-    overflow: 'hidden',
   },
-  contentArea: {
+  backgroundFallback: {
     flex: 1,
-    paddingRight: 40,
-  },
-  sampleTitle: {
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  sampleBody: {
-    lineHeight: 16,
-  },
-  decoration: {
-    position: 'absolute',
-    fontSize: 12,
-    opacity: 0.7,
-    zIndex: 2,
-  },
-  decorationTopLeft: {
-    top: 24,
-    left: 8,
-  },
-  decorationBottomRight: {
-    bottom: 8,
-    right: 8,
-  },
-  designIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
+    borderRadius: 16,
   },
   sticker: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    bottom: 36,
+    right: 8,
     zIndex: 10,
+  },
+  colorSwatches: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 5,
+  },
+  colorSwatch: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  decoration: {
+    position: 'absolute',
+    fontSize: 14,
+    opacity: 0.8,
+    zIndex: 2,
+  },
+  decorationTopLeft: {
+    top: 8,
+    left: 8,
+  },
+  decorationBottomRight: {
+    bottom: 32,
+    right: 8,
   },
   checkmark: {
     position: 'absolute',
-    top: 28,
-    left: 8,
-    width: 22,
-    height: 22,
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
     backgroundColor: '#F59E0B',
-    borderRadius: 11,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 6,
+    zIndex: 15,
   },
   checkmarkText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

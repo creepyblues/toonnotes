@@ -12,9 +12,10 @@ import {
   TouchableOpacity,
   Animated,
   StyleSheet,
+  TextInput,
 } from 'react-native';
 import { useLabelSuggestionStore, useNoteStore } from '@/stores';
-import { Tag, X, Check } from 'phosphor-react-native';
+import { Tag, X, Check, Hash, Plus } from 'phosphor-react-native';
 import { useTheme } from '@/src/theme';
 
 const ANIMATION_DURATION_MS = 200;
@@ -37,10 +38,16 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
   // Track which labels are selected (all selected by default)
   const [selectedLabels, setSelectedLabels] = useState<Set<string>>(new Set());
 
+  // Custom label input state
+  const [inputValue, setInputValue] = useState('');
+  const [customLabels, setCustomLabels] = useState<string[]>([]);
+
   // Initialize selected labels when toast appears
   useEffect(() => {
     if (activeToast && !activeToast.undone) {
       setSelectedLabels(new Set(activeToast.labels));
+      setCustomLabels([]);
+      setInputValue('');
     }
   }, [activeToast]);
 
@@ -86,6 +93,21 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
       return next;
     });
   }, []);
+
+  // Add a custom label from input
+  const handleAddCustomLabel = useCallback(() => {
+    const trimmed = inputValue.trim().toLowerCase();
+    if (!trimmed) return;
+
+    // Check for duplicates in both AI suggestions and custom labels
+    const allLabels = [...(activeToast?.labels || []), ...customLabels];
+    if (allLabels.some(l => l.toLowerCase() === trimmed)) return;
+
+    // Add to custom labels list and auto-select
+    setCustomLabels(prev => [...prev, trimmed]);
+    setSelectedLabels(prev => new Set([...prev, trimmed]));
+    setInputValue('');
+  }, [inputValue, activeToast?.labels, customLabels]);
 
   const handleApply = useCallback(() => {
     if (activeToast?.noteId && selectedLabels.size > 0) {
@@ -157,10 +179,11 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
           </View>
         </View>
 
-        {/* Selectable label chips */}
+        {/* Selectable label chips (AI suggestions + custom labels) */}
         <View style={styles.labelsRow}>
-          {activeToast.labels.map((label) => {
+          {[...activeToast.labels, ...customLabels].map((label) => {
             const isSelected = selectedLabels.has(label);
+            const isCustom = customLabels.includes(label);
             return (
               <TouchableOpacity
                 key={label}
@@ -171,7 +194,7 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
                     ? styles.labelChipSelected
                     : { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
                 ]}
-                accessibilityLabel={`${label}, ${isSelected ? 'selected' : 'not selected'}`}
+                accessibilityLabel={`${label}, ${isSelected ? 'selected' : 'not selected'}${isCustom ? ', custom' : ''}`}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: isSelected }}
               >
@@ -188,6 +211,35 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        {/* Custom label input */}
+        <View style={styles.inputRow}>
+          <View style={[styles.inputContainer, { backgroundColor: isDark ? '#374151' : '#F3F4F6' }]}>
+            <Hash size={14} color={isDark ? '#9CA3AF' : '#6B7280'} weight="regular" />
+            <TextInput
+              style={[styles.input, { color: isDark ? '#FFFFFF' : '#1F2937' }]}
+              placeholder="Add custom label..."
+              placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
+              value={inputValue}
+              onChangeText={setInputValue}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onSubmitEditing={handleAddCustomLabel}
+              returnKeyType="done"
+              accessibilityLabel="Custom label input"
+            />
+            {inputValue.trim().length > 0 && (
+              <TouchableOpacity
+                onPress={handleAddCustomLabel}
+                style={styles.addInputButton}
+                accessibilityLabel="Add custom label"
+                accessibilityRole="button"
+              >
+                <Plus size={16} color="#FFFFFF" weight="bold" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
     </Animated.View>
@@ -271,6 +323,30 @@ const styles = StyleSheet.create({
   },
   labelTextSelected: {
     color: '#FFFFFF',
+  },
+  inputRow: {
+    marginTop: 12,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 6,
+    fontSize: 14,
+    paddingVertical: 0,
+  },
+  addInputButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#6C5CE7',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
