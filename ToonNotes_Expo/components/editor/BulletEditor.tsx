@@ -87,6 +87,7 @@ export function BulletEditor({
             {/* Text Input */}
             <TextInput
               multiline={true}
+              submitBehavior="submit"
               ref={(ref) => { inputRefs.current[index] = ref; }}
               style={[
                 styles.textInput,
@@ -99,7 +100,6 @@ export function BulletEditor({
               placeholder={index === 0 ? 'Add item...' : ''}
               placeholderTextColor={isDark ? '#666' : '#999'}
               returnKeyType="next"
-              blurOnSubmit={false}
             />
           </View>
         );

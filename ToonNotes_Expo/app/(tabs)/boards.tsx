@@ -9,7 +9,7 @@ import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Hash } from 'phosphor-react-native';
+import { Tag } from 'phosphor-react-native';
 
 import {
   useNoteStore,
@@ -74,13 +74,13 @@ export default function BoardsScreen() {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <View style={[styles.emptyIcon, { backgroundColor: `${colors.accent}15` }]}>
-        <Hash size={40} color={colors.textSecondary} weight="regular" />
+        <Tag size={40} color={colors.textSecondary} weight="regular" />
       </View>
       <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
         No boards yet
       </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        Add hashtags to your notes using # to organize them into boards
+        Labels are automatically added to organize your notes into boards
       </Text>
     </View>
   );
@@ -98,7 +98,7 @@ export default function BoardsScreen() {
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {allBoards.length > 0
             ? `${allBoards.length} ${allBoards.length === 1 ? 'board' : 'boards'}`
-            : 'Organize notes with hashtags'}
+            : 'Notes organized by labels'}
         </Text>
       </View>
 
@@ -124,7 +124,7 @@ export default function BoardsScreen() {
       {/* Coach Mark Tooltip */}
       <CoachMarkTooltip
         title="Your boards live here"
-        description="Add #hashtags to notes and they'll automatically organize into boards"
+        description="Labels are automatically added to your notes and organize them into boards"
         visible={showTooltip}
         onDismiss={handleDismissTooltip}
         accentColor="#8B5CF6"

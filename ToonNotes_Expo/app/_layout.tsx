@@ -11,7 +11,11 @@ import 'react-native-reanimated';
 
 // Onboarding imports
 import { useUserStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 import { WelcomeCarousel, CoachMarksProvider } from '@/components/onboarding';
+import { isSupabaseConfigured } from '@/services/supabase';
+import { View, ActivityIndicator } from 'react-native';
+import { Redirect, useSegments, useRootNavigationState } from 'expo-router';
 
 // Google Fonts imports - Sans-serif
 import {
@@ -201,13 +205,50 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { onboarding, completeWelcome } = useUserStore();
+  const { isInitialized, user, initialize } = useAuthStore();
   const [showOnboarding, setShowOnboarding] = useState(!onboarding.hasCompletedWelcome);
+  const segments = useSegments();
+  const navigationState = useRootNavigationState();
+
+  // Initialize auth on mount (only if Supabase is configured)
+  useEffect(() => {
+    if (isSupabaseConfigured()) {
+      initialize();
+    }
+  }, []);
 
   // Handle onboarding completion
   const handleOnboardingComplete = () => {
     completeWelcome();
     setShowOnboarding(false);
   };
+
+  // Check if we're on an auth route
+  const inAuthGroup = segments[0] === 'auth';
+
+  // Wait for navigation to be ready
+  if (!navigationState?.key) {
+    return null;
+  }
+
+  // Show loading while auth initializes (only if Supabase is configured)
+  if (isSupabaseConfigured() && !isInitialized) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' }}>
+        <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#fff' : '#000'} />
+      </View>
+    );
+  }
+
+  // Redirect to auth if not authenticated and not already on auth screen
+  if (isSupabaseConfigured() && !user && !inAuthGroup) {
+    return <Redirect href="/auth" />;
+  }
+
+  // Redirect to main app if authenticated and on auth screen
+  if (isSupabaseConfigured() && user && inAuthGroup) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   // Show welcome carousel if user hasn't completed onboarding
   if (showOnboarding) {
@@ -226,6 +267,7 @@ function RootLayoutNav() {
         <CoachMarksProvider>
           <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen
             name="note/[id]"
             options={{

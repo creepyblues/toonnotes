@@ -12,12 +12,17 @@ import {
   X,
   Palette,
   ArrowCounterClockwise,
+  SignOut,
+  User,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 
 import { useUserStore, useNoteStore, useDesignStore } from '@/stores';
+import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/src/theme';
 import { CoinShop } from '@/components/shop/CoinShop';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -41,9 +46,12 @@ export default function SettingsScreen() {
   } = useUserStore();
   const { getArchivedNotes, getDeletedNotes, clearUnpinnedNotes, getActiveNotes } = useNoteStore();
   const { designs, clearAllDesigns } = useDesignStore();
+  const { user: authUser, signOut, isLoading: isAuthLoading } = useAuthStore();
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const isAuthEnabled = isSupabaseConfigured();
 
   // Load API key from secure storage on mount
   useEffect(() => {
@@ -110,6 +118,27 @@ export default function SettingsScreen() {
   const handleOpenApiKeyModal = () => {
     setApiKeyInput(''); // Don't pre-fill for security
     setShowApiKeyModal(true);
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleClearAllDesigns = () => {
@@ -188,13 +217,64 @@ export default function SettingsScreen() {
 
       {/* Settings List */}
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-        {/* Account Section */}
+        {/* User Profile Section (only if auth is enabled) */}
+        {isAuthEnabled && authUser && (
+          <View className="mt-6">
+            <Text
+              className="text-xs uppercase tracking-wider px-2 mb-2"
+              style={{ color: colors.textSecondary }}
+            >
+              Profile
+            </Text>
+            <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
+              {/* User Info */}
+              <View className="flex-row items-center px-4 py-4" style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}>
+                {authUser.user_metadata?.avatar_url ? (
+                  <Image
+                    source={{ uri: authUser.user_metadata.avatar_url }}
+                    style={{ width: 48, height: 48, borderRadius: 24 }}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={24} color={colors.accent} weight="regular" />
+                  </View>
+                )}
+                <View className="ml-3 flex-1">
+                  <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
+                    {authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'ToonNotes User'}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                    {authUser.email}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Sign Out */}
+              <TouchableOpacity
+                onPress={handleSignOut}
+                disabled={isAuthLoading}
+                className="flex-row items-center justify-between px-4 py-3"
+              >
+                <View className="flex-row items-center">
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <SignOut size={20} color="#FF3B30" weight="regular" />
+                  </View>
+                  <Text className="ml-3" style={{ color: '#FF3B30', fontSize: 17 }}>Sign Out</Text>
+                </View>
+                {isAuthLoading && <ActivityIndicator size="small" color="#FF3B30" />}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Coins Section */}
         <View className="mt-6">
           <Text
             className="text-xs uppercase tracking-wider px-2 mb-2"
             style={{ color: colors.textSecondary }}
           >
-            Account
+            Economy
           </Text>
           <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
             <TouchableOpacity

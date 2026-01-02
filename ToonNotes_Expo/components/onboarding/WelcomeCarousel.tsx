@@ -18,7 +18,7 @@ import {
 import Onboarding from 'react-native-onboarding-swiper';
 import {
   NotePencil,
-  Hash,
+  Tag,
   Sparkle,
   Rocket,
   CheckSquare,
@@ -180,11 +180,11 @@ const SlideIllustration = ({ slideId, accentColor }: SlideIllustrationProps) => 
           </View>
         );
 
-      case 'welcome-hashtags':
+      case 'welcome-labels':
         return (
           <View style={styles.iconCluster}>
             <View style={[styles.iconCircle, { backgroundColor: accentColor }]}>
-              <Hash size={48} color="#FFFFFF" weight="bold" />
+              <Tag size={48} color="#FFFFFF" weight="fill" />
             </View>
             <View
               style={[

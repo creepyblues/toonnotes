@@ -156,6 +156,7 @@ export function ChecklistEditor({
           {/* Text Input */}
           <TextInput
             multiline={true}
+            submitBehavior="submit"
             ref={(ref) => setItemRef(item.id, ref)}
             style={[
               styles.textInput,
@@ -173,7 +174,6 @@ export function ChecklistEditor({
             placeholder="List item"
             placeholderTextColor={isDark ? '#666' : '#999'}
             returnKeyType="next"
-            blurOnSubmit={false}
           />
         </View>
       ))}

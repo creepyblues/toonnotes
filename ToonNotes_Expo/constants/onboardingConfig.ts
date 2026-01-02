@@ -90,16 +90,16 @@ export const DEFAULT_CAROUSEL_SLIDES: CarouselSlide[] = [
     backgroundColor: '#F0FDFA', // Light teal background
   },
   {
-    id: 'welcome-hashtags',
-    title: 'Organize with #hashtags',
-    subtitle: 'Add #tags to notes and they automatically group into boards',
+    id: 'welcome-labels',
+    title: 'Smart labels organize for you',
+    subtitle: 'AI automatically adds labels to your notes and groups them into boards',
     accentColor: '#8B5CF6', // Purple
     backgroundColor: '#F5F3FF', // Light purple background
   },
   {
     id: 'welcome-designs',
     title: 'AI-powered designs',
-    subtitle: 'Turn any image into a beautiful note theme',
+    subtitle: 'Turn any image into a theme with character sticker and background',
     accentColor: '#F472B6', // Pink
     backgroundColor: '#FDF2F8', // Light pink background
   },

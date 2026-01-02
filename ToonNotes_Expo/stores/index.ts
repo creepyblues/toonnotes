@@ -1,6 +1,7 @@
 export { useNoteStore } from './noteStore';
 export { useUserStore } from './userStore';
 export { useDesignStore } from './designStore';
+export { useAuthStore } from './authStore';
 export { useBoardStore, computeBoardsFromNotes, deriveGradientFromColors } from './boardStore';
 export { useBoardDesignStore } from './boardDesignStore';
 export {
