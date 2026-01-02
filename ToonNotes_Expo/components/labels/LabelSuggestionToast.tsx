@@ -32,7 +32,7 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
 
   const addLabelToNote = useNoteStore((state) => state.addLabelToNote);
 
-  const [translateY] = useState(new Animated.Value(100));
+  const [scale] = useState(new Animated.Value(0.9));
   const [opacity] = useState(new Animated.Value(0));
 
   // Track which labels are selected (all selected by default)
@@ -55,8 +55,8 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
   useEffect(() => {
     if (activeToast && !activeToast.undone) {
       Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 0,
+        Animated.timing(scale, {
+          toValue: 1,
           duration: ANIMATION_DURATION_MS,
           useNativeDriver: true,
         }),
@@ -68,8 +68,8 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 100,
+        Animated.timing(scale, {
+          toValue: 0.9,
           duration: ANIMATION_DURATION_MS,
           useNativeDriver: true,
         }),
@@ -129,22 +129,23 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
   }
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-          transform: [{ translateY }],
-          opacity,
-          shadowColor: '#000000',
-        },
-      ]}
-    >
+    <View style={styles.overlay}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: isDark ? '#292524' : '#FFFFFF',
+            transform: [{ scale }],
+            opacity,
+            shadowColor: '#000000',
+          },
+        ]}
+      >
       <View style={styles.content}>
         {/* Header row */}
         <View style={styles.headerRow}>
-          <View style={styles.iconContainer}>
-            <Tag size={18} color="#6C5CE7" weight="bold" />
+          <View style={[styles.iconContainer, { backgroundColor: isDark ? '#367272' : '#C2E4E3' }]}>
+            <Tag size={18} color={isDark ? '#70BFBD' : '#4C9C9B'} weight="bold" />
           </View>
           <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
             Add labels?
@@ -156,6 +157,7 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
               onPress={handleApply}
               style={[
                 styles.applyButton,
+                { backgroundColor: isDark ? '#70BFBD' : '#4C9C9B' },
                 selectedLabels.size === 0 && styles.applyButtonDisabled,
               ]}
               disabled={selectedLabels.size === 0}
@@ -191,7 +193,7 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
                 style={[
                   styles.labelChip,
                   isSelected
-                    ? styles.labelChipSelected
+                    ? { backgroundColor: isDark ? '#70BFBD' : '#4C9C9B' }
                     : { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
                 ]}
                 accessibilityLabel={`${label}, ${isSelected ? 'selected' : 'not selected'}${isCustom ? ', custom' : ''}`}
@@ -232,7 +234,7 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
             {inputValue.trim().length > 0 && (
               <TouchableOpacity
                 onPress={handleAddCustomLabel}
-                style={styles.addInputButton}
+                style={[styles.addInputButton, { backgroundColor: isDark ? '#70BFBD' : '#4C9C9B' }]}
                 accessibilityLabel="Add custom label"
                 accessibilityRole="button"
               >
@@ -242,16 +244,25 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
           </View>
         </View>
       </View>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     position: 'absolute',
-    bottom: 100,
-    left: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  container: {
+    width: '90%',
+    maxWidth: 360,
     borderRadius: 16,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
@@ -270,7 +281,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#EDE9FE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -288,12 +298,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#6C5CE7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   applyButtonDisabled: {
-    backgroundColor: '#A5B4FC',
+    backgroundColor: '#99D1D0',
     opacity: 0.5,
   },
   dismissButton: {
@@ -315,7 +324,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   labelChipSelected: {
-    backgroundColor: '#6C5CE7',
+    // Color set inline based on isDark
   },
   labelText: {
     fontSize: 14,
@@ -344,7 +353,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#6C5CE7',
     alignItems: 'center',
     justifyContent: 'center',
   },
