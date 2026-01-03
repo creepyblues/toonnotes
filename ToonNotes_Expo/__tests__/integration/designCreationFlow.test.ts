@@ -8,7 +8,7 @@
 
 import { useNoteStore } from '@/stores/noteStore';
 import { useDesignStore } from '@/stores/designStore';
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore, FREE_DESIGN_QUOTA } from '@/stores/userStore';
 import { NoteColor, NoteDesign } from '@/types';
 
 // Mock router
@@ -70,7 +70,7 @@ describe('Design Creation Flow - Integration Tests', () => {
     useUserStore.setState({
       user: {
         id: 'test-user',
-        freeDesignUsed: false,
+        freeDesignsUsed: 0, // 3 free designs available
         coinBalance: 100,
         createdAt: Date.now(),
       },
@@ -129,8 +129,8 @@ describe('Design Creation Flow - Integration Tests', () => {
       expect(useDesignStore.getState().designs).toHaveLength(1);
       expect(useDesignStore.getState().designs[0].id).toBe('design-123');
 
-      // Verify coin was spent (free design used)
-      expect(useUserStore.getState().user.freeDesignUsed).toBe(true);
+      // Verify free design was used (1 of 3)
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(1);
       expect(useUserStore.getState().user.coinBalance).toBe(100);
     });
 
@@ -311,20 +311,25 @@ describe('Design Creation Flow - Integration Tests', () => {
       useUserStore.getState().spendCoin();
       designStore.addDesign(createMockDesign());
 
-      expect(useUserStore.getState().user.freeDesignUsed).toBe(true);
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(1);
       expect(useUserStore.getState().user.coinBalance).toBe(initialBalance);
     });
 
-    it('should spend coins on subsequent designs', () => {
+    it('should spend coins after all 3 free designs are used', () => {
       const designStore = useDesignStore.getState();
 
-      // Use free design
+      // Use all 3 free designs
       useUserStore.getState().spendCoin();
       designStore.addDesign(createMockDesign());
+      useUserStore.getState().spendCoin();
+      useDesignStore.getState().addDesign({ ...createMockDesign(), id: 'design-2' });
+      useUserStore.getState().spendCoin();
+      useDesignStore.getState().addDesign({ ...createMockDesign(), id: 'design-3' });
 
       const balanceAfterFree = useUserStore.getState().user.coinBalance;
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(3);
 
-      // Create second design (should cost 1 coin)
+      // Create 4th design (should cost 1 coin)
       const cost = useUserStore.getState().getDesignCost();
       expect(cost).toBe(1);
 
@@ -334,9 +339,9 @@ describe('Design Creation Flow - Integration Tests', () => {
       expect(useUserStore.getState().user.coinBalance).toBe(balanceAfterFree - 1);
     });
 
-    it('should fail design creation when no coins and free design used', () => {
+    it('should fail design creation when no coins and all free designs used', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 0 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 0 },
       }));
 
       const canAfford = useUserStore.getState().canAffordDesign();

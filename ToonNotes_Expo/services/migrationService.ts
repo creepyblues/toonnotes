@@ -51,7 +51,7 @@ export async function migrateLocalDataToCloud(userId: string): Promise<Migration
     // 1. Migrate user profile/settings
     const { error: profileError } = await supabase.from('profiles').upsert({
       id: userId,
-      free_design_used: userStore.user.freeDesignUsed,
+      free_designs_used: userStore.user.freeDesignsUsed,
       coin_balance: userStore.user.coinBalance,
       has_completed_welcome: userStore.onboarding.hasCompletedWelcome,
       seen_coach_marks: userStore.onboarding.seenCoachMarks,

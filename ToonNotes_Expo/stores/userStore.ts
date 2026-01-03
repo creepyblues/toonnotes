@@ -47,11 +47,11 @@ interface UserState {
   isPurchaseSheetOpen: boolean;
 
   // User actions
-  setFreeDesignUsed: () => void;
   addCoins: (amount: number) => void;
   spendCoin: () => boolean; // Returns false if insufficient balance
   canAffordDesign: () => boolean;
   getDesignCost: () => number; // 0 if free design available, 1 otherwise
+  getFreeDesignsRemaining: () => number; // Returns remaining free designs (0-3)
 
   // Purchase actions
   addPurchase: (purchase: Purchase) => void;
@@ -81,10 +81,13 @@ interface UserState {
   setOnboardingVersion: (version: number) => void;
 }
 
+// Free design quota constant (exported for UI)
+export const FREE_DESIGN_QUOTA = 3;
+
 const INITIAL_USER: User = {
   id: generateUUID(),
-  freeDesignUsed: false,
-  coinBalance: 0, // Production: users start with 0 coins (1 free design available)
+  freeDesignsUsed: 0, // Production: users start with 0 used, 3 free designs available
+  coinBalance: 0,
   createdAt: Date.now(),
 };
 
@@ -107,12 +110,6 @@ export const useUserStore = create<UserState>()(
       isProcessingPurchase: false,
       isPurchaseSheetOpen: false,
 
-      setFreeDesignUsed: () => {
-        set((state) => ({
-          user: { ...state.user, freeDesignUsed: true },
-        }));
-      },
-
       addCoins: (amount) => {
         set((state) => ({
           user: { ...state.user, coinBalance: state.user.coinBalance + amount },
@@ -122,10 +119,10 @@ export const useUserStore = create<UserState>()(
       spendCoin: () => {
         const { user } = get();
 
-        // If free design not used, use it instead of coins
-        if (!user.freeDesignUsed) {
+        // If free designs remaining, use one instead of coins
+        if (user.freeDesignsUsed < FREE_DESIGN_QUOTA) {
           set((state) => ({
-            user: { ...state.user, freeDesignUsed: true },
+            user: { ...state.user, freeDesignsUsed: state.user.freeDesignsUsed + 1 },
           }));
           return true;
         }
@@ -143,12 +140,17 @@ export const useUserStore = create<UserState>()(
 
       canAffordDesign: () => {
         const { user } = get();
-        return !user.freeDesignUsed || user.coinBalance >= 1;
+        return user.freeDesignsUsed < FREE_DESIGN_QUOTA || user.coinBalance >= 1;
       },
 
       getDesignCost: () => {
         const { user } = get();
-        return user.freeDesignUsed ? 1 : 0;
+        return user.freeDesignsUsed < FREE_DESIGN_QUOTA ? 0 : 1;
+      },
+
+      getFreeDesignsRemaining: () => {
+        const { user } = get();
+        return Math.max(0, FREE_DESIGN_QUOTA - user.freeDesignsUsed);
       },
 
       // Purchase actions
@@ -325,6 +327,21 @@ export const useUserStore = create<UserState>()(
           // Explicitly exclude geminiApiKey from persistence
         },
       }),
+      // Migration: Convert old freeDesignUsed boolean to new freeDesignsUsed number
+      onRehydrateStorage: () => (state) => {
+        if (state?.user) {
+          const user = state.user as User & { freeDesignUsed?: boolean };
+          // Migrate from old boolean field to new number field
+          if (typeof user.freeDesignUsed === 'boolean') {
+            user.freeDesignsUsed = user.freeDesignUsed ? 1 : 0;
+            delete user.freeDesignUsed;
+          }
+          // Ensure freeDesignsUsed exists (for very old users)
+          if (typeof user.freeDesignsUsed !== 'number') {
+            user.freeDesignsUsed = 0;
+          }
+        }
+      },
     }
   )
 );

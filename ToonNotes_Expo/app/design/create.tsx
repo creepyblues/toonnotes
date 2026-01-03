@@ -8,7 +8,7 @@
  * 4. Apply selected elements while keeping label preset design (fonts, colors, icons)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,20 +27,28 @@ import {
   User,
   ImageSquare,
   CheckCircle,
+  Coin,
 } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useUserStore, useDesignStore, useNoteStore } from '@/stores';
+import { FREE_DESIGN_QUOTA } from '@/stores/userStore';
 import { NoteDesign } from '@/types';
 import { generateStickerFromImage } from '@/services/geminiService';
 import { useTheme } from '@/src/theme';
+import { UpgradeModal } from '@/components/shop/UpgradeModal';
+import {
+  trackDesignFlowStarted,
+  trackDesignGenerated,
+  trackPaywallShown,
+} from '@/utils/analytics';
 
 type ApplyOption = 'sticker' | 'background' | 'both';
 
 export default function CreateDesignScreen() {
   const router = useRouter();
   const { returnTo, noteId } = useLocalSearchParams<{ returnTo?: string; noteId?: string }>();
-  const { getDesignCost, canAffordDesign, spendCoin } = useUserStore();
+  const { getDesignCost, canAffordDesign, spendCoin, getFreeDesignsRemaining, user } = useUserStore();
   const { addDesign, getDesignById } = useDesignStore();
   const { getNoteById, updateNote } = useNoteStore();
   const { colors, isDark } = useTheme();
@@ -51,9 +59,16 @@ export default function CreateDesignScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedOption, setSelectedOption] = useState<ApplyOption>('both');
   const [step, setStep] = useState<'select' | 'options'>('select');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const cost = getDesignCost();
   const canAfford = canAffordDesign();
+  const freeRemaining = getFreeDesignsRemaining();
+
+  // Track flow started on mount
+  useEffect(() => {
+    trackDesignFlowStarted(freeRemaining, user.coinBalance);
+  }, []);
 
   // Get current note's design to preserve label preset elements
   const currentNote = noteId ? getNoteById(noteId) : null;
@@ -65,7 +80,9 @@ export default function CreateDesignScreen() {
 
   const handleSelectImage = async () => {
     if (!canAfford) {
-      Alert.alert('Not Enough Coins', 'You need more coins to create a design. Purchase more in Settings.');
+      // Show upgrade modal instead of alert
+      trackPaywallShown(freeRemaining, user.coinBalance);
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -112,12 +129,18 @@ export default function CreateDesignScreen() {
   const handleApplyDesign = async () => {
     if (!selectedImage) return;
 
+    // Track whether we're using a free design
+    const usingFreeDesign = freeRemaining > 0;
+
     // Create design based on selected options
     const design = createCustomDesign();
 
     // Save the design first, then deduct cost (prevents coin loss on failure)
     addDesign(design);
     spendCoin();
+
+    // Track the design generation
+    trackDesignGenerated(usingFreeDesign);
 
     // Navigate based on origin
     if (returnTo === 'note' && noteId) {
@@ -330,24 +353,71 @@ export default function CreateDesignScreen() {
               </TouchableOpacity>
             )}
 
-            {/* Cost Indicator */}
+            {/* Free designs remaining / Cost Indicator */}
             <View className="items-center mt-8">
-              <View
-                className="flex-row items-center px-5 py-3 rounded-full"
-                style={{ backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }}
-              >
-                <Sparkle size={20} color={colors.accent} />
-                <Text
-                  className="font-semibold ml-2 text-base"
-                  style={{ color: colors.accent }}
-                >
-                  {cost === 0 ? 'Free!' : `${cost} coin`}
-                </Text>
-              </View>
-              {!canAfford && (
-                <Text className="text-sm mt-3" style={{ color: '#EF4444' }}>
-                  Not enough coins.
-                </Text>
+              {freeRemaining > 0 ? (
+                <>
+                  <View
+                    className="flex-row items-center px-5 py-3 rounded-full"
+                    style={{ backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }}
+                  >
+                    <Sparkle size={20} color={colors.accent} />
+                    <Text
+                      className="font-semibold ml-2 text-base"
+                      style={{ color: colors.accent }}
+                    >
+                      Free!
+                    </Text>
+                  </View>
+                  <Text
+                    className="text-sm mt-3"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    {freeRemaining} of {FREE_DESIGN_QUOTA} free designs remaining
+                  </Text>
+                </>
+              ) : canAfford ? (
+                <>
+                  <View
+                    className="flex-row items-center px-5 py-3 rounded-full"
+                    style={{ backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }}
+                  >
+                    <Coin size={20} color={colors.accent} weight="duotone" />
+                    <Text
+                      className="font-semibold ml-2 text-base"
+                      style={{ color: colors.accent }}
+                    >
+                      1 coin
+                    </Text>
+                  </View>
+                  <Text
+                    className="text-sm mt-3"
+                    style={{ color: colors.textSecondary }}
+                  >
+                    You have {user.coinBalance} coins
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <View
+                    className="flex-row items-center px-5 py-3 rounded-full"
+                    style={{ backgroundColor: '#FEF2F2' }}
+                  >
+                    <Coin size={20} color="#EF4444" weight="duotone" />
+                    <Text
+                      className="font-semibold ml-2 text-base"
+                      style={{ color: '#EF4444' }}
+                    >
+                      No coins
+                    </Text>
+                  </View>
+                  <Text
+                    className="text-sm mt-3"
+                    style={{ color: '#EF4444' }}
+                  >
+                    Free designs used. Get coins to continue.
+                  </Text>
+                </>
               )}
             </View>
           </View>
@@ -566,6 +636,12 @@ export default function CreateDesignScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Upgrade Modal (Soft Paywall) */}
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </SafeAreaView>
   );
 }

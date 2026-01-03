@@ -167,7 +167,7 @@ export interface LabelSuggestion {
 export interface User {
   id: string;
   email?: string;
-  freeDesignUsed: boolean;
+  freeDesignsUsed: number;  // Count of free designs used (0-3)
   coinBalance: number;
   createdAt: number;
 }

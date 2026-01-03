@@ -43,6 +43,7 @@ export default function SettingsScreen() {
     closePurchaseSheet,
     resetOnboarding,
     onboarding,
+    getFreeDesignsRemaining,
   } = useUserStore();
   const { getArchivedNotes, getDeletedNotes, clearUnpinnedNotes, getActiveNotes } = useNoteStore();
   const { designs, clearAllDesigns } = useDesignStore();
@@ -416,16 +417,16 @@ export default function SettingsScreen() {
         </View>
 
         {/* Free design indicator */}
-        {!user.freeDesignUsed && (
+        {getFreeDesignsRemaining() > 0 && (
           <View
             className="mt-6 p-4 rounded-2xl"
             style={{ backgroundColor: `${colors.accent}15` }}
           >
             <Text style={{ color: colors.accent, fontWeight: '600' }}>
-              Free Design Available
+              {getFreeDesignsRemaining()} of 3 Free Designs Remaining
             </Text>
             <Text style={{ color: colors.accentLight, fontSize: 14, marginTop: 4 }}>
-              Create your first custom design for free!
+              Create custom designs for free!
             </Text>
           </View>
         )}

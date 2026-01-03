@@ -1,11 +1,11 @@
 /**
  * Unit Tests for userStore
  *
- * Tests user economy (coins, free design), settings (dark mode, API key),
+ * Tests user economy (coins, free designs), settings (dark mode, API key),
  * and design affordability checks.
  */
 
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore, FREE_DESIGN_QUOTA } from '@/stores/userStore';
 import { NoteColor } from '@/types';
 
 // Mock generateUUID
@@ -19,7 +19,7 @@ describe('userStore', () => {
     useUserStore.setState({
       user: {
         id: 'test-user-id',
-        freeDesignUsed: false,
+        freeDesignsUsed: 0, // 3 free designs available
         coinBalance: 100,
         createdAt: Date.now(),
       },
@@ -30,38 +30,70 @@ describe('userStore', () => {
     });
   });
 
-  describe('User Economy - Free Design', () => {
-    it('should start with free design available', () => {
+  describe('User Economy - Free Designs', () => {
+    it('should start with 3 free designs available', () => {
       const store = useUserStore.getState();
 
-      expect(store.user.freeDesignUsed).toBe(false);
+      expect(store.user.freeDesignsUsed).toBe(0);
+      expect(store.getFreeDesignsRemaining()).toBe(3);
       expect(store.canAffordDesign()).toBe(true);
       expect(store.getDesignCost()).toBe(0);
     });
 
-    it('should use free design when spending coin for the first time', () => {
+    it('should use free design when spending coin with free designs remaining', () => {
       const store = useUserStore.getState();
       const initialBalance = store.user.coinBalance;
 
       const success = store.spendCoin();
 
       expect(success).toBe(true);
-      expect(useUserStore.getState().user.freeDesignUsed).toBe(true);
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(1);
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(2);
       expect(useUserStore.getState().user.coinBalance).toBe(initialBalance); // Balance unchanged
     });
 
-    it('should mark free design as used', () => {
+    it('should use all 3 free designs before spending coins', () => {
       const store = useUserStore.getState();
+      const initialBalance = store.user.coinBalance;
 
-      store.setFreeDesignUsed();
+      // Use all 3 free designs
+      store.spendCoin();
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(2);
 
-      expect(useUserStore.getState().user.freeDesignUsed).toBe(true);
+      useUserStore.getState().spendCoin();
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(1);
+
+      useUserStore.getState().spendCoin();
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(0);
+
+      // All free designs used, balance unchanged
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(3);
+      expect(useUserStore.getState().user.coinBalance).toBe(initialBalance);
+
+      // 4th design should spend a coin
+      useUserStore.getState().spendCoin();
+      expect(useUserStore.getState().user.coinBalance).toBe(initialBalance - 1);
     });
 
-    it('should show cost as 1 after free design is used', () => {
+    it('should show cost as 0 while free designs remain', () => {
       const store = useUserStore.getState();
 
-      store.setFreeDesignUsed();
+      expect(store.getDesignCost()).toBe(0);
+
+      store.spendCoin(); // Use 1
+      expect(useUserStore.getState().getDesignCost()).toBe(0);
+
+      useUserStore.getState().spendCoin(); // Use 2
+      expect(useUserStore.getState().getDesignCost()).toBe(0);
+
+      useUserStore.getState().spendCoin(); // Use 3
+      expect(useUserStore.getState().getDesignCost()).toBe(1); // Now costs 1
+    });
+
+    it('should show cost as 1 after all free designs are used', () => {
+      useUserStore.setState((state) => ({
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA },
+      }));
 
       expect(useUserStore.getState().getDesignCost()).toBe(1);
     });
@@ -92,10 +124,10 @@ describe('userStore', () => {
       expect(useUserStore.getState().user.coinBalance).toBe(160);
     });
 
-    it('should spend coin after free design is used', () => {
-      const store = useUserStore.getState();
-
-      store.setFreeDesignUsed();
+    it('should spend coin after free designs are used', () => {
+      useUserStore.setState((state) => ({
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA },
+      }));
 
       const initialBalance = useUserStore.getState().user.coinBalance;
 
@@ -105,9 +137,9 @@ describe('userStore', () => {
       expect(useUserStore.getState().user.coinBalance).toBe(initialBalance - 1);
     });
 
-    it('should fail to spend coin when balance is 0', () => {
+    it('should fail to spend coin when balance is 0 and no free designs', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 0 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 0 },
       }));
 
       const success = useUserStore.getState().spendCoin();
@@ -118,7 +150,7 @@ describe('userStore', () => {
 
     it('should handle spending last coin', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 1 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 1 },
       }));
 
       const success = useUserStore.getState().spendCoin();
@@ -127,45 +159,45 @@ describe('userStore', () => {
       expect(useUserStore.getState().user.coinBalance).toBe(0);
     });
 
-    it('should not allow spending when no free design and no coins', () => {
+    it('should not allow spending when no free designs and no coins', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 0 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 0 },
       }));
 
       const success = useUserStore.getState().spendCoin();
 
       expect(success).toBe(false);
       expect(useUserStore.getState().user.coinBalance).toBe(0);
-      expect(useUserStore.getState().user.freeDesignUsed).toBe(true);
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(FREE_DESIGN_QUOTA);
     });
   });
 
   describe('Design Affordability', () => {
-    it('should afford design with free design available', () => {
+    it('should afford design with free designs available', () => {
       const store = useUserStore.getState();
 
       expect(store.canAffordDesign()).toBe(true);
     });
 
-    it('should afford design with coins after free design used', () => {
-      const store = useUserStore.getState();
-
-      store.setFreeDesignUsed();
+    it('should afford design with coins after free designs used', () => {
+      useUserStore.setState((state) => ({
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA },
+      }));
 
       expect(useUserStore.getState().canAffordDesign()).toBe(true);
     });
 
-    it('should not afford design with no free design and no coins', () => {
+    it('should not afford design with no free designs and no coins', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 0 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 0 },
       }));
 
       expect(useUserStore.getState().canAffordDesign()).toBe(false);
     });
 
-    it('should afford design with exactly 1 coin', () => {
+    it('should afford design with exactly 1 coin and no free designs', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 1 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 1 },
       }));
 
       expect(useUserStore.getState().canAffordDesign()).toBe(true);
@@ -174,13 +206,49 @@ describe('userStore', () => {
     it('should calculate design cost correctly', () => {
       const store = useUserStore.getState();
 
-      // Free design not used
+      // Free designs available
       expect(store.getDesignCost()).toBe(0);
+      expect(store.getFreeDesignsRemaining()).toBe(3);
 
-      store.setFreeDesignUsed();
+      // Use 2 free designs
+      store.spendCoin();
+      useUserStore.getState().spendCoin();
 
-      // Free design used
+      expect(useUserStore.getState().getDesignCost()).toBe(0);
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(1);
+
+      // Use last free design
+      useUserStore.getState().spendCoin();
+
       expect(useUserStore.getState().getDesignCost()).toBe(1);
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(0);
+    });
+  });
+
+  describe('Free Designs Remaining', () => {
+    it('should return 3 when no designs used', () => {
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(3);
+    });
+
+    it('should return 2 when 1 design used', () => {
+      useUserStore.setState((state) => ({
+        user: { ...state.user, freeDesignsUsed: 1 },
+      }));
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(2);
+    });
+
+    it('should return 0 when all designs used', () => {
+      useUserStore.setState((state) => ({
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA },
+      }));
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(0);
+    });
+
+    it('should never return negative', () => {
+      useUserStore.setState((state) => ({
+        user: { ...state.user, freeDesignsUsed: 10 }, // More than quota
+      }));
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(0);
     });
   });
 
@@ -231,32 +299,23 @@ describe('userStore', () => {
     it('should set default note color', () => {
       const store = useUserStore.getState();
 
-      store.setDefaultNoteColor(NoteColor.Blue);
+      store.setDefaultNoteColor(NoteColor.Sky);
 
-      expect(useUserStore.getState().settings.defaultNoteColor).toBe(NoteColor.Blue);
+      expect(useUserStore.getState().settings.defaultNoteColor).toBe(NoteColor.Sky);
     });
 
     it('should change default note color multiple times', () => {
       const store = useUserStore.getState();
 
-      store.setDefaultNoteColor(NoteColor.Red);
-      useUserStore.getState().setDefaultNoteColor(NoteColor.Yellow);
-      useUserStore.getState().setDefaultNoteColor(NoteColor.Green);
+      store.setDefaultNoteColor(NoteColor.Rose);
+      useUserStore.getState().setDefaultNoteColor(NoteColor.Lavender);
+      useUserStore.getState().setDefaultNoteColor(NoteColor.Mint);
 
-      expect(useUserStore.getState().settings.defaultNoteColor).toBe(NoteColor.Green);
+      expect(useUserStore.getState().settings.defaultNoteColor).toBe(NoteColor.Mint);
     });
 
     it('should handle all note colors', () => {
-      const colors = [
-        NoteColor.White,
-        NoteColor.Red,
-        NoteColor.Orange,
-        NoteColor.Yellow,
-        NoteColor.Green,
-        NoteColor.Teal,
-        NoteColor.Blue,
-        NoteColor.Purple,
-      ];
+      const colors = Object.values(NoteColor);
 
       colors.forEach((color) => {
         useUserStore.getState().setDefaultNoteColor(color);
@@ -319,28 +378,31 @@ describe('userStore', () => {
   });
 
   describe('Integration Tests', () => {
-    it('should handle full design purchase flow with free design', () => {
+    it('should handle full design purchase flow with free designs', () => {
       const store = useUserStore.getState();
 
       // Check affordability
       expect(store.canAffordDesign()).toBe(true);
       expect(store.getDesignCost()).toBe(0);
+      expect(store.getFreeDesignsRemaining()).toBe(3);
 
       const initialBalance = store.user.coinBalance;
 
-      // Purchase design (uses free design)
-      const success = store.spendCoin();
+      // Purchase 3 designs (uses all free designs)
+      store.spendCoin();
+      useUserStore.getState().spendCoin();
+      useUserStore.getState().spendCoin();
 
-      expect(success).toBe(true);
-      expect(useUserStore.getState().user.freeDesignUsed).toBe(true);
-      expect(useUserStore.getState().user.coinBalance).toBe(initialBalance);
+      expect(useUserStore.getState().user.freeDesignsUsed).toBe(3);
+      expect(useUserStore.getState().user.coinBalance).toBe(initialBalance); // Balance unchanged
       expect(useUserStore.getState().canAffordDesign()).toBe(true); // Still can afford with coins
       expect(useUserStore.getState().getDesignCost()).toBe(1); // Now costs 1 coin
+      expect(useUserStore.getState().getFreeDesignsRemaining()).toBe(0);
     });
 
     it('should handle full design purchase flow with coins', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 5 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 5 },
       }));
 
       // Purchase 3 designs
@@ -354,7 +416,7 @@ describe('userStore', () => {
 
     it('should handle running out of coins', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 1 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 1 },
       }));
 
       // Purchase last design
@@ -373,7 +435,7 @@ describe('userStore', () => {
 
     it('should handle coin purchase and spending', () => {
       useUserStore.setState((state) => ({
-        user: { ...state.user, freeDesignUsed: true, coinBalance: 0 },
+        user: { ...state.user, freeDesignsUsed: FREE_DESIGN_QUOTA, coinBalance: 0 },
       }));
 
       expect(useUserStore.getState().canAffordDesign()).toBe(false);
@@ -420,16 +482,16 @@ describe('userStore', () => {
       const store = useUserStore.getState();
 
       store.toggleDarkMode();
-      useUserStore.getState().setDefaultNoteColor(NoteColor.Purple);
+      useUserStore.getState().setDefaultNoteColor(NoteColor.Violet);
       useUserStore.getState().setGeminiApiKey('test-key');
       useUserStore.getState().addCoins(50);
-      useUserStore.getState().spendCoin();
+      useUserStore.getState().spendCoin(); // Uses 1 free design
 
       const finalState = useUserStore.getState();
       expect(finalState.settings.darkMode).toBe(true);
-      expect(finalState.settings.defaultNoteColor).toBe(NoteColor.Purple);
+      expect(finalState.settings.defaultNoteColor).toBe(NoteColor.Violet);
       expect(finalState.settings.geminiApiKey).toBe('test-key');
-      expect(finalState.user.freeDesignUsed).toBe(true);
+      expect(finalState.user.freeDesignsUsed).toBe(1);
       expect(finalState.user.coinBalance).toBe(150); // 100 + 50, free design used
     });
   });
