@@ -13,12 +13,14 @@ import {
   Image,
   NativeSyntheticEvent,
   TextInputSelectionChangeEventData,
-  BackHandler,
   Keyboard,
   Animated,
+  Share,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import {
   CaretLeft,
   PushPin,
@@ -31,6 +33,7 @@ import {
   Plus,
   Hash,
   Check,
+  ShareNetwork,
   // Label icons for note editor
   CheckSquare,
   Star,
@@ -92,7 +95,9 @@ import {
   useUserStore,
   useLabelSuggestionStore,
   createPendingSuggestions,
+  useAuthStore,
 } from '@/stores';
+import { createShareLink } from '@/services/shareService';
 import {
   useEditorContent,
   toggleCheckboxAtLine,
@@ -153,6 +158,7 @@ const getLabelColor = (index: number, isDark: boolean) => {
 export default function NoteEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const {
     getNoteById,
     updateNote,
@@ -195,6 +201,7 @@ export default function NoteEditorScreen() {
   }, [note?.designId]);
   const [showMenu, setShowMenu] = useState(false);
   const [showDesignPicker, setShowDesignPicker] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Hashtag autocomplete state
   const [showHashtagAutocomplete, setShowHashtagAutocomplete] = useState(false);
@@ -282,6 +289,9 @@ export default function NoteEditorScreen() {
 
   // Track original content to detect changes for analysis
   const originalContentRef = useRef({ title: note?.title || '', content: note?.content || '' });
+
+  // Track pending navigation action for beforeRemove listener
+  const pendingNavigationRef = useRef<any>(null);
 
   // Use the editor content hook for parsing
   const { parsedLines, checkboxLines } = useEditorContent(content);
@@ -620,8 +630,15 @@ export default function NoteEditorScreen() {
   // Callback when toast is confirmed/dismissed
   const handleToastComplete = useCallback(() => {
     setWaitingForToast(false);
-    router.back();
-  }, [router]);
+    // Dispatch the pending navigation action that was stored when beforeRemove fired
+    if (pendingNavigationRef.current) {
+      navigation.dispatch(pendingNavigationRef.current);
+      pendingNavigationRef.current = null;
+    } else {
+      // Fallback: if no pending action (e.g., programmatic back button press), use router.back()
+      router.back();
+    }
+  }, [navigation, router]);
 
   const handleBack = async () => {
     // Dismiss keyboard first
@@ -682,15 +699,93 @@ export default function NoteEditorScreen() {
     );
   };
 
-  // Android hardware back button handler
+  // Share note handler
+  const handleShare = async () => {
+    // Check if user is signed in
+    const { user } = useAuthStore.getState();
+    if (!user) {
+      Alert.alert(
+        'Sign In Required',
+        'Please sign in to share notes.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign In',
+            onPress: () => router.push('/auth'),
+          },
+        ]
+      );
+      return;
+    }
+
+    setShowMenu(false);
+    setIsSharing(true);
+
+    try {
+      const result = await createShareLink(note, user.id);
+      if (result) {
+        await Share.share({
+          message: `Check out my note "${note.title || 'Untitled'}": ${result.shareUrl}`,
+          url: result.shareUrl, // iOS only
+        });
+      } else {
+        Alert.alert('Error', 'Failed to create share link. Please try again.');
+      }
+    } catch (error) {
+      if ((error as Error).message !== 'Share was dismissed') {
+        Alert.alert('Error', 'Failed to share note. Please try again.');
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // Universal navigation listener for all dismissal methods (swipe-down, back button, etc.)
   useEffect(() => {
-    const backAction = () => {
-      handleBack();
-      return true; // Prevent default back behavior
-    };
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-    return () => backHandler.remove();
-  }, [title, content, color, designId, note?.labels]);
+    const unsubscribe = navigation.addListener('beforeRemove', async (e: any) => {
+      // Safety check - allow navigation if note doesn't exist
+      if (!note) {
+        return;
+      }
+
+      // Don't block if we're waiting for toast (toast will handle navigation)
+      if (waitingForToast) {
+        return;
+      }
+
+      // Prevent default behavior
+      e.preventDefault();
+
+      // Dismiss keyboard first
+      Keyboard.dismiss();
+
+      // Save current state (including designId to prevent design loss)
+      updateNote(note.id, { title, content, color, designId });
+
+      // Delete empty notes
+      if (!title.trim() && !content.trim()) {
+        deleteNote(note.id);
+        navigation.dispatch(e.data.action);
+        return;
+      }
+
+      // Trigger label analysis if note has content
+      if (title.trim() || content.trim()) {
+        const hasSuggestions = await analyzeForLabels();
+        if (hasSuggestions) {
+          // Store the navigation action for later dispatch after toast
+          pendingNavigationRef.current = e.data.action;
+          setWaitingForToast(true);
+          return;
+        }
+      }
+
+      // No suggestions, proceed with navigation
+      navigation.dispatch(e.data.action);
+    });
+
+    return unsubscribe;
+  }, [navigation, title, content, color, designId, note, waitingForToast, updateNote, deleteNote]);
 
   const handleApplyDesign = (design: NoteDesign) => {
     setDesignId(design.id);
@@ -909,6 +1004,31 @@ export default function NoteEditorScreen() {
               borderColor: isDark ? '#252136' : '#EDE9FE',
             }}
           >
+            <TouchableOpacity
+              onPress={handleShare}
+              disabled={isSharing}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: isDark ? '#252136' : '#EDE9FE',
+                opacity: isSharing ? 0.5 : 1,
+              }}
+              accessibilityLabel="Share note"
+              accessibilityHint="Creates a shareable link"
+              accessibilityRole="button"
+            >
+              {isSharing ? (
+                <ActivityIndicator size={18} color="#3B82F6" />
+              ) : (
+                <ShareNetwork size={18} color="#3B82F6" weight="regular" />
+              )}
+              <Text style={{ marginLeft: 12, color: '#3B82F6' }}>
+                {isSharing ? 'Creating link...' : 'Share'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={handleArchive}
               style={{
