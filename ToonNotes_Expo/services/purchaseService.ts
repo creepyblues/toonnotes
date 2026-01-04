@@ -1,4 +1,6 @@
 import { devLog, devWarn } from '@/utils/devLog';
+import { recordError } from '@/services/firebaseAnalytics';
+
 /**
  * Purchase Service - RevenueCat Integration
  *
@@ -159,6 +161,7 @@ class PurchaseService {
       }
 
       console.error('Purchase failed:', purchaseError);
+      recordError(new Error(purchaseError.message || 'Purchase failed'), { service: 'purchase', method: 'purchasePackage' });
       return {
         success: false,
         coinsGranted: 0,

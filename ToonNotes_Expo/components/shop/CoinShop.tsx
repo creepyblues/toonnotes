@@ -30,6 +30,22 @@ import { Purchase } from '@/types';
 // Check if running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
 
+// Mock packages for screenshot/development purposes
+// Set to true only for screenshots, false for production
+const USE_MOCK_PACKAGES = false;
+
+interface MockPackage {
+  identifier: string;
+  productId: string;
+  priceString: string;
+}
+
+const MOCK_PACKAGES: MockPackage[] = [
+  { identifier: 'starter', productId: 'com.toonnotes.coins.starter', priceString: '$0.99' },
+  { identifier: 'popular', productId: 'com.toonnotes.coins.popular', priceString: '$2.99' },
+  { identifier: 'bestvalue', productId: 'com.toonnotes.coins.bestvalue', priceString: '$5.99' },
+];
+
 interface CoinShopProps {
   visible: boolean;
   onClose: () => void;
@@ -45,9 +61,11 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
   } = useUserStore();
 
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+  const [mockPackages, setMockPackages] = useState<MockPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [usingMock, setUsingMock] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -58,9 +76,16 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
   const loadPackages = async () => {
     setLoading(true);
     setError(null);
+    setUsingMock(false);
 
     // Check if running in Expo Go
     if (isExpoGo) {
+      if (USE_MOCK_PACKAGES) {
+        setMockPackages(MOCK_PACKAGES);
+        setUsingMock(true);
+        setLoading(false);
+        return;
+      }
       setError('EXPO_GO');
       setLoading(false);
       return;
@@ -68,6 +93,12 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
 
     // Check if RevenueCat is initialized
     if (!purchaseService.isInitialized()) {
+      if (USE_MOCK_PACKAGES) {
+        setMockPackages(MOCK_PACKAGES);
+        setUsingMock(true);
+        setLoading(false);
+        return;
+      }
       setError('Purchase service not configured. Please check your RevenueCat API keys.');
       setLoading(false);
       return;
@@ -77,6 +108,12 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
     if (offering?.availablePackages) {
       setPackages(offering.availablePackages);
     } else {
+      if (USE_MOCK_PACKAGES) {
+        setMockPackages(MOCK_PACKAGES);
+        setUsingMock(true);
+        setLoading(false);
+        return;
+      }
       setError('Unable to load packages. Please try again.');
     }
     setLoading(false);
@@ -210,8 +247,96 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
               <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
           </View>
+        ) : usingMock ? (
+          /* Mock Package Cards for Screenshots */
+          <View style={styles.packagesContainer}>
+            {mockPackages.map((pkg) => {
+              const config = getPackageConfig(pkg.productId);
+              const totalCoins = getCoinsForProduct(pkg.productId);
+
+              if (!config) return null;
+
+              return (
+                <TouchableOpacity
+                  key={pkg.identifier}
+                  onPress={() => Alert.alert('Demo Mode', 'Purchases are disabled in demo mode.')}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.packageCard,
+                    {
+                      borderColor: config.isBestValue
+                        ? colors.accent
+                        : config.isMostPopular
+                        ? '#10B981'
+                        : colors.border,
+                      backgroundColor: config.isBestValue
+                        ? `${colors.accent}10`
+                        : colors.surfaceCard,
+                    },
+                  ]}
+                >
+                  {/* Badge */}
+                  {config.isBestValue && (
+                    <View style={[styles.badge, { backgroundColor: colors.accent }]}>
+                      <Crown size={12} color="#FFFFFF" weight="fill" />
+                      <Text style={styles.badgeText}>BEST VALUE</Text>
+                    </View>
+                  )}
+                  {config.isMostPopular && !config.isBestValue && (
+                    <View style={[styles.badge, { backgroundColor: '#10B981' }]}>
+                      <Star size={12} color="#FFFFFF" weight="fill" />
+                      <Text style={styles.badgeText}>POPULAR</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.packageContent}>
+                    {/* Icon */}
+                    <View
+                      style={[
+                        styles.coinIconContainer,
+                        { backgroundColor: `${colors.accent}15` },
+                      ]}
+                    >
+                      <Coin size={28} color="#FBBF24" weight="fill" />
+                    </View>
+
+                    {/* Details */}
+                    <View style={styles.packageDetails}>
+                      <Text
+                        style={[styles.packageCoins, { color: colors.textPrimary }]}
+                      >
+                        {totalCoins} Coins
+                      </Text>
+                      {config.bonusCoins > 0 && (
+                        <View style={styles.bonusRow}>
+                          <Gift size={14} color="#10B981" weight="fill" />
+                          <Text style={styles.bonusText}>
+                            +{config.bonusCoins} bonus
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Price Button */}
+                    <View
+                      style={[
+                        styles.priceButton,
+                        {
+                          backgroundColor: config.isBestValue
+                            ? colors.accent
+                            : colors.buttonPrimary,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.priceText}>{pkg.priceString}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         ) : (
-          /* Package Cards */
+          /* Real Package Cards */
           <View style={styles.packagesContainer}>
             {packages.map((pkg) => {
               const config = getPackageConfig(pkg.product.identifier);

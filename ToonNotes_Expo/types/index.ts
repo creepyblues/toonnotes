@@ -201,7 +201,6 @@ export interface CoinPackage {
 export interface AppSettings {
   darkMode: boolean;
   defaultNoteColor: NoteColor;
-  geminiApiKey?: string;
 }
 
 // View context for design adaptation

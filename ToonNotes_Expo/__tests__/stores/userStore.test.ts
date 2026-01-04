@@ -324,59 +324,6 @@ describe('userStore', () => {
     });
   });
 
-  describe('Settings - Gemini API Key', () => {
-    it('should start without API key', () => {
-      const store = useUserStore.getState();
-
-      expect(store.settings.geminiApiKey).toBeUndefined();
-    });
-
-    it('should set API key', () => {
-      const store = useUserStore.getState();
-
-      store.setGeminiApiKey('test-api-key-123');
-
-      expect(useUserStore.getState().settings.geminiApiKey).toBe('test-api-key-123');
-    });
-
-    it('should trim API key whitespace', () => {
-      const store = useUserStore.getState();
-
-      store.setGeminiApiKey('  test-key-with-spaces  ');
-
-      expect(useUserStore.getState().settings.geminiApiKey).toBe('test-key-with-spaces');
-    });
-
-    it('should clear API key when set to empty string', () => {
-      const store = useUserStore.getState();
-
-      store.setGeminiApiKey('test-key');
-      expect(useUserStore.getState().settings.geminiApiKey).toBe('test-key');
-
-      useUserStore.getState().setGeminiApiKey('');
-      expect(useUserStore.getState().settings.geminiApiKey).toBeUndefined();
-    });
-
-    it('should clear API key when set to whitespace-only string', () => {
-      const store = useUserStore.getState();
-
-      store.setGeminiApiKey('test-key');
-      useUserStore.getState().setGeminiApiKey('   ');
-
-      expect(useUserStore.getState().settings.geminiApiKey).toBeUndefined();
-    });
-
-    it('should update existing API key', () => {
-      const store = useUserStore.getState();
-
-      store.setGeminiApiKey('old-key');
-      expect(useUserStore.getState().settings.geminiApiKey).toBe('old-key');
-
-      useUserStore.getState().setGeminiApiKey('new-key');
-      expect(useUserStore.getState().settings.geminiApiKey).toBe('new-key');
-    });
-  });
-
   describe('Integration Tests', () => {
     it('should handle full design purchase flow with free designs', () => {
       const store = useUserStore.getState();
@@ -483,14 +430,12 @@ describe('userStore', () => {
 
       store.toggleDarkMode();
       useUserStore.getState().setDefaultNoteColor(NoteColor.Violet);
-      useUserStore.getState().setGeminiApiKey('test-key');
       useUserStore.getState().addCoins(50);
       useUserStore.getState().spendCoin(); // Uses 1 free design
 
       const finalState = useUserStore.getState();
       expect(finalState.settings.darkMode).toBe(true);
       expect(finalState.settings.defaultNoteColor).toBe(NoteColor.Violet);
-      expect(finalState.settings.geminiApiKey).toBe('test-key');
       expect(finalState.user.freeDesignsUsed).toBe(1);
       expect(finalState.user.coinBalance).toBe(150); // 100 + 50, free design used
     });

@@ -1,5 +1,6 @@
 import * as LegacyFileSystem from 'expo-file-system/legacy';
 import { devLog, devWarn, devError } from '@/utils/devLog';
+import { recordError, log } from '@/services/firebaseAnalytics';
 import * as Crypto from 'expo-crypto';
 import { NoteDesign, DesignTheme, BoardDesign, GeminiBoardDesignResponse, Note, TypographyPosterStyle, CharacterMascotType, TypographyStyleConfig, CharacterMascotConfig, TypographyImageResponse, CharacterMascotResponse, TextAnalysis } from '@/types';
 import { themeToNoteDesign } from './designEngine';
@@ -247,6 +248,7 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
       if (isNetworkError) {
         console.error('Network error detected. Make sure local API server is running on port 3001');
         if (attempt >= MAX_RETRIES - 1) {
+          recordError(error as Error, { service: 'gemini', method: 'generateDesign', type: 'network' });
           throw new Error('Cannot connect to design server. Make sure the local API server is running on port 3001.');
         }
       }
@@ -259,6 +261,8 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
         continue;
       }
 
+      // Record final failure
+      recordError(error as Error, { service: 'gemini', method: 'generateDesign', attempt: String(attempt + 1) });
       throw error;
     }
   }
@@ -456,6 +460,7 @@ export async function generateLuckyDesign(
       if (isNetworkError) {
         console.error('Network error detected. Make sure local API server is running on port 3001');
         if (attempt >= MAX_RETRIES - 1) {
+          recordError(error as Error, { service: 'gemini', method: 'generateLuckyDesign', type: 'network' });
           throw new Error('Cannot connect to design server. Make sure the local API server is running on port 3001.');
         }
       }
@@ -468,6 +473,8 @@ export async function generateLuckyDesign(
         continue;
       }
 
+      // Record final failure
+      recordError(error as Error, { service: 'gemini', method: 'generateLuckyDesign', attempt: String(attempt + 1) });
       throw error;
     }
   }

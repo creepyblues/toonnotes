@@ -13,6 +13,7 @@ import {
   signOut as authSignOut,
   OAuthProvider,
 } from '@/services/authService';
+import { setUserId, clearUser as clearAnalyticsUser, Analytics } from '@/services/firebaseAnalytics';
 
 interface AuthState {
   // State
@@ -97,9 +98,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           switch (event) {
             case 'SIGNED_IN':
               console.log('[AuthStore] User signed in:', session?.user?.email);
+              // Set user context for Firebase Analytics/Crashlytics
+              if (session?.user?.id) {
+                setUserId(session.user.id);
+                Analytics.login(session.user.app_metadata?.provider as 'google' | 'apple' || 'google');
+              }
               break;
             case 'SIGNED_OUT':
               console.log('[AuthStore] User signed out');
+              // Clear user context from Firebase
+              clearAnalyticsUser();
+              Analytics.signOut();
               break;
             case 'TOKEN_REFRESHED':
               console.log('[AuthStore] Token refreshed');

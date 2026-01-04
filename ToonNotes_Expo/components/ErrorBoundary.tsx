@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WarningCircle, ArrowCounterClockwise } from 'phosphor-react-native';
+import { recordError, log } from '@/services/firebaseAnalytics';
 
 interface ErrorBoundaryProps {
   error: Error;
@@ -22,13 +23,14 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     }
   };
 
-  // Log error for debugging (will be sent to Sentry once configured)
+  // Log error and send to Firebase Crashlytics
   React.useEffect(() => {
     console.error('ErrorBoundary caught error:', error);
     console.error('Stack trace:', error.stack);
 
-    // TODO: Send to Sentry once configured
-    // Sentry.captureException(error);
+    // Send to Firebase Crashlytics
+    log('ErrorBoundary triggered');
+    recordError(error, { context: 'error_boundary' });
   }, [error]);
 
   return (

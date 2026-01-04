@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "908256602330",
+    "project_id": "toonnotes",
+    "storage_bucket": "toonnotes.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:908256602330:android:dfc3d1d72fa8f3234f1de3",
+        "android_client_info": {
+          "package_name": "com.toonnotes.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5-ZUiVdg_oLysuPnNLdZSfKO7r4LNpKI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

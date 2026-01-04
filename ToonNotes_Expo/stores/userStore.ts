@@ -2,12 +2,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { User, AppSettings, NoteColor, Purchase } from '@/types';
 import { generateUUID } from '@/utils/uuid';
-import {
-  saveApiKey,
-  getApiKey,
-  deleteApiKey,
-  maskApiKey,
-} from '@/services/secureStorage';
 import { debouncedStorage } from './debouncedStorage';
 import { CoachMarkId } from '@/constants/onboardingConfig';
 
@@ -37,9 +31,6 @@ interface UserState {
   user: User;
   settings: AppSettings;
   onboarding: OnboardingState;
-  // API key is stored in memory only (loaded from SecureStore)
-  apiKeyLoaded: boolean;
-  apiKeyMasked: string | null;
 
   // Purchase state
   purchases: Purchase[];
@@ -65,13 +56,6 @@ interface UserState {
   toggleDarkMode: () => void;
   setDefaultNoteColor: (color: NoteColor) => void;
 
-  // API Key actions (secure storage)
-  setGeminiApiKey: (key: string) => void; // Deprecated - use async version
-  loadApiKey: () => Promise<string | null>;
-  saveGeminiApiKey: (key: string) => Promise<boolean>;
-  clearGeminiApiKey: () => Promise<boolean>;
-  hasApiKey: () => boolean;
-
   // Onboarding actions
   completeWelcome: () => void;
   markCoachMarkSeen: (id: CoachMarkId | string) => void;
@@ -87,7 +71,7 @@ export const FREE_DESIGN_QUOTA = 3;
 const INITIAL_USER: User = {
   id: generateUUID(),
   freeDesignsUsed: 0, // Production: users start with 0 used, 3 free designs available
-  coinBalance: 0,
+  coinBalance: 5, // New users start with 5 coins
   createdAt: Date.now(),
 };
 
@@ -102,8 +86,6 @@ export const useUserStore = create<UserState>()(
       user: INITIAL_USER,
       settings: INITIAL_SETTINGS,
       onboarding: INITIAL_ONBOARDING,
-      apiKeyLoaded: false,
-      apiKeyMasked: null,
 
       // Purchase state
       purchases: [],
@@ -196,74 +178,6 @@ export const useUserStore = create<UserState>()(
         }));
       },
 
-      // Deprecated - kept for backward compatibility with tests
-      // Use saveGeminiApiKey for production code
-      setGeminiApiKey: (key) => {
-        const trimmedKey = key.trim();
-        set((state) => ({
-          settings: { ...state.settings, geminiApiKey: trimmedKey || undefined },
-          apiKeyMasked: trimmedKey ? maskApiKey(trimmedKey) : null,
-        }));
-
-        // Also save to secure storage (fire and forget for sync compatibility)
-        if (trimmedKey) {
-          saveApiKey(trimmedKey).catch(console.error);
-        } else {
-          deleteApiKey().catch(console.error);
-        }
-      },
-
-      // Load API key from secure storage
-      loadApiKey: async () => {
-        try {
-          const key = await getApiKey();
-          set({
-            apiKeyLoaded: true,
-            apiKeyMasked: key ? maskApiKey(key) : null,
-            settings: {
-              ...get().settings,
-              geminiApiKey: key || undefined,
-            },
-          });
-          return key;
-        } catch (error) {
-          console.error('Failed to load API key:', error);
-          set({ apiKeyLoaded: true });
-          return null;
-        }
-      },
-
-      // Save API key to secure storage
-      saveGeminiApiKey: async (key: string) => {
-        const trimmedKey = key.trim();
-        const success = await saveApiKey(trimmedKey);
-        if (success) {
-          set((state) => ({
-            settings: { ...state.settings, geminiApiKey: trimmedKey || undefined },
-            apiKeyMasked: trimmedKey ? maskApiKey(trimmedKey) : null,
-          }));
-        }
-        return success;
-      },
-
-      // Clear API key from secure storage
-      clearGeminiApiKey: async () => {
-        const success = await deleteApiKey();
-        if (success) {
-          set((state) => ({
-            settings: { ...state.settings, geminiApiKey: undefined },
-            apiKeyMasked: null,
-          }));
-        }
-        return success;
-      },
-
-      // Check if API key is set
-      hasApiKey: () => {
-        const { settings } = get();
-        return !!settings.geminiApiKey;
-      },
-
       // ========================================================================
       // Onboarding Actions
       // ========================================================================
@@ -316,16 +230,11 @@ export const useUserStore = create<UserState>()(
     {
       name: 'toonnotes-user',
       storage: createJSONStorage(() => debouncedStorage),
-      // Don't persist API key in AsyncStorage - it's stored in SecureStore
       partialize: (state) => ({
         user: state.user,
         purchases: state.purchases,
         onboarding: state.onboarding,
-        settings: {
-          darkMode: state.settings.darkMode,
-          defaultNoteColor: state.settings.defaultNoteColor,
-          // Explicitly exclude geminiApiKey from persistence
-        },
+        settings: state.settings,
       }),
       // Migration: Convert old freeDesignUsed boolean to new freeDesignsUsed number
       onRehydrateStorage: () => (state) => {

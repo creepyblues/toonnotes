@@ -87,8 +87,10 @@ import {
 import { useColorScheme } from '@/components/useColorScheme';
 import { purchaseService } from '@/services/purchaseService';
 import { initSentry } from '@/services/sentry';
+import { initFirebase, trackScreen } from '@/services/firebaseAnalytics';
+import { usePathname } from 'expo-router';
 
-// Initialize Sentry for error monitoring
+// Initialize Sentry for error monitoring (kept as fallback)
 initSentry();
 
 // Custom error boundary with ToonNotes styling
@@ -190,6 +192,11 @@ export default function RootLayout() {
     });
   }, []);
 
+  // Initialize Firebase Analytics & Crashlytics
+  useEffect(() => {
+    initFirebase();
+  }, []);
+
   if (!loaded && !error) {
     // Return a simple loading view instead of null
     return null;
@@ -200,6 +207,28 @@ export default function RootLayout() {
       <RootLayoutNav />
     </FontLoadingContext.Provider>
   );
+}
+
+/**
+ * Navigation tracker component for Firebase Analytics screen views.
+ * Tracks screen changes automatically using Expo Router's usePathname.
+ */
+function NavigationTracker() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!pathname) return;
+
+    // Convert pathname to readable screen name
+    // "/" -> "Home", "/note/123" -> "note_123", "/design/create" -> "design_create"
+    const screenName = pathname === '/'
+      ? 'Home'
+      : pathname.replace(/^\//, '').replace(/\//g, '_');
+
+    trackScreen(screenName);
+  }, [pathname]);
+
+  return null;
 }
 
 function RootLayoutNav() {
@@ -262,6 +291,7 @@ function RootLayoutNav() {
 
   return (
     <>
+      <NavigationTracker />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <CoachMarksProvider>

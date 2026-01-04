@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert, TextInput, Modal, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Switch, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -8,8 +8,6 @@ import {
   Coin,
   Info,
   CaretRight,
-  Key,
-  X,
   Palette,
   ArrowCounterClockwise,
   SignOut,
@@ -32,12 +30,6 @@ export default function SettingsScreen() {
     toggleDarkMode,
     user,
     addCoins,
-    apiKeyLoaded,
-    apiKeyMasked,
-    loadApiKey,
-    saveGeminiApiKey,
-    clearGeminiApiKey,
-    hasApiKey,
     isPurchaseSheetOpen,
     openPurchaseSheet,
     closePurchaseSheet,
@@ -48,18 +40,8 @@ export default function SettingsScreen() {
   const { getArchivedNotes, getDeletedNotes, clearUnpinnedNotes, getActiveNotes } = useNoteStore();
   const { designs, clearAllDesigns } = useDesignStore();
   const { user: authUser, signOut, isLoading: isAuthLoading } = useAuthStore();
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const isAuthEnabled = isSupabaseConfigured();
-
-  // Load API key from secure storage on mount
-  useEffect(() => {
-    if (!apiKeyLoaded) {
-      loadApiKey();
-    }
-  }, [apiKeyLoaded, loadApiKey]);
 
   const archivedCount = getArchivedNotes().length;
   const deletedCount = getDeletedNotes().length;
@@ -74,51 +56,6 @@ export default function SettingsScreen() {
 
   const handleBuyCoins = () => {
     openPurchaseSheet();
-  };
-
-  const handleSaveApiKey = async () => {
-    setIsSaving(true);
-    try {
-      const success = await saveGeminiApiKey(apiKeyInput);
-      if (success) {
-        setShowApiKeyModal(false);
-        setApiKeyInput('');
-        Alert.alert('Success', 'API key saved securely!');
-      } else {
-        Alert.alert(
-          'Invalid API Key',
-          'Please enter a valid Gemini API key. It should start with "AIza" and contain only alphanumeric characters.'
-        );
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save API key. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleClearApiKey = async () => {
-    Alert.alert(
-      'Clear API Key',
-      'Are you sure you want to remove your API key?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            await clearGeminiApiKey();
-            setShowApiKeyModal(false);
-            Alert.alert('Success', 'API key removed.');
-          },
-        },
-      ]
-    );
-  };
-
-  const handleOpenApiKeyModal = () => {
-    setApiKeyInput(''); // Don't pre-fill for security
-    setShowApiKeyModal(true);
   };
 
   const handleSignOut = () => {
@@ -296,35 +233,6 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* API Section */}
-        <View className="mt-6">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            AI Configuration
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            <TouchableOpacity
-              onPress={handleOpenApiKeyModal}
-              className="flex-row items-center justify-between px-4 py-3"
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Key size={20} color={colors.accent} weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Gemini API Key</Text>
-              </View>
-              <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 15 }}>
-                  {!apiKeyLoaded ? 'Loading...' : apiKeyMasked || 'Not set'}
-                </Text>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Appearance Section */}
         <View className="mt-6">
           <Text
@@ -431,183 +339,97 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* Debug Section */}
-        <View className="mt-6 mb-8">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            Debug
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            <TouchableOpacity
-              onPress={() => {
-                addCoins(100);
-                Alert.alert('Success', 'Added 100 coins!');
-              }}
-              className="flex-row items-center justify-between px-4 py-3"
-              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
+        {/* Debug Section - Admin only */}
+        {authUser?.email === 'creepyblues@gmail.com' && (
+          <View className="mt-6 mb-8">
+            <Text
+              className="text-xs uppercase tracking-wider px-2 mb-2"
+              style={{ color: colors.textSecondary }}
             >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52, 199, 89, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Coin size={20} color="#34C759" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Add 100 Coins</Text>
-              </View>
-              <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleClearUnpinnedNotes}
-              className="flex-row items-center justify-between px-4 py-3"
-              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Trash size={20} color="#FF3B30" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear Unpinned Notes</Text>
-              </View>
-              <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleClearAllDesigns}
-              className="flex-row items-center justify-between px-4 py-3"
-              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 149, 0, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Palette size={20} color="#FF9500" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear All Designs</Text>
-              </View>
-              <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                Alert.alert(
-                  'Reset Onboarding',
-                  'This will show the welcome carousel and coach marks again on next app launch.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Reset',
-                      onPress: () => {
-                        resetOnboarding();
-                        Alert.alert('Done', 'Onboarding reset. Restart the app to see the welcome screen again.');
-                      },
-                    },
-                  ]
-                );
-              }}
-              className="flex-row items-center justify-between px-4 py-3"
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(88, 86, 214, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowCounterClockwise size={20} color="#5856D6" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Reset Onboarding</Text>
-              </View>
-              <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 13 }}>
-                  {onboarding.hasCompletedWelcome ? 'Completed' : 'Not started'}
-                </Text>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* API Key Modal */}
-      <Modal
-        visible={showApiKeyModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowApiKeyModal(false)}
-      >
-        <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.overlayDark }}>
-          <View
-            className="w-[90%] max-w-[400px] rounded-2xl p-6"
-            style={{ backgroundColor: colors.surfaceElevated }}
-          >
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                Gemini API Key
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowApiKeyModal(false)}
-                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <X size={18} color={colors.textSecondary} weight="regular" />
-              </TouchableOpacity>
-            </View>
-
-            <Text className="mb-3" style={{ color: colors.textSecondary }}>
-              Enter your Gemini API key to enable AI-powered design generation.
+              Debug
             </Text>
-
-            {hasApiKey() && (
-              <Text className="mb-3 text-xs" style={{ color: '#34C759' }}>
-                Current key: {apiKeyMasked}
-              </Text>
-            )}
-
-            <TextInput
-              className="rounded-xl px-4 py-3 mb-4"
-              style={{
-                backgroundColor: colors.backgroundSecondary,
-                color: colors.textPrimary,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
-              placeholder={hasApiKey() ? 'Enter new API key...' : 'AIza...'}
-              placeholderTextColor={colors.textTertiary}
-              value={apiKeyInput}
-              onChangeText={setApiKeyInput}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isSaving}
-            />
-
-            <View className="flex-row gap-3">
+            <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
               <TouchableOpacity
-                onPress={() => setShowApiKeyModal(false)}
-                className="flex-1 py-3 rounded-xl items-center"
-                style={{ backgroundColor: colors.buttonSecondary }}
-                disabled={isSaving}
+                onPress={() => {
+                  addCoins(100);
+                  Alert.alert('Success', 'Added 100 coins!');
+                }}
+                className="flex-row items-center justify-between px-4 py-3"
+                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
               >
-                <Text className="font-medium" style={{ color: colors.textPrimary }}>Cancel</Text>
+                <View className="flex-row items-center">
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52, 199, 89, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Coin size={20} color="#34C759" weight="regular" />
+                  </View>
+                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Add 100 Coins</Text>
+                </View>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
               </TouchableOpacity>
+
               <TouchableOpacity
-                onPress={handleSaveApiKey}
-                className="flex-1 py-3 rounded-xl items-center"
-                disabled={isSaving || !apiKeyInput.trim()}
-                style={{ backgroundColor: colors.buttonPrimary, opacity: isSaving || !apiKeyInput.trim() ? 0.5 : 1 }}
+                onPress={handleClearUnpinnedNotes}
+                className="flex-row items-center justify-between px-4 py-3"
+                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
               >
-                {isSaving ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text className="text-white font-semibold">Save</Text>
-                )}
+                <View className="flex-row items-center">
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash size={20} color="#FF3B30" weight="regular" />
+                  </View>
+                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear Unpinned Notes</Text>
+                </View>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleClearAllDesigns}
+                className="flex-row items-center justify-between px-4 py-3"
+                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
+              >
+                <View className="flex-row items-center">
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 149, 0, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Palette size={20} color="#FF9500" weight="regular" />
+                  </View>
+                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear All Designs</Text>
+                </View>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    'Reset Onboarding',
+                    'This will show the welcome carousel and coach marks again on next app launch.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Reset',
+                        onPress: () => {
+                          resetOnboarding();
+                          Alert.alert('Done', 'Onboarding reset. Restart the app to see the welcome screen again.');
+                        },
+                      },
+                    ]
+                  );
+                }}
+                className="flex-row items-center justify-between px-4 py-3"
+              >
+                <View className="flex-row items-center">
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(88, 86, 214, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <ArrowCounterClockwise size={20} color="#5856D6" weight="regular" />
+                  </View>
+                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Reset Onboarding</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 13 }}>
+                    {onboarding.hasCompletedWelcome ? 'Completed' : 'Not started'}
+                  </Text>
+                  <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+                </View>
               </TouchableOpacity>
             </View>
-
-            {hasApiKey() && (
-              <TouchableOpacity
-                onPress={handleClearApiKey}
-                className="mt-4 py-2 items-center"
-                disabled={isSaving}
-              >
-                <Text style={{ color: '#FF3B30', fontSize: 14, fontWeight: '500' }}>Remove API Key</Text>
-              </TouchableOpacity>
-            )}
           </View>
-        </View>
-      </Modal>
+        )}
+      </ScrollView>
 
       {/* Coin Shop */}
       <CoinShop
