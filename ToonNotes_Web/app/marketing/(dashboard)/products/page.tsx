@@ -11,7 +11,15 @@ interface ProductManifest {
     web: { name: string; current_version: string; status: string };
   };
   aliases: Record<string, string>;
-  upcoming: Array<{ version: string; codename: string; target_date: string }>;
+  upcoming: Array<{ version: string; codename: string; target_date: string | Date }>;
+}
+
+// Helper to format dates that may come as Date objects from js-yaml
+function formatDate(value: string | Date, options?: Intl.DateTimeFormatOptions): string {
+  if (value instanceof Date) {
+    return value.toLocaleDateString(undefined, options);
+  }
+  return value;
 }
 
 export default async function ProductsPage() {
@@ -143,7 +151,7 @@ export default async function ProductsPage() {
                   <div className="font-medium text-gray-900">v{release.version}</div>
                   <div className="text-sm text-gray-500">{release.codename}</div>
                 </div>
-                <div className="text-sm text-gray-500">{release.target_date}</div>
+                <div className="text-sm text-gray-500">{formatDate(release.target_date)}</div>
               </div>
             ))}
           </div>
@@ -183,7 +191,7 @@ export default async function ProductsPage() {
         <div className="text-center text-sm text-gray-500">
           Last synced: {manifest.last_synced instanceof Date
             ? manifest.last_synced.toLocaleString()
-            : new Date(manifest.last_synced).toLocaleString()}
+            : manifest.last_synced}
           <span className="mx-2">|</span>
           Run <code className="bg-gray-100 px-1 rounded">/sync-versions</code> to update
         </div>
