@@ -4,7 +4,7 @@ import FileViewer from '@/components/marketing/FileViewer';
 import yaml from 'js-yaml';
 
 interface ProductManifest {
-  last_synced: string;
+  last_synced: string | Date;
   products: {
     ios: { name: string; current_version: string; build_number: string; status: string };
     android: { name: string; current_version: string; version_code: number; status: string };
@@ -181,7 +181,9 @@ export default async function ProductsPage() {
       {/* Sync Info */}
       {manifest && (
         <div className="text-center text-sm text-gray-500">
-          Last synced: {new Date(manifest.last_synced).toLocaleString()}
+          Last synced: {manifest.last_synced instanceof Date
+            ? manifest.last_synced.toLocaleString()
+            : new Date(manifest.last_synced).toLocaleString()}
           <span className="mx-2">|</span>
           Run <code className="bg-gray-100 px-1 rounded">/sync-versions</code> to update
         </div>
