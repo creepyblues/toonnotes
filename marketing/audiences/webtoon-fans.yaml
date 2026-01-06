@@ -1,0 +1,141 @@
+# Secondary Target Audience: Webtoon/Anime Fans
+# Source: ToonNotes_Expo/PRD.md Section 3
+# Updated: Strategy v2 - Now secondary to "Prolific Procrastinator" ICP
+#
+# NOTE: This audience is a fandom-specific subset of the Prolific Procrastinator.
+# They share the same core pain points (organization guilt, retrieval failure)
+# but also want fandom-specific aesthetics. Use this for fandom-targeted campaigns.
+# See: audiences/prolific-procrastinator.yaml for primary ICP.
+
+name: webtoon-fans
+type: secondary
+priority: 2
+parent_icp: prolific-procrastinator
+
+demographics:
+  age_range: "16-35"
+  gender: "All"
+  location: "Global (focus: US, Korea, Japan, SEA)"
+  income: "Disposable income for entertainment/merchandise"
+
+psychographics:
+  interests:
+    - Webtoons (LINE Webtoon, Tapas, Lezhin)
+    - Anime streaming (Crunchyroll, Netflix)
+    - Manga reading
+    - Digital art and fan content
+    - Cosplay and conventions
+  values:
+    - Self-expression through fandom
+    - Aesthetic curation
+    - Community belonging
+    - Supporting creators
+  lifestyle:
+    - Mobile-first behavior
+    - Active social media users
+    - Content creators (fan art, edits)
+
+behaviors:
+  digital:
+    - Screenshots favorite panels/scenes
+    - Saves images to curate aesthetic
+    - Shares fandom content on social media
+    - Uses Pinterest boards for inspiration
+  purchasing:
+    - Buys merchandise (figures, posters, apparel)
+    - Purchases webtoon coins for early access
+    - Spends on sticker packs ($0.99-$2.99)
+    - Monthly spend: $5-20 on fandom content
+  content:
+    - Creates fan edits and compilations
+    - Participates in fandom discussions
+    - Follows official and fan accounts
+
+platforms:
+  primary:
+    - instagram: "Reels, aesthetic posts, fan edits"
+    - tiktok: "Trend participation, short videos"
+    - twitter: "Discussion, updates, threads"
+  secondary:
+    - reddit: "r/webtoons, r/anime, r/manga"
+    - discord: "Fandom servers, communities"
+    - pinterest: "Aesthetic boards, inspiration"
+
+pain_points:
+  # Organization pain (shared with Prolific Procrastinator ICP)
+  organization:
+    - "I know I saved that webtoon rec somewhere..."
+    - "My reading lists are a mess across apps"
+    - "I should organize my fan content but never do"
+  # Design/Identity pain (specific to this audience)
+  design:
+    - Generic note apps don't reflect fandom identity
+    - Can't create custom themes without design skills
+    - Notes not designed for social sharing
+    - Disconnected: fandom consumption vs productivity tools
+
+needs:
+  - Express fandom identity in daily tools
+  - Create aesthetically pleasing content to share
+  - Simple, quick note-taking without complexity
+  - Personalization without design expertise
+
+messaging_hooks:
+  # v2: Lead with organization pain, then fandom aesthetic
+  primary_v2:
+    - "Never lose a webtoon rec again—AI organizes your notes"
+    - "Your fandom content, beautifully organized"
+    - "Capture everything. Organize nothing. See it in your aesthetic."
+  fandom_aesthetic:
+    - "Notes that match your aesthetic"
+    - "Your favorite panels, now in your notes"
+    - "Made for fans, by fans"
+  feature_focused:
+    - "AI transforms your webtoon screenshots into custom designs"
+    - "Get character stickers from your favorite scenes"
+    - "Share notes as beautiful images"
+  emotional:
+    - "Finally, notes that feel like you"
+    - "Bring your favorites into your daily life"
+    - "Where fandom meets productivity"
+
+content_preferences:
+  formats:
+    - Short-form video (15-60 seconds)
+    - Carousel posts (before/after, tutorials)
+    - Aesthetic imagery
+    - Behind-the-scenes content
+  topics:
+    - Feature demonstrations
+    - Design showcases
+    - Fan spotlights (user content)
+    - Seasonal/trending anime content
+  tone:
+    - Playful and fun
+    - Fandom-aware (understands references)
+    - Not trying too hard
+    - Authentic enthusiasm
+
+acquisition_channels:
+  organic:
+    - App Store search (ASO)
+    - Social media discovery
+    - Reddit recommendations
+    - Word of mouth in fandom communities
+  paid:
+    - Instagram/TikTok ads
+    - Influencer partnerships
+    - Anime/webtoon content creator sponsorships
+
+conversion_triggers:
+  - Seeing a note design they love
+  - "Free first design" offer
+  - Friend recommendation
+  - Seeing shared notes on social
+  - Feature that solves specific pain point
+
+retention_factors:
+  - Regular new design creation
+  - Social sharing engagement
+  - New border templates/features
+  - Seasonal content and themes

@@ -1,0 +1,377 @@
+---
+name: marketing-campaign
+description: Creates and manages marketing campaigns for ToonNotes feature launches, seasonal promotions, and partnerships. This skill should be used when planning campaigns, coordinating multi-channel launches, or tracking campaign performance.
+---
+
+# Marketing Campaign Orchestrator
+
+This skill orchestrates multi-channel marketing campaigns using **Strategy v2: AI Organization + AI Design** positioning. All campaigns target the "Prolific Procrastinator" ICP and use pain-relief messaging.
+
+## Strategy v2 Core Positioning
+
+**One-liner:** "Capture everything. Organize nothing. See it beautifully."
+
+**ICP:** The Prolific Procrastinator - heavy note-takers who have given up on organization
+
+**Two Pillars:**
+1. **AI Organization** - Structure without effort
+2. **AI Design** - Visualization as organization
+
+**Use Cases:** Studying, Collecting Ideas, Drafting Writing, Trip Planning
+
+## When to Use This Skill
+
+- Planning a feature launch campaign
+- Creating seasonal promotional campaigns
+- Coordinating multi-channel content
+- Tracking campaign status and performance
+- Generating campaign reports
+- Archiving completed campaigns
+
+## Commands
+
+```
+/marketing-campaign create --type=feature-launch --feature="Pro Subscription"
+/marketing-campaign create --type=seasonal --theme="back-to-school"
+/marketing-campaign create --type=partnership --partner="Webtoon Name"
+/marketing-campaign create --type=use-case --case=studying      # Use-case focused (v2)
+/marketing-campaign create --type=use-case --case=trip-planning # Use-case focused (v2)
+/marketing-campaign create --type=pillar --pillar=ai-organization  # Pillar focused (v2)
+/marketing-campaign list                          # List all campaigns
+/marketing-campaign list --status=active          # Filter by status
+/marketing-campaign status --campaign=pro-launch  # Check specific campaign
+/marketing-campaign update --campaign=pro-launch --status=active
+/marketing-campaign archive --campaign=pro-launch
+/marketing-campaign report --campaign=pro-launch
+/marketing-campaign --dry-run                     # Preview without creating
+```
+
+## Campaign Types
+
+### Feature Launch
+
+For new feature releases. Coordinates App Store updates, social announcements, and landing page updates.
+
+**Typical Duration:** 4-6 weeks
+**Channels:** App Store, Instagram, Twitter, TikTok, Landing Page
+
+### Seasonal
+
+For holiday, back-to-school, or trending moments. Focus on themed content and limited-time messaging.
+
+**Typical Duration:** 2-4 weeks
+**Channels:** Instagram, TikTok, Twitter
+
+### Partnership
+
+For collaborations with IP owners, influencers, or other brands.
+
+**Typical Duration:** Varies
+**Channels:** All relevant platforms
+
+### Use Case (v2)
+
+For campaigns focused on specific use cases from Strategy v2.
+
+**Available Cases:**
+- `studying` - Knowledge Map for students/researchers
+- `ideas` - Idea Constellation for creative thinkers
+- `writing` - Writing Workspace for content creators
+- `trip-planning` - Trip Planner for travelers
+
+**Typical Duration:** 2-4 weeks
+**Channels:** Targeted by use case audience
+**Messaging:** Pain → Solution → Board Output format
+
+### Pillar (v2)
+
+For campaigns focused on one of the two AI pillars.
+
+**Available Pillars:**
+- `ai-organization` - "Structure without effort" focus
+- `ai-design` - "Visualization as organization" focus
+
+**Typical Duration:** 2-4 weeks
+**Channels:** All platforms
+**Messaging:** Pillar-specific pain points and benefits
+
+## Campaign Workflow
+
+### Step 1: Create Campaign
+
+When `/marketing-campaign create` is invoked:
+
+```
+1. Read marketing/messaging.md for core messaging
+2. Read relevant audience definitions
+3. If feature-launch: Read PRD for feature details
+4. Generate campaign.yaml configuration
+5. Save to marketing/campaigns/active/{campaign-slug}/
+```
+
+### Step 2: Generate Assets
+
+The campaign automatically triggers asset generation:
+
+```
+Campaign Creation
+       │
+       ├─→ /marketing-copy --feature="{Feature}"
+       │      └─→ Generates copy for all channels
+       │
+       ├─→ /aso-optimizer generate (if app-store channel)
+       │      └─→ Updates App Store copy
+       │
+       ├─→ /social-scheduler generate --feature="{Feature}"
+       │      └─→ Creates content calendar
+       │
+       └─→ Asset specs documented in campaign.yaml
+```
+
+### Step 3: Review & Launch
+
+Campaign enters "planning" status until manually set to "active".
+
+### Step 4: Monitor & Report
+
+Use `/marketing-campaign report` to generate performance summary.
+
+### Step 5: Archive
+
+Completed campaigns move to `marketing/campaigns/archive/`.
+
+## Campaign YAML Structure (v2)
+
+Campaigns are stored at `marketing/campaigns/active/{slug}/campaign.yaml`:
+
+```yaml
+name: pro-subscription-launch
+type: feature-launch
+status: planning  # planning, active, completed, archived
+created_at: 2026-01-03
+
+# v2: Strategy alignment
+strategy_v2:
+  icp: prolific-procrastinator  # Primary ICP
+  pillars:
+    - ai-organization  # Which pillars this campaign emphasizes
+    - ai-design
+  use_case: null  # or: studying, ideas, writing, trip-planning
+  key_insight: "Design IS Organization"
+
+dates:
+  planning_start: 2026-01-15
+  launch: 2026-02-01
+  end: 2026-02-28
+
+feature:
+  name: ToonNotes Pro Subscription
+  prd_section: "5.4, 7.2"
+  key_benefits:
+    - Unlimited AI designs (5/month included)
+    - No watermarks on exports
+    - Premium borders and themes
+    - Cloud backup (coming soon)
+
+audiences:
+  primary: prolific-procrastinator  # v2: Updated primary
+  secondary: webtoon-fans
+  tertiary: aesthetic-creators
+
+channels:
+  - platform: app-store
+    actions:
+      - update_description
+      - add_whats_new
+      - update_screenshots
+    status: pending
+
+  - platform: instagram
+    actions:
+      - carousel_post
+      - story_series
+      - reels
+    status: pending
+
+  - platform: twitter
+    actions:
+      - announcement_thread
+      - feature_highlights
+    status: pending
+
+  - platform: tiktok
+    actions:
+      - demo_video
+      - trend_participation
+    status: pending
+
+  - platform: landing
+    actions:
+      - update_pricing_section
+      - add_pro_benefits
+    status: pending
+
+assets:
+  required:
+    - pro_hero_image         # 1200x630 for OG/social
+    - feature_comparison     # Comparison graphic
+    - pricing_table          # Pro vs Free
+    - app_screenshots_pro    # App Store screenshots
+  generated: []
+
+messaging:
+  # v2: Lead with pain relief, then feature benefits
+  tagline: "Unlimited creativity. Zero organization effort."
+  pain_hooks:
+    - "Tired of notes you're embarrassed to share?"
+    - "Ready for organization without the work?"
+  key_messages:
+    - "Unlimited AI designs—organize and beautify everything"
+    - "Pro users get infinite boards: Knowledge Maps, Trip Planners, more"
+    - "Try Pro free for 7 days"
+  dual_pillar_message: "AI Organization + AI Design, unlimited."
+
+goals:
+  impressions: 50000
+  installs: 500
+  conversion_rate: 5%  # Free to Pro
+
+tracking:
+  utm_source: toonnotes
+  utm_medium: various
+  utm_campaign: pro-launch-jan26
+
+checklist:
+  pre_launch:
+    - [ ] Copy approved
+    - [ ] Assets created
+    - [ ] Landing page updated
+    - [ ] App Store listing updated
+    - [ ] Social content scheduled
+  launch_day:
+    - [ ] Announcement posted
+    - [ ] Monitor engagement
+    - [ ] Respond to comments
+  post_launch:
+    - [ ] Collect metrics
+    - [ ] Generate report
+    - [ ] Archive campaign
+
+notes: |
+  Additional context or decisions for this campaign.
+```
+
+## Campaign Directory Structure
+
+```
+marketing/campaigns/active/{campaign-slug}/
+├── campaign.yaml          # Campaign configuration
+├── assets/                # Campaign-specific assets
+│   ├── hero.png
+│   └── screenshots/
+├── copy/                  # Generated copy
+│   ├── app-store.md
+│   ├── instagram.md
+│   └── twitter.md
+└── metrics.json           # Performance data
+```
+
+## Pipeline Stages
+
+When creating a campaign, these stages run in sequence:
+
+| Stage | Skill Called | Output |
+|-------|-------------|--------|
+| 1. Initialize | - | campaign.yaml created |
+| 2. Generate Copy | `/marketing-copy` | Copy files in campaign/copy/ |
+| 3. ASO Update | `/aso-optimizer` | App Store copy (if applicable) |
+| 4. Social Calendar | `/social-scheduler` | Content calendar |
+| 5. Asset Specs | `/marketing-assets` | Asset requirements documented |
+
+## Status Transitions
+
+```
+planning → active → completed → archived
+              ↓
+           paused
+```
+
+## Campaign Report Format
+
+```markdown
+# Campaign Report: {Campaign Name}
+
+## Overview
+- **Type:** {type}
+- **Duration:** {start} to {end}
+- **Status:** {status}
+
+## Performance Summary
+
+| Metric | Target | Actual | % of Target |
+|--------|--------|--------|-------------|
+| Impressions | {n} | {n} | {%} |
+| Clicks | {n} | {n} | {%} |
+| Installs | {n} | {n} | {%} |
+| Conversions | {n} | {n} | {%} |
+
+## Channel Breakdown
+
+### Instagram
+- Posts: {n}
+- Reach: {n}
+- Engagement: {%}
+
+### Twitter
+- Posts: {n}
+- Impressions: {n}
+- Engagement: {%}
+
+...
+
+## Learnings
+- {What worked}
+- {What didn't}
+- {Recommendations for next time}
+
+## Assets Used
+- {List of assets with performance}
+
+## Next Steps
+- {Follow-up actions}
+```
+
+## Integration with Other Skills
+
+| Skill | Integration |
+|-------|-------------|
+| `/marketing-copy` | Generate channel-specific copy |
+| `/aso-optimizer` | Update App Store listings |
+| `/social-scheduler` | Create content calendar |
+| `/marketing-assets` | Document asset requirements |
+| `/marketing-report` | Generate performance reports |
+
+## Campaign Templates
+
+Templates are stored at `marketing/campaigns/templates/`:
+
+- `feature-launch.yaml` - New feature releases
+- `seasonal.yaml` - Holidays and trending moments
+- `partnership.yaml` - Collaborations
+
+## Error Handling
+
+| Error | Resolution |
+|-------|------------|
+| Campaign already exists | Use unique slug or update existing |
+| Missing feature in PRD | Add feature to PRD first |
+| Invalid campaign type | Use: feature-launch, seasonal, partnership |
+| Missing required fields | Check template for required fields |
+
+## Related Skills
+
+- `/marketing-copy` - Generate copy for campaigns
+- `/aso-optimizer` - App Store optimization
+- `/social-scheduler` - Content calendar planning
+- `/marketing-assets` - Asset generation
+- `/marketing-report` - Performance reporting

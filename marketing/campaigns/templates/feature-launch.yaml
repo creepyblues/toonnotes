@@ -1,0 +1,117 @@
+# Feature Launch Campaign Template
+# Usage: /marketing-campaign create --type=feature-launch --feature="Feature Name"
+
+name: "{feature-slug}-launch"
+type: feature-launch
+status: planning
+
+dates:
+  planning_start: "{today}"
+  launch: "{today + 14 days}"
+  end: "{launch + 28 days}"
+
+# REQUIRED: Product Version Targeting
+# Reference: marketing/product/manifest.yaml and marketing/product/features/_index.yaml
+product:
+  min_version: "{version}"           # Minimum app version required
+  platforms:
+    ios:
+      min_version: "{version}"
+      status: pending                # pending | live | not-applicable
+    android:
+      min_version: "{version}"
+      status: pending
+    web:
+      required: false                # Set to true if web app feature
+  features: []                       # List feature slugs from product/features/_index.yaml
+  # Example: [ai-design, pro-subscription]
+
+feature:
+  name: "{Feature Name}"
+  prd_section: ""  # Reference to PRD.md section
+  key_benefits:
+    - ""
+    - ""
+    - ""
+
+audiences:
+  primary: webtoon-fans
+  secondary: aesthetic-creators
+
+channels:
+  - platform: app-store
+    actions:
+      - update_description
+      - add_whats_new
+      - update_screenshots
+
+  - platform: instagram
+    actions:
+      - announcement_post
+      - carousel_features
+      - story_series
+      - reels_demo
+
+  - platform: twitter
+    actions:
+      - announcement_thread
+      - feature_highlights
+      - engagement_polls
+
+  - platform: tiktok
+    actions:
+      - demo_video
+      - trend_participation
+
+  - platform: landing
+    actions:
+      - update_features_section
+      - add_feature_page
+
+assets:
+  required:
+    - hero_image           # 1200x630 for OG/social
+    - feature_screenshots  # App store format
+    - social_graphics      # Platform-specific sizes
+    - demo_video           # 30-60 second walkthrough
+  generated: []
+
+messaging:
+  tagline: ""
+  key_messages:
+    - ""
+    - ""
+    - ""
+  hashtags:
+    - "#ToonNotes"
+    - ""
+
+goals:
+  impressions_target: 0
+  installs_target: 0
+  conversion_target: 0  # percentage
+
+tracking:
+  utm_source: toonnotes
+  utm_medium: various
+  utm_campaign: "{feature-slug}-launch-{month}{year}"
+
+checklist:
+  pre_launch:
+    - [ ] Product version verified (matches product.min_version)
+    - [ ] All features available in target version
+    - [ ] Platform parity confirmed (ios/android)
+    - [ ] Copy approved
+    - [ ] Assets created
+    - [ ] Landing page updated
+    - [ ] App Store listing updated
+    - [ ] Social content scheduled
+  launch_day:
+    - [ ] App version live in stores
+    - [ ] Announcement posted
+    - [ ] Monitor engagement
+    - [ ] Respond to comments
+  post_launch:
+    - [ ] Collect metrics
+    - [ ] Generate report
+    - [ ] Archive campaign

@@ -1,0 +1,74 @@
+# Android Release History
+# Platform-specific release tracking for Google Play
+
+platform: android
+package_id: com.toonnotes.app
+store_url: "https://play.google.com/store/apps/details?id=com.toonnotes.app"
+min_sdk: 24  # Android 7.0 (Nougat)
+
+releases:
+  - version: "1.1.1"
+    version_code: 3
+    release_date: 2026-01-03
+    status: development  # live | pending-review | rejected | beta | development
+    type: patch
+    highlights:
+      - "Auto-labeling on swipe-down modal dismissal"
+    marketing_focus: "Bug fix release"
+    notes: "Parity with iOS 1.1.1"
+
+  - version: "1.1.0"
+    version_code: 2
+    release_date: 2025-12-28
+    status: development
+    type: minor
+    highlights:
+      - "Google Sign-In authentication"
+      - "Supabase auth integration"
+    marketing_focus: "Authentication update"
+    notes: "First version with cloud authentication support"
+
+  - version: "1.0.0"
+    version_code: 1
+    release_date: 2025-12-15
+    status: development
+    type: major
+    highlights:
+      - "Initial release"
+      - "AI Design Generation (Gemini)"
+      - "Auto-styled notes (20/month free)"
+      - "Note organization with labels"
+      - "Custom borders and textures"
+      - "Note sharing with watermark"
+    marketing_focus: "Launch campaign - webtoon/anime aesthetic notes"
+    notes: "Android MVP - feature parity with iOS"
+
+upcoming:
+  - version: "1.2.0"
+    target_date: 2026-01-20
+    status: planned
+    features:
+      - pro-subscription
+      - unlimited-notes
+      - watermark-free
+      - premium-borders
+    marketing_campaign: "pro-launch"
+
+# Play Store metadata
+play_store:
+  category: "Productivity"
+  content_rating: "Everyone"
+  keywords:
+    - webtoon
+    - anime
+    - aesthetic
+    - notes
+    - journal
+    - AI
+    - design
+
+# Android-specific notes
+platform_notes:
+  - "Using Expo/React Native for cross-platform development"
+  - "Play Store release pending - currently iOS-first strategy"
+  - "Will use same Supabase backend as iOS"

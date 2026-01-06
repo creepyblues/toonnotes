@@ -1,0 +1,76 @@
+# iOS Release History
+# Platform-specific release tracking for App Store
+
+platform: ios
+bundle_id: com.toonnotes.app
+store_url: "https://apps.apple.com/app/toonnotes/id..."
+min_os: "iOS 15.0"
+
+releases:
+  - version: "1.1.1"
+    build: "2"
+    release_date: 2026-01-03
+    status: live  # live | pending-review | rejected | beta
+    type: patch  # major | minor | patch
+    highlights:
+      - "Auto-labeling on swipe-down modal dismissal"
+    marketing_focus: "Bug fix release"
+    notes: "Minor UX improvement for label workflow"
+
+  - version: "1.1.0"
+    build: "1"
+    release_date: 2025-12-28
+    status: live
+    type: minor
+    highlights:
+      - "Sign in with Apple authentication"
+      - "TestFlight beta distribution setup"
+      - "Supabase auth integration"
+    marketing_focus: "Authentication & beta launch"
+    notes: "First version with cloud authentication support"
+
+  - version: "1.0.0"
+    build: "1"
+    release_date: 2025-12-15
+    status: live
+    type: major
+    highlights:
+      - "Initial App Store release"
+      - "AI Design Generation (Gemini)"
+      - "Auto-styled notes (20/month free)"
+      - "Note organization with labels"
+      - "Custom borders and textures"
+      - "Note sharing with watermark"
+    marketing_focus: "Launch campaign - webtoon/anime aesthetic notes"
+    notes: "MVP launch targeting webtoon and anime fans"
+
+upcoming:
+  - version: "1.2.0"
+    target_date: 2026-01-20
+    status: development
+    features:
+      - pro-subscription
+      - unlimited-notes
+      - watermark-free
+      - premium-borders
+    marketing_campaign: "pro-launch"
+    app_store_notes: |
+      Introducing ToonNotes Pro!
+      - Unlimited auto-styled notes
+      - No watermarks on exports
+      - All 12+ premium borders
+      - 5 AI designs per month
+
+# App Store metadata
+app_store:
+  category: "Productivity"
+  subcategory: "Notes"
+  age_rating: "4+"
+  keywords:
+    - webtoon
+    - anime
+    - aesthetic
+    - notes
+    - journal
+    - AI
+    - design

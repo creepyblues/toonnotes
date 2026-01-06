@@ -1,0 +1,116 @@
+# Feature: Pro Subscription
+# Detailed specification for Pro tier marketing
+
+feature:
+  name: "ToonNotes Pro"
+  slug: pro-subscription
+  tagline: "Unlock your full creative potential"
+
+overview:
+  description: |
+    ToonNotes Pro removes all limits and unlocks premium features for the
+    ultimate aesthetic note-taking experience. Unlimited designs, no watermarks,
+    and exclusive premium content.
+
+  pricing:
+    monthly:
+      price: "$2.99"
+      billing: "per month"
+    yearly:
+      price: "$24.99"
+      billing: "per year"
+      savings: "2 months free"
+      monthly_equivalent: "$2.08"
+
+availability:
+  introduced: "1.2.0"
+  platforms: [ios, android]
+  payment_providers:
+    ios: "Apple In-App Purchase"
+    android: "Google Play Billing"
+
+benefits:
+  unlimited_notes:
+    name: "Unlimited Auto-Styled Notes"
+    free_limit: "20/month"
+    pro_limit: "unlimited"
+    value: "Never hit the limit again"
+
+  watermark_free:
+    name: "Watermark-Free Exports"
+    free_limit: "ToonNotes watermark"
+    pro_limit: "clean exports"
+    value: "Share without branding"
+
+  premium_borders:
+    name: "Premium Border Collection"
+    free_limit: "6 borders"
+    pro_limit: "12+ borders"
+    value: "Exclusive designs"
+
+  ai_designs:
+    name: "Monthly AI Designs"
+    free_limit: "1 (ever)"
+    pro_limit: "5/month"
+    value: "Fresh themes monthly"
+
+marketing:
+  value_props:
+    - "Remove all limits"
+    - "Premium-only content"
+    - "Support indie development"
+    - "Best value with yearly plan"
+
+  pain_points_solved:
+    - "Hit the 20 note limit too fast"
+    - "Watermark ruins my aesthetic shares"
+    - "Want access to all borders"
+    - "Need more AI designs"
+
+  target_segments:
+    power_users:
+      description: "Users who hit limits regularly"
+      conversion_hook: "Never hit limits again"
+    design_creators:
+      description: "Users who share their notes"
+      conversion_hook: "Watermark-free for clean shares"
+    collectors:
+      description: "Users who want all content"
+      conversion_hook: "Access every premium border"
+
+  objection_handling:
+    too_expensive:
+      objection: "It costs money"
+      response: "Less than a coffee/month, unlimited creativity"
+    not_enough_value:
+      objection: "Free is enough"
+      response: "20 notes goes fast - Pro users average 50+/month"
+    commitment_fear:
+      objection: "What if I stop using it"
+      response: "Cancel anytime, keep your created content"
+
+copy:
+  short: "Unlimited notes, zero limits"
+  medium: "Go Pro for unlimited auto-styled notes, watermark-free exports, and all premium borders"
+  long: |
+    ToonNotes Pro unlocks your full creative potential. Get unlimited auto-styled
+    notes (no more 20/month cap), export without watermarks for clean sharing,
+    access all 12+ premium borders, and enjoy 5 AI designs every month.
+
+    Choose monthly ($2.99) or save with yearly ($24.99 - 2 months free).
+
+  upgrade_prompts:
+    limit_reached: "You've used all 20 free notes this month. Go Pro for unlimited!"
+    watermark_shown: "Remove this watermark with Pro"
+    border_locked: "This premium border is Pro-only"
+    ai_limit: "Get 5 AI designs/month with Pro"
+
+  ctas:
+    primary: "Go Pro"
+    secondary: "Try Pro Free"
+    urgency: "Unlock Pro Now"
+
+assets:
+  comparison_table: true
+  feature_icons: true
+  testimonials_planned: true

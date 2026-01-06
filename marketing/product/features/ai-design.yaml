@@ -1,0 +1,77 @@
+# Feature: AI Design Generation
+# Detailed feature specification for marketing reference
+
+feature:
+  name: "AI Design Generation"
+  slug: ai-design
+  tagline: "Turn any image into a custom note theme"
+
+overview:
+  description: |
+    Upload any image - anime screenshot, webtoon panel, aesthetic photo - and
+    ToonNotes AI extracts colors, patterns, and vibes to create a unique note design.
+
+  how_it_works:
+    1: "Tap the AI design button"
+    2: "Choose or capture an image"
+    3: "AI analyzes colors, mood, and style"
+    4: "Get a custom note theme in seconds"
+
+  technology: "Powered by Google Gemini"
+
+availability:
+  introduced: "1.0.0"
+  platforms: [ios, android]
+  tier: free
+  limits:
+    free:
+      designs_per_account: 1
+      regenerations: 0
+    pro:
+      designs_per_month: 5
+      regenerations: unlimited
+
+marketing:
+  value_props:
+    - "No design skills needed"
+    - "Matches your favorite anime/webtoon aesthetic"
+    - "Unique themes from your own images"
+    - "AI-powered color extraction"
+
+  pain_points_solved:
+    - "Generic note apps look boring"
+    - "Can't find themes that match my style"
+    - "Don't know how to pick colors"
+
+  use_cases:
+    - "Create theme from favorite anime screenshot"
+    - "Match notes to webtoon color palette"
+    - "Design aesthetic study notes"
+    - "Personalize journal with photo vibes"
+
+  competitor_comparison:
+    notion: "No AI theming"
+    bear: "Limited color options"
+    goodnotes: "Manual template creation"
+
+copy:
+  short: "AI-powered custom note themes"
+  medium: "Upload any image and get a unique note design in seconds"
+  long: |
+    Turn your favorite anime screenshots, webtoon panels, or aesthetic photos
+    into beautiful custom note themes. ToonNotes AI extracts colors, patterns,
+    and vibes to create designs that match your unique style - no design skills needed.
+
+  ctas:
+    - "Try AI Design"
+    - "Create Your Theme"
+    - "Design from Image"
+
+assets:
+  screenshots_needed:
+    - "AI design button in editor"
+    - "Image selection screen"
+    - "Generated design preview"
+    - "Before/after comparison"
+
+  demo_video: "30s showing image → design flow"

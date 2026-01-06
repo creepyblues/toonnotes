@@ -1,0 +1,78 @@
+# Seasonal Campaign Template
+# Usage: /marketing-campaign create --type=seasonal --theme="back-to-school"
+
+name: "{theme-slug}-{year}"
+type: seasonal
+status: planning
+
+dates:
+  planning_start: "{today}"
+  launch: ""
+  end: ""
+
+theme:
+  name: "{Theme Name}"
+  description: ""
+  visual_style: ""
+  color_palette: []
+
+audiences:
+  primary: webtoon-fans
+  secondary: aesthetic-creators
+
+channels:
+  - platform: instagram
+    actions:
+      - themed_posts
+      - story_templates
+      - reels_content
+
+  - platform: tiktok
+    actions:
+      - trend_participation
+      - themed_content
+
+  - platform: twitter
+    actions:
+      - themed_posts
+      - engagement_polls
+
+assets:
+  required:
+    - themed_graphics     # Social media sizes
+    - story_templates     # Instagram/TikTok stories
+    - profile_elements    # Optional themed elements
+  generated: []
+
+messaging:
+  tagline: ""
+  key_messages:
+    - ""
+    - ""
+  hashtags:
+    - "#ToonNotes"
+    - ""
+
+content_calendar:
+  week_1: []
+  week_2: []
+  week_3: []
+  week_4: []
+
+tracking:
+  utm_source: toonnotes
+  utm_medium: social
+  utm_campaign: "{theme-slug}-{year}"
+
+checklist:
+  pre_launch:
+    - [ ] Theme assets created
+    - [ ] Content calendar finalized
+    - [ ] Posts scheduled
+  during:
+    - [ ] Monitor engagement
+    - [ ] Adjust content as needed
+  post_campaign:
+    - [ ] Collect metrics
+    - [ ] Generate report
+    - [ ] Archive campaign

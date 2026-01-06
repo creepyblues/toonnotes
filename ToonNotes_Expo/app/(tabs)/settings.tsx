@@ -14,6 +14,7 @@ import {
   User,
   Crown,
   Cloud,
+  UserMinus,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -77,6 +78,22 @@ export default function SettingsScreen() {
             } catch (error) {
               Alert.alert('Error', 'Failed to sign out. Please try again.');
             }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will open a web page where you can request permanent deletion of your account and all data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: () => {
+            Linking.openURL('https://toonnotes.com/delete-account');
           },
         },
       ]
@@ -222,6 +239,7 @@ export default function SettingsScreen() {
                 onPress={handleSignOut}
                 disabled={isAuthLoading}
                 className="flex-row items-center justify-between px-4 py-3"
+                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
               >
                 <View className="flex-row items-center">
                   <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
@@ -230,6 +248,23 @@ export default function SettingsScreen() {
                   <Text className="ml-3" style={{ color: '#FF3B30', fontSize: 17 }}>Sign Out</Text>
                 </View>
                 {isAuthLoading && <ActivityIndicator size="small" color="#FF3B30" />}
+              </TouchableOpacity>
+
+              {/* Delete Account */}
+              <TouchableOpacity
+                onPress={handleDeleteAccount}
+                className="flex-row items-center justify-between px-4 py-3"
+                accessibilityLabel="Delete account"
+                accessibilityRole="button"
+                accessibilityHint="Opens web page to request account deletion"
+              >
+                <View className="flex-row items-center">
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                    <UserMinus size={20} color="#FF3B30" weight="regular" />
+                  </View>
+                  <Text className="ml-3" style={{ color: '#FF3B30', fontSize: 17 }}>Delete Account</Text>
+                </View>
+                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
               </TouchableOpacity>
             </View>
           </View>

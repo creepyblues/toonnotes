@@ -1,0 +1,58 @@
+# Web Release History
+# Platform-specific tracking for ToonNotes Web
+
+platform: web
+url: "https://toonnotes.com"
+framework: "Next.js 16"
+hosting: "Vercel"
+
+releases:
+  - version: "0.1.0"
+    release_date: 2026-01-04
+    status: live
+    type: initial
+    highlights:
+      - "Marketing landing page"
+      - "App Store/Play Store links"
+      - "Shared note viewer"
+      - "Marketing admin dashboard"
+    marketing_focus: "App discovery and shared content"
+    notes: "Web presence for mobile app - not a standalone app"
+
+upcoming:
+  - version: "0.2.0"
+    target_date: TBD
+    status: planned
+    features:
+      - enhanced-landing
+      - testimonials
+      - pricing-page
+    notes: "Enhanced marketing site for Pro launch"
+
+# Web capabilities
+capabilities:
+  current:
+    - marketing_landing: true
+    - shared_note_viewer: true
+    - admin_dashboard: true
+    - og_image_generation: true
+  planned:
+    - web_app: false  # No plans for full web app
+    - cloud_sync_portal: false
+
+# Technical details
+technical:
+  framework: "Next.js 16 (App Router)"
+  hosting: "Vercel"
+  database: "Supabase (shared with mobile)"
+  features:
+    - "Server-side rendering for shared notes"
+    - "Dynamic OG image generation"
+    - "Protected admin routes"
+
+# Web-specific notes
+platform_notes:
+  - "Web is supporting platform for mobile apps"
+  - "Primary purpose: marketing and shared content viewing"
+  - "Admin dashboard for marketing team"
+  - "No plans for full web app version"

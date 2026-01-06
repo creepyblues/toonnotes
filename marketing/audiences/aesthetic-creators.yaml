@@ -1,0 +1,141 @@
+# Tertiary Target Audience: Aesthetic Note-Takers
+# Source: ToonNotes_Expo/PRD.md Section 3
+# Updated: Strategy v2 - Now tertiary (subset of Prolific Procrastinator)
+#
+# NOTE: This audience prioritizes visual aesthetics in digital tools.
+# They share organization pain with the primary ICP but are more focused
+# on visual customization than fandom content.
+# See: audiences/prolific-procrastinator.yaml for primary ICP.
+
+name: aesthetic-creators
+type: tertiary
+priority: 3
+parent_icp: prolific-procrastinator
+
+demographics:
+  age_range: "18-30"
+  gender: "Skews female (70%)"
+  location: "Global (focus: US, UK, Australia)"
+  income: "Entry-level to mid-career professionals"
+
+psychographics:
+  interests:
+    - Visual aesthetics and design
+    - Digital planning and journaling
+    - Productivity tools
+    - Content creation
+    - Self-improvement
+  values:
+    - Personal expression
+    - Quality over quantity
+    - Visual organization
+    - Creative outlets
+  lifestyle:
+    - Curates digital and physical spaces
+    - Values aesthetic consistency
+    - Documents life through creative means
+
+behaviors:
+  digital:
+    - Curates aesthetic feeds (Instagram, Pinterest)
+    - Uses multiple note/planning apps
+    - Creates content for social media
+    - Searches for customization options
+  purchasing:
+    - Buys digital planners and templates
+    - Purchases app subscriptions for aesthetics
+    - Invests in productivity tools
+    - Willing to pay for visual quality
+  content:
+    - Shares planning spreads and setups
+    - Creates "how I organize" content
+    - Participates in productivity communities
+
+platforms:
+  primary:
+    - instagram: "Aesthetic posts, planning spreads"
+    - pinterest: "Inspiration boards, templates"
+    - youtube: "Planning videos, app reviews"
+  secondary:
+    - tiktok: "Planning routines, app showcases"
+    - twitter: "Productivity tips, app discussions"
+    - reddit: "r/bulletjournal, r/productivity"
+
+pain_points:
+  # Organization pain (shared with Prolific Procrastinator ICP)
+  organization:
+    - "My planning notes are scattered everywhere"
+    - "I know I saved that inspiration somewhere..."
+    - "I start organizing, then give up"
+  # Design/Visual pain (specific to this audience)
+  design:
+    - Most note apps are visually boring
+    - Custom themes require design skills or paid templates
+    - Limited personalization options in free apps
+    - Can't achieve cohesive aesthetic across notes
+
+needs:
+  - Personalized, visually pleasing notes
+  - Easy customization without design expertise
+  - Professional-looking output for sharing
+  - Consistent aesthetic across content
+
+messaging_hooks:
+  # v2: Lead with organization + aesthetic solution
+  primary_v2:
+    - "Beautiful AND organized—AI handles both"
+    - "Your notes, finally matching your aesthetic AND making sense"
+    - "Design IS Organization. See it beautifully."
+  aesthetic_focused:
+    - "AI-powered custom themes from any image"
+    - "Personalized note designs in seconds"
+    - "Notes as aesthetic as your feed"
+  feature_focused:
+    - "Upload any image, get a matching theme"
+    - "Visual layouts that organize your thoughts"
+    - "Export picture-perfect notes for sharing"
+  emotional:
+    - "Your aesthetic, your notes"
+    - "No design skills required"
+    - "The organization you want, the look you love"
+
+content_preferences:
+  formats:
+    - Tutorial content (how to customize)
+    - Before/after transformations
+    - Design inspiration galleries
+    - Quick tips and hacks
+  topics:
+    - Design creation process
+    - Color palette inspiration
+    - Organization and planning tips
+    - Export and sharing workflows
+  tone:
+    - Inspirational and aspirational
+    - Helpful and educational
+    - Clean and polished
+    - Encouraging creativity
+
+acquisition_channels:
+  organic:
+    - Pinterest discovery
+    - Instagram Explore
+    - YouTube app reviews
+    - Reddit recommendations
+  paid:
+    - Pinterest ads (inspiration targeting)
+    - Instagram aesthetic accounts
+    - Productivity influencer partnerships
+
+conversion_triggers:
+  - Seeing beautiful design examples
+  - Frustration with current app limitations
+  - Planning/journaling content creators
+  - "AI-powered" customization appeal
+  - Free tier accessibility
+
+retention_factors:
+  - Regular design creation
+  - Export quality for sharing
+  - New features and templates
+  - Community inspiration

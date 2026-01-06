@@ -1,0 +1,174 @@
+# Feature Registry
+# Maps features to versions, platforms, and tiers
+# Reference this when creating campaigns to ensure feature availability
+
+features:
+  # Core Features (v1.0.0)
+  ai-design:
+    name: "AI Design Generation"
+    slug: ai-design
+    category: core
+    introduced: "1.0.0"
+    platforms: [ios, android]
+    tier: free
+    limits:
+      free: "1 design"
+      pro: "5 designs/month"
+    marketing_hook: "Turn any image into a custom note theme"
+    detail_file: features/ai-design.yaml
+
+  auto-styling:
+    name: "Auto-Styled Notes"
+    slug: auto-styling
+    category: core
+    introduced: "1.0.0"
+    platforms: [ios, android]
+    tier: free
+    limits:
+      free: "20/month"
+      pro: "unlimited"
+    marketing_hook: "Every note gets a unique aesthetic"
+
+  organization:
+    name: "Note Organization"
+    slug: organization
+    category: core
+    introduced: "1.0.0"
+    platforms: [ios, android]
+    tier: free
+    limits:
+      free: "unlimited"
+      pro: "unlimited"
+    marketing_hook: "Labels and folders for your aesthetic notes"
+
+  borders:
+    name: "Custom Borders"
+    slug: borders
+    category: design
+    introduced: "1.0.0"
+    platforms: [ios, android]
+    tier: mixed  # Some free, some pro
+    limits:
+      free: "6 basic borders"
+      pro: "12+ premium borders"
+    marketing_hook: "Frame your notes in style"
+
+  textures:
+    name: "Paper Textures"
+    slug: textures
+    category: design
+    introduced: "1.0.0"
+    platforms: [ios, android]
+    tier: free
+    limits:
+      free: "all textures"
+      pro: "all textures"
+    marketing_hook: "Paper, comic, artistic backgrounds"
+
+  sharing:
+    name: "Note Sharing"
+    slug: sharing
+    category: social
+    introduced: "1.0.0"
+    platforms: [ios, android, web]
+    tier: free
+    limits:
+      free: "with watermark"
+      pro: "watermark-free"
+    marketing_hook: "Share your aesthetic notes anywhere"
+    detail_file: features/sharing.yaml
+
+  # v1.1.0 Features
+  apple-signin:
+    name: "Sign in with Apple"
+    slug: apple-signin
+    category: auth
+    introduced: "1.1.0"
+    platforms: [ios]
+    tier: free
+    limits:
+      free: "full access"
+      pro: "full access"
+    marketing_hook: "Quick, secure sign-in"
+
+  google-signin:
+    name: "Google Sign-In"
+    slug: google-signin
+    category: auth
+    introduced: "1.1.0"
+    platforms: [android]
+    tier: free
+    limits:
+      free: "full access"
+      pro: "full access"
+    marketing_hook: "Sign in with your Google account"
+
+  # v1.2.0 Features (Upcoming)
+  pro-subscription:
+    name: "Pro Subscription"
+    slug: pro-subscription
+    category: monetization
+    introduced: "1.2.0"
+    platforms: [ios, android]
+    tier: pro
+    pricing:
+      monthly: "$2.99"
+      yearly: "$24.99"
+    marketing_hook: "Unlock your full creative potential"
+    detail_file: features/pro-subscription.yaml
+
+  unlimited-notes:
+    name: "Unlimited Auto-Styled Notes"
+    slug: unlimited-notes
+    category: pro-benefit
+    introduced: "1.2.0"
+    platforms: [ios, android]
+    tier: pro
+    marketing_hook: "No more monthly limits"
+
+  watermark-free:
+    name: "Watermark-Free Exports"
+    slug: watermark-free
+    category: pro-benefit
+    introduced: "1.2.0"
+    platforms: [ios, android]
+    tier: pro
+    marketing_hook: "Clean exports for sharing"
+
+  premium-borders:
+    name: "Premium Border Collection"
+    slug: premium-borders
+    category: pro-benefit
+    introduced: "1.2.0"
+    platforms: [ios, android]
+    tier: pro
+    marketing_hook: "Exclusive border designs"
+
+# Version → Feature mapping
+# Use this to verify campaign compatibility
+version_features:
+  "1.0.0":
+    - ai-design
+    - auto-styling
+    - organization
+    - borders
+    - textures
+    - sharing
+  "1.1.0":
+    - apple-signin
+    - google-signin
+  "1.1.1": []  # Bug fixes only
+  "1.2.0":
+    - pro-subscription
+    - unlimited-notes
+    - watermark-free
+    - premium-borders
+
+# Feature categories for dashboard grouping
+categories:
+  core: "Core Features"
+  design: "Design & Styling"
+  social: "Social & Sharing"
+  auth: "Authentication"
+  monetization: "Monetization"
+  pro-benefit: "Pro Benefits"

@@ -1,0 +1,83 @@
+# Feature: Note Sharing
+# Detailed specification for sharing functionality
+
+feature:
+  name: "Note Sharing"
+  slug: sharing
+  tagline: "Share your aesthetic notes anywhere"
+
+overview:
+  description: |
+    Export your beautifully styled notes as images or share them via web link.
+    Perfect for social media, study groups, or showing off your aesthetic to friends.
+
+  methods:
+    image_export:
+      description: "Export note as PNG/JPEG image"
+      platforms: [ios, android]
+      watermark:
+        free: "ToonNotes watermark in corner"
+        pro: "No watermark"
+
+    web_link:
+      description: "Generate shareable web link"
+      platforms: [ios, android, web]
+      features:
+        - "View note in browser"
+        - "Social media preview cards"
+        - "No app required to view"
+
+availability:
+  introduced: "1.0.0"
+  platforms: [ios, android, web]
+  tier: free
+  limits:
+    free:
+      image_export: "with watermark"
+      web_sharing: "unlimited"
+    pro:
+      image_export: "watermark-free"
+      web_sharing: "unlimited"
+
+marketing:
+  value_props:
+    - "Share aesthetic notes on any platform"
+    - "Web links work for anyone"
+    - "Social media optimized previews"
+    - "Study group friendly"
+
+  use_cases:
+    - "Post aesthetic notes on Instagram"
+    - "Share study notes with classmates"
+    - "Show off webtoon-themed journal"
+    - "Send styled notes to friends"
+
+  social_proof:
+    - "Instagram aesthetic community"
+    - "Study/productivity accounts"
+    - "Webtoon fan art sharing"
+
+copy:
+  short: "Share your aesthetic everywhere"
+  medium: "Export styled notes as images or share via web link"
+  long: |
+    Your aesthetic notes deserve to be seen. Export as beautiful images for
+    Instagram, Twitter, or anywhere you share. Or generate a web link that
+    anyone can view - no app required. Pro users get watermark-free exports
+    for the cleanest shares.
+
+  ctas:
+    - "Share Note"
+    - "Export Image"
+    - "Get Link"
+
+web_viewer:
+  url_format: "toonnotes.com/note/{shareToken}"
+  features:
+    - "Responsive design"
+    - "Original styling preserved"
+    - "Open Graph meta tags"
+    - "Download button"
+  seo:
+    - "Dynamic OG images"
+    - "Proper meta descriptions"

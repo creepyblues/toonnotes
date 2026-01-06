@@ -1,0 +1,51 @@
+# Product Version Manifest
+# Auto-sync: Run `/sync-versions` to update from source files
+# Source of truth for all ToonNotes product versions
+
+last_synced: 2026-01-04T12:00:00Z
+
+products:
+  ios:
+    name: "ToonNotes for iOS"
+    current_version: "1.1.1"
+    build_number: "2"
+    bundle_id: "com.toonnotes.app"
+    source: "ToonNotes_Expo/app.json"
+    store_url: "https://apps.apple.com/app/toonnotes/id..."
+    min_os: "iOS 15.0"
+    status: live  # live | beta | development
+
+  android:
+    name: "ToonNotes for Android"
+    current_version: "1.1.1"
+    version_code: 2
+    package_id: "com.toonnotes.app"
+    source: "ToonNotes_Expo/app.json"
+    store_url: "https://play.google.com/store/apps/details?id=com.toonnotes.app"
+    min_sdk: 24
+    status: development  # live | beta | development
+
+  web:
+    name: "ToonNotes Web"
+    current_version: "0.1.0"
+    source: "ToonNotes_Web/package.json"
+    url: "https://toonnotes.com"
+    status: "landing-page-only"  # landing-page-only | full-app
+
+# Version aliases for marketing convenience
+aliases:
+  latest: "1.1.1"
+  stable: "1.1.1"
+  pro_launch: "1.2.0"  # Upcoming
+
+# Upcoming releases
+upcoming:
+  - version: "1.2.0"
+    codename: "Pro Launch"
+    target_date: 2026-01-20
+    platforms: [ios, android]
+    campaign: "pro-launch"
+    features:
+      - pro-subscription
+      - unlimited-notes
+      - watermark-free

@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           <h1 className="font-display text-4xl font-bold text-warm-900 mb-2">
             Privacy Policy
           </h1>
-          <p className="text-warm-500 text-sm mb-10">Last Updated: January 4, 2025</p>
+          <p className="text-warm-500 text-sm mb-10">Last Updated: January 6, 2025</p>
 
           <section className="mb-10">
             <h2>Overview</h2>
@@ -168,10 +168,43 @@ export default function PrivacyPage() {
             <p>You can:</p>
             <ul>
               <li><strong>Opt out of analytics:</strong> Toggle off in app settings</li>
-              <li><strong>Delete your account:</strong> Contact us to request complete data deletion</li>
+              <li><strong>Delete your account:</strong> Request complete data deletion (see below)</li>
               <li><strong>Delete shared notes:</strong> Remove from the app at any time</li>
               <li><strong>Use without an account:</strong> Core note-taking features work offline without sign-in</li>
             </ul>
+          </section>
+
+          <section className="mb-10">
+            <h2>Account Deletion</h2>
+            <p>
+              You have the right to delete your ToonNotes account and all associated data at any time.
+            </p>
+            <h3>How to Request Deletion</h3>
+            <p>
+              Visit our <a href="/delete-account">Account Deletion Request page</a> and submit your email address.
+              You can also request deletion by emailing <a href="mailto:support@toonnotes.com">support@toonnotes.com</a>.
+            </p>
+            <h3>What Gets Deleted</h3>
+            <p>When we process your deletion request, we permanently remove:</p>
+            <ul>
+              <li>Your account profile (name, email, avatar)</li>
+              <li>All notes and their content</li>
+              <li>All custom designs you created</li>
+              <li>All labels and boards</li>
+              <li>Purchase history and coin balance</li>
+              <li>Any shared notes</li>
+            </ul>
+            <h3>Processing Time</h3>
+            <p>
+              We will process deletion requests within <strong>30 days</strong> and send a confirmation
+              email once complete. Note that some anonymized analytics data may be retained according
+              to Firebase&apos;s retention policies.
+            </p>
+            <h3>Before Deleting</h3>
+            <p>
+              Account deletion is permanent and cannot be undone. Any remaining coin balance is
+              non-refundable. We recommend exporting any notes you wish to keep before requesting deletion.
+            </p>
           </section>
 
           <section className="mb-10">
@@ -225,7 +258,7 @@ export default function PrivacyPage() {
 
           <hr className="my-10" />
           <p className="text-warm-500 text-sm italic">
-            This privacy policy is effective as of January 4, 2025.
+            This privacy policy is effective as of January 6, 2025.
           </p>
         </article>
       </div>

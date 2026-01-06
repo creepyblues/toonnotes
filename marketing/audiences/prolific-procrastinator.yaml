@@ -1,0 +1,242 @@
+# Primary Target Audience: The Prolific Procrastinator
+# Source: marketing/strategy.md - Strategy v2
+
+name: prolific-procrastinator
+type: primary
+priority: 1
+
+tagline: "Heavy note-takers who have given up on organization"
+
+quote: |
+  "I take a lot of notes but lack the organization skill or time to organize them.
+  I've tried the fancy tools—they're too much work. I just need my notes to make sense
+  AND look good without me doing anything."
+
+demographics:
+  age_range: "22-40"
+  gender: "All"
+  location: "Global (focus: US, UK, AU, Western Europe)"
+  income: "Mid-career professionals, students, knowledge workers"
+  occupation:
+    - Students (graduate, professional)
+    - Writers and content creators
+    - Researchers and academics
+    - Entrepreneurs and freelancers
+    - Knowledge workers
+
+psychographics:
+  interests:
+    - Personal productivity (but not productivity systems)
+    - Self-improvement
+    - Creative work
+    - Lifelong learning
+    - Travel and experiences
+  values:
+    - Efficiency over effort
+    - Outcomes over process
+    - Aesthetics and visual organization
+    - Personal expression
+    - Work-life balance
+  lifestyle:
+    - Takes lots of notes (20-100+ per month)
+    - Multi-device users (phone, laptop)
+    - Visually oriented (Pinterest, design-forward apps)
+    - Values simplicity over power features
+
+what_they_capture:
+  - Ideas & thoughts: Shower thoughts, random inspirations, observations
+  - Todos & tasks: Quick reminders, action items, follow-ups
+  - Bookmarks & saves: Articles, links, references to check later
+  - Quotes & snippets: Text from books, podcasts, conversations
+  - Drafts & outlines: Blog post ideas, email drafts, project notes
+  - Lists & checklists: Wishlists, packing lists, shopping lists
+
+what_they_need:
+  - Build on notes: Turn fragments into something useful over time
+  - Organize meaningfully: Without manual effort or maintenance
+  - Visualize thinking: See thoughts laid out beautifully
+  - Create shareable outputs: Travel plans, articles, reports
+  - Personal aesthetic: Notes that feel like "mine"
+
+behavioral_signals:
+  high_volume:
+    signal: "Takes 20-100+ notes per month"
+    indicator: "High volume user"
+  power_tool_failure:
+    signal: "Has abandoned Notion/Obsidian workspace"
+    indicator: "Tried power tools, gave up"
+  visual_thinker:
+    signal: "Cares about aesthetics (Pinterest, design-forward apps)"
+    indicator: "Visual thinker"
+  retrieval_pain:
+    signal: "Says 'I know I wrote this somewhere...'"
+    indicator: "Retrieval frustration"
+  outcome_oriented:
+    signal: "Envies organized people's systems but won't build one"
+    indicator: "Wants outcome, not process"
+
+pain_journey:
+  - stage: 1
+    name: "The Capture Habit"
+    pain: "No immediate pain—capturing feels productive"
+    quote: '"I''ll organize this later..."'
+  - stage: 2
+    name: "The Pile-Up"
+    pain: "Notes accumulate, finding things gets harder"
+    quote: '"I know I saved something about this..."'
+  - stage: 3
+    name: "The Power Tool Attempt"
+    pain: "Try Notion/Obsidian, spend hours on setup"
+    quote: '"This will finally fix everything!"'
+  - stage: 4
+    name: "The Abandonment"
+    pain: "System becomes work, usage drops, back to basics"
+    quote: '"It''s just too much overhead..."'
+  - stage: 5
+    name: "The Resignation"
+    pain: "Accept chaos, lower expectations, notes become a graveyard"
+    quote: '"Maybe I''m just not an organized person."'
+
+pain_points:
+  organization:
+    - name: "Retrieval Failure"
+      quote: "I know I saved it but can't find it"
+      solution: "AI auto-labeling + smart search"
+    - name: "Organization Guilt"
+      quote: "I should organize but never do"
+      solution: "AI does it automatically"
+    - name: "Tool Fatigue"
+      quote: "I've tried everything, nothing sticks"
+      solution: "Zero setup, zero maintenance"
+  design:
+    - name: "Visual Overwhelm"
+      quote: "My notes are an ugly mess—I don't want to look"
+      solution: "AI creates beautiful layouts"
+    - name: "Sharing Shame"
+      quote: "My notes are too messy and ugly to share"
+      solution: "Shareable-ready outputs"
+    - name: "Identity Gap"
+      quote: "I want my notes to feel like mine"
+      solution: "Personalized aesthetics"
+
+platforms:
+  primary:
+    - instagram: "Aesthetic content, planning spreads"
+    - twitter: "Productivity discussions, app recommendations"
+    - reddit: "r/productivity, r/NoteTaking, r/GetStudying"
+  secondary:
+    - youtube: "Productivity reviews, workflow videos"
+    - tiktok: "Quick tips, satisfying organization content"
+    - pinterest: "Visual inspiration boards"
+
+messaging_hooks:
+  primary:
+    - "Capture everything. Organize nothing. See it beautifully."
+    - "AI organizes your notes so you never have to"
+    - "Notes that make sense without the work"
+  pain_relief:
+    - "Never say 'I know I wrote this somewhere' again"
+    - "Finally, notes you're not embarrassed to share"
+    - "The organization you want without the system you don't"
+  ai_organization:
+    - "AI reads, labels, and connects your notes automatically"
+    - "No folders. No tags. No maintenance. Just answers."
+    - "Turn 100 random notes into organized knowledge"
+  ai_design:
+    - "How it looks IS how it's organized"
+    - "Beautiful layouts that make sense of your thoughts"
+    - "Notes that feel like yours—personalized to your aesthetic"
+
+use_cases:
+  studying:
+    job: "Help me turn scattered research into structured knowledge"
+    board_output: "Knowledge Map"
+    notes_captured:
+      - Article highlights
+      - Video notes
+      - Definitions
+      - Questions
+      - Connections
+  collecting_ideas:
+    job: "Help me see patterns in my random thoughts"
+    board_output: "Idea Constellation"
+    notes_captured:
+      - Shower thoughts
+      - Quotes
+      - Observations
+      - Inspirations
+  drafting_writing:
+    job: "Help me turn fragments into a first draft"
+    board_output: "Writing Workspace"
+    notes_captured:
+      - Outline bullets
+      - Key points
+      - Examples
+      - Quotes to use
+  planning_trip:
+    job: "Help me turn bookmarks into an itinerary"
+    board_output: "Trip Planner"
+    notes_captured:
+      - Restaurant saves
+      - Hotel options
+      - Activity ideas
+      - Packing notes
+
+content_preferences:
+  formats:
+    - Before/after transformations (chaos → organized)
+    - Quick tips and "aha" moments
+    - Use case demos (studying, trip planning)
+    - Satisfying AI organization videos
+  topics:
+    - AI auto-labeling in action
+    - Visual board layouts
+    - "I finally found that note" moments
+    - Productivity without the system
+  tone:
+    - Empathetic (we understand the pain)
+    - Relieved (the solution is effortless)
+    - Not preachy (no productivity guilt)
+    - Aspirational without being overwhelming
+
+acquisition_channels:
+  organic:
+    - App Store search (ASO): "organize notes", "AI notes", "note organization"
+    - Social media: Productivity content creators
+    - Reddit: r/productivity, r/NoteTaking recommendations
+    - Word of mouth: "This app finally worked for me"
+  paid:
+    - Instagram/TikTok: Productivity and organization audiences
+    - YouTube: Pre-roll on productivity content
+    - Podcast: Productivity and self-improvement shows
+
+conversion_triggers:
+  - Seeing AI auto-organize a messy note collection
+  - "It just works" simplicity
+  - Beautiful output they want to share
+  - Friend recommendation from fellow note-hoarder
+  - Frustration with current tool complexity
+
+retention_factors:
+  - Regular AI-powered organization improvements
+  - Satisfying visual board layouts
+  - Successful retrieval ("found it!")
+  - Shareable outputs they're proud of
+  - Personalization that feels like "mine"
+
+key_insight: |
+  Design IS Organization. For this ICP, visual presentation is a form of organization.
+  When notes LOOK organized and match their personal aesthetic, users FEEL organized—
+  even without folders or tags.
+
+differentiation:
+  vs_apple_notes_keep:
+    - Same capture simplicity
+    - "+ AI organization"
+    - "+ Beautiful AI design"
+    - "+ Smart retrieval"
+  vs_notion_obsidian:
+    - Same powerful organization
+    - "- Zero setup required"
+    - "- No system maintenance"
+    - "- AI does the design too"
