@@ -17,9 +17,8 @@ import {
 // (localhost doesn't work on physical devices for testing)
 const API_BASE_URL = 'https://toonnotes-api.vercel.app';
 const THEME_API_URL = `${API_BASE_URL}/api/generate-theme`;
-const STICKER_API_URL = `${API_BASE_URL}/api/generate-sticker`;
+const REMOVE_BG_API_URL = `${API_BASE_URL}/api/remove-background`;
 const LUCKY_THEME_API_URL = `${API_BASE_URL}/api/generate-lucky-theme`;
-const LUCKY_STICKER_API_URL = `${API_BASE_URL}/api/generate-lucky-sticker`;
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -99,7 +98,7 @@ async function generateSticker(
   try {
     devLog('Generating sticker with background removal...');
 
-    const response = await fetch(STICKER_API_URL, {
+    const response = await fetch(REMOVE_BG_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +106,7 @@ async function generateSticker(
       body: JSON.stringify({
         imageData: base64,
         mimeType: mimeType,
-        characterDescription: characterDescription,
+        type: 'basic',
       }),
     });
 
@@ -281,7 +280,7 @@ async function generateLuckySticker(
   try {
     devLog('🎲 Generating lucky transformed sticker...');
 
-    const response = await fetch(LUCKY_STICKER_API_URL, {
+    const response = await fetch(REMOVE_BG_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -289,6 +288,7 @@ async function generateLuckySticker(
       body: JSON.stringify({
         imageData: base64,
         mimeType: mimeType,
+        type: 'lucky',
       }),
     });
 
@@ -486,8 +486,6 @@ export async function generateLuckyDesign(
 // Theme-Based Design Generation
 // ============================================
 
-const THEMED_STICKER_API_URL = `${API_BASE_URL}/api/generate-themed-sticker`;
-
 /**
  * Generate a sticker based on theme style hints
  */
@@ -499,19 +497,22 @@ async function generateThemedSticker(
   try {
     devLog(`Generating ${theme.name} themed sticker...`);
 
-    const response = await fetch(THEMED_STICKER_API_URL, {
+    const response = await fetch(REMOVE_BG_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        themeId: theme.id,
-        themeName: theme.name,
-        artStyle: theme.stickerHint.artStyle,
-        mood: theme.stickerHint.mood,
-        aiPromptHints: theme.aiPromptHints,
         imageData: imageBase64,
         mimeType: mimeType,
+        type: 'themed',
+        themeData: {
+          themeId: theme.id,
+          themeName: theme.name,
+          artStyle: theme.stickerHint.artStyle,
+          mood: theme.stickerHint.mood,
+          aiPromptHints: theme.aiPromptHints,
+        },
       }),
     });
 
@@ -1107,8 +1108,6 @@ export async function saveCharacterMascot(
 // Image-Only Design Generation
 // ============================================
 
-const IMAGE_STICKER_API_URL = `${API_BASE_URL}/api/generate-image-sticker`;
-
 /**
  * Generate a character sticker from an image (background removal)
  * Returns the URI of the saved sticker image, or null if failed
@@ -1120,31 +1119,32 @@ export async function generateStickerFromImage(imageUri: string): Promise<string
   const { base64, mimeType } = await imageUriToBase64(imageUri);
 
   try {
-    devLog('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
-    const stickerResponse = await fetch(IMAGE_STICKER_API_URL, {
+    devLog('🔄 Calling sticker API at:', REMOVE_BG_API_URL);
+    const stickerResponse = await fetch(REMOVE_BG_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        imageBase64: base64,
+        imageData: base64,
         mimeType: mimeType,
+        type: 'image',
       }),
     });
 
     devLog('📡 Sticker API response status:', stickerResponse.status);
 
     if (stickerResponse.ok) {
-      const stickerData = await stickerResponse.json();
-      devLog('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
+      const data = await stickerResponse.json();
+      devLog('📦 Sticker data received, has stickerData:', !!data.stickerData);
 
-      if (stickerData.stickerBase64) {
+      if (data.stickerData) {
         // Save sticker to local storage
-        const stickerUri = await saveStickerImage(stickerData.stickerBase64, stickerData.mimeType || 'image/png');
+        const stickerUri = await saveStickerImage(data.stickerData, data.mimeType || 'image/png');
         devLog('✅ Sticker generated and saved:', stickerUri);
         return stickerUri;
       } else {
-        devWarn('⚠️ API returned OK but no stickerBase64 in response');
+        devWarn('⚠️ API returned OK but no stickerData in response');
         return null;
       }
     } else {
@@ -1172,30 +1172,31 @@ export async function generateImageDesign(imageUri: string): Promise<NoteDesign>
   let stickerUri: string | undefined;
 
   try {
-    devLog('🔄 Calling sticker API at:', IMAGE_STICKER_API_URL);
-    const stickerResponse = await fetch(IMAGE_STICKER_API_URL, {
+    devLog('🔄 Calling sticker API at:', REMOVE_BG_API_URL);
+    const stickerResponse = await fetch(REMOVE_BG_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        imageBase64: base64,
+        imageData: base64,
         mimeType: mimeType,
+        type: 'image',
       }),
     });
 
     devLog('📡 Sticker API response status:', stickerResponse.status);
 
     if (stickerResponse.ok) {
-      const stickerData = await stickerResponse.json();
-      devLog('📦 Sticker data received, has stickerBase64:', !!stickerData.stickerBase64);
+      const data = await stickerResponse.json();
+      devLog('📦 Sticker data received, has stickerData:', !!data.stickerData);
 
-      if (stickerData.stickerBase64) {
+      if (data.stickerData) {
         // Save sticker to local storage
-        stickerUri = await saveStickerImage(stickerData.stickerBase64, stickerData.mimeType || 'image/png');
+        stickerUri = await saveStickerImage(data.stickerData, data.mimeType || 'image/png');
         devLog('✅ Sticker generated and saved:', stickerUri);
       } else {
-        devWarn('⚠️ API returned OK but no stickerBase64 in response');
+        devWarn('⚠️ API returned OK but no stickerData in response');
       }
     } else {
       const errorText = await stickerResponse.text();

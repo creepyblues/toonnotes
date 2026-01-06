@@ -50,6 +50,22 @@ async function convertBackgroundToTransparent(imageBase64: string): Promise<stri
   }
 }
 
+/**
+ * Unified background removal endpoint
+ * Consolidates: generate-sticker, generate-lucky-sticker, generate-themed-sticker, generate-image-sticker
+ *
+ * Input:
+ *   - imageData OR imageBase64: base64 encoded image (accepts either for backwards compat)
+ *   - mimeType: optional, defaults to image/jpeg
+ *   - type: optional, for logging ('basic' | 'lucky' | 'themed' | 'image')
+ *   - themeData: optional theme metadata for themed stickers
+ *
+ * Output:
+ *   - stickerData: base64 PNG with transparent background
+ *   - stickerBase64: same as stickerData (for backwards compat with image-sticker callers)
+ *   - mimeType: always 'image/png'
+ *   - fallback: true if original image returned instead
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -64,35 +80,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+  }
+
   try {
-    const { themeId, themeName, artStyle, mood, aiPromptHints, imageData, mimeType } = req.body;
+    const {
+      imageData,      // Field name used by generate-sticker, generate-lucky-sticker, generate-themed-sticker
+      imageBase64,    // Field name used by generate-image-sticker
+      mimeType,
+      type = 'basic', // For logging: 'basic' | 'lucky' | 'themed' | 'image'
+      themeData,      // Optional: { themeId, themeName, artStyle, mood }
+    } = req.body;
 
-    // If no image provided - return info about what sticker style would be used
-    if (!imageData) {
-      console.log('No image provided, returning theme sticker hints...');
+    // Accept either field name
+    const inputImage = imageData || imageBase64;
 
-      return res.status(200).json({
-        themeId: themeId,
-        artStyle: artStyle,
-        mood: mood,
-        hints: aiPromptHints,
-        message: 'No image provided - use these hints for sticker generation'
-      });
+    if (!inputImage) {
+      // For themed sticker, if no image provided, return hints
+      if (type === 'themed' && themeData) {
+        return res.status(200).json({
+          themeId: themeData.themeId,
+          artStyle: themeData.artStyle,
+          mood: themeData.mood,
+          hints: themeData.aiPromptHints,
+          message: 'No image provided - use these hints for sticker generation'
+        });
+      }
+      return res.status(400).json({ error: 'imageData or imageBase64 is required' });
     }
 
-    if (!GEMINI_API_KEY) {
-      // Fallback if no API key
-      return res.status(200).json({
-        stickerData: imageData,
-        mimeType: mimeType || 'image/jpeg',
-        themeId: themeId,
-        artStyleApplied: artStyle,
-        fallback: true,
-        message: 'GEMINI_API_KEY not configured - using original image'
-      });
-    }
+    const logPrefix = type === 'lucky' ? 'Lucky sticker' :
+                      type === 'themed' ? `Themed sticker (${themeData?.themeName || 'unknown'})` :
+                      type === 'image' ? 'Image sticker' : 'Sticker';
 
-    console.log(`Themed sticker for ${themeName}: Using Gemini to remove background...`);
+    console.log(`${logPrefix}: Using Gemini to remove background...`);
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
@@ -118,7 +140,7 @@ Output a PNG with the subject on a solid white background.`;
       {
         inlineData: {
           mimeType: mimeType || 'image/jpeg',
-          data: imageData
+          data: inputImage
         }
       }
     ]);
@@ -126,42 +148,46 @@ Output a PNG with the subject on a solid white background.`;
     const response = await result.response;
 
     // Extract image from response
-    let stickerData = null;
+    let outputImage = null;
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if ((part as any).inlineData) {
-        stickerData = (part as any).inlineData.data;
+        outputImage = (part as any).inlineData.data;
         break;
       }
     }
 
-    if (!stickerData) {
-      console.warn(`Themed sticker for ${themeName}: Gemini did not return an image, falling back to original`);
+    if (!outputImage) {
+      console.warn(`${logPrefix}: Gemini did not return an image, falling back to original`);
       return res.status(200).json({
-        stickerData: imageData,
+        stickerData: inputImage,
+        stickerBase64: inputImage,  // For backwards compat
         mimeType: mimeType || 'image/jpeg',
-        themeId: themeId,
-        artStyleApplied: artStyle,
         fallback: true,
+        transformed: false,
+        ...(themeData?.themeId && { themeId: themeData.themeId }),
+        ...(themeData?.artStyle && { artStyleApplied: themeData.artStyle }),
         message: 'Gemini could not process image - using original'
       });
     }
 
     // Convert white background to transparent
-    console.log(`Themed sticker for ${themeName}: Converting white background to transparent...`);
-    const transparentSticker = await convertBackgroundToTransparent(stickerData);
+    console.log(`${logPrefix}: Converting white background to transparent...`);
+    const transparentSticker = await convertBackgroundToTransparent(outputImage);
 
-    console.log(`Themed sticker for ${themeName}: Background removed and made transparent`);
+    console.log(`${logPrefix}: Background removed and made transparent`);
 
     return res.status(200).json({
       stickerData: transparentSticker,
+      stickerBase64: transparentSticker,  // For backwards compat
       mimeType: 'image/png',
-      themeId: themeId,
-      artStyleApplied: artStyle,
-      fallback: false
+      fallback: false,
+      transformed: true,
+      ...(themeData?.themeId && { themeId: themeData.themeId }),
+      ...(themeData?.artStyle && { artStyleApplied: themeData.artStyle }),
     });
 
   } catch (error: any) {
-    console.error('Error in themed sticker endpoint:', error);
+    console.error('Error in remove-background endpoint:', error);
 
     if (error.message?.includes('429') || error.message?.includes('quota')) {
       return res.status(429).json({
@@ -171,7 +197,7 @@ Output a PNG with the subject on a solid white background.`;
     }
 
     return res.status(500).json({
-      error: error.message || 'Failed to generate themed sticker',
+      error: error.message || 'Failed to remove background',
       fallback: true
     });
   }
