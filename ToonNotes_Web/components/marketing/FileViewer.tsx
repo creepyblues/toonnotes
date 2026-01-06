@@ -16,8 +16,8 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
     return (
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {title && (
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+            <h2 className="text-base md:text-lg font-semibold text-gray-900">{title}</h2>
           </div>
         )}
         <div className="overflow-x-auto">
@@ -27,8 +27,9 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
             customStyle={{
               margin: 0,
               borderRadius: 0,
-              fontSize: '14px',
+              fontSize: '12px',
             }}
+            className="text-xs md:text-sm"
           >
             {content}
           </SyntaxHighlighter>
@@ -40,11 +41,11 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       {title && (
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+          <h2 className="text-base md:text-lg font-semibold text-gray-900">{title}</h2>
         </div>
       )}
-      <div className="px-6 py-6">
+      <div className="px-4 md:px-6 py-4 md:py-6">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -79,12 +80,12 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
 
             // Lists
             ul: ({ children }) => (
-              <ul className="list-disc list-outside ml-6 mb-4 space-y-1 text-gray-700">
+              <ul className="list-disc list-outside ml-4 md:ml-6 mb-4 space-y-1 text-gray-700 text-sm md:text-base">
                 {children}
               </ul>
             ),
             ol: ({ children }) => (
-              <ol className="list-decimal list-outside ml-6 mb-4 space-y-1 text-gray-700">
+              <ol className="list-decimal list-outside ml-4 md:ml-6 mb-4 space-y-1 text-gray-700 text-sm md:text-base">
                 {children}
               </ol>
             ),
@@ -142,12 +143,12 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
               <tr className="hover:bg-gray-50 transition-colors">{children}</tr>
             ),
             th: ({ children }) => (
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 {children}
               </th>
             ),
             td: ({ children }) => (
-              <td className="px-4 py-3 text-sm text-gray-700 whitespace-pre-wrap">
+              <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-700 whitespace-pre-wrap">
                 {children}
               </td>
             ),
@@ -170,7 +171,7 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
               }
 
               return (
-                <div className="my-4 rounded-lg overflow-hidden">
+                <div className="my-4 rounded-lg overflow-hidden overflow-x-auto">
                   <SyntaxHighlighter
                     style={oneDark}
                     language={match ? match[1] : 'text'}
@@ -178,7 +179,7 @@ export default function FileViewer({ content, type, title }: FileViewerProps) {
                     customStyle={{
                       margin: 0,
                       borderRadius: '0.5rem',
-                      fontSize: '14px',
+                      fontSize: '12px',
                     }}
                   >
                     {String(children).replace(/\n$/, '')}

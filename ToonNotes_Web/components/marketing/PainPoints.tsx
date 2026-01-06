@@ -15,26 +15,26 @@ export function PainPoints() {
   ];
 
   return (
-    <section className="py-24 md:py-32 bg-white">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="py-16 md:py-24 lg:py-32 bg-white">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {/* Section intro */}
-        <div className="text-center mb-16">
-          <h2 className="font-display text-3xl font-bold text-warm-900 md:text-4xl mb-4">
+        <div className="text-center mb-10 md:mb-16">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-warm-900 mb-4">
             Heavy note-takers have a problem.
           </h2>
         </div>
 
         {/* Pain point cards */}
-        <div className="grid gap-6 md:grid-cols-3 mb-16">
+        <div className="grid gap-4 md:gap-6 md:grid-cols-3 mb-10 md:mb-16">
           {painPoints.map((pain, index) => (
             <div
               key={index}
-              className="rounded-2xl border border-warm-200 bg-warm-50 p-8 text-center"
+              className="rounded-2xl border border-warm-200 bg-warm-50 p-5 md:p-8 text-center"
             >
-              <div className="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-full bg-warm-200">
-                <pain.icon className="w-6 h-6 text-warm-600" />
+              <div className="mb-3 md:mb-4 inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-warm-200">
+                <pain.icon className="w-5 h-5 md:w-6 md:h-6 text-warm-600" />
               </div>
-              <p className="font-hand text-xl text-warm-700">
+              <p className="font-hand text-lg md:text-xl text-warm-700">
                 &ldquo;{pain.quote}&rdquo;
               </p>
             </div>
@@ -42,16 +42,16 @@ export function PainPoints() {
         </div>
 
         {/* Power tools callout */}
-        <div className="text-center max-w-2xl mx-auto">
-          <p className="text-lg text-warm-600 mb-4">
+        <div className="text-center max-w-2xl mx-auto px-2">
+          <p className="text-base md:text-lg text-warm-600 mb-3 md:mb-4">
             You&apos;ve tried the power tools.
             <br />
             <span className="font-semibold text-warm-700">Notion. Obsidian. Roam.</span>
           </p>
-          <p className="text-lg text-warm-600 mb-4">
+          <p className="text-base md:text-lg text-warm-600 mb-3 md:mb-4">
             Too much setup. Too much maintenance.
           </p>
-          <p className="text-xl font-semibold text-warm-900">
+          <p className="text-lg md:text-xl font-semibold text-warm-900">
             You need something that just works.
           </p>
         </div>

@@ -1,5 +1,31 @@
 import type { Metadata } from 'next';
+import { Inter, Outfit, Caveat, Playfair_Display } from 'next/font/google';
 import './globals.css';
+
+// Font optimization - loaded at build time, self-hosted
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const caveat = Caveat({
+  subsets: ['latin'],
+  variable: '--font-hand',
+  display: 'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -34,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${outfit.variable} ${caveat.variable} ${playfair.variable}`}>
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

@@ -7,11 +7,11 @@ interface FinalCTAProps {
 
 export function FinalCTA({ appStoreUrl, playStoreUrl }: FinalCTAProps) {
   return (
-    <section className="py-24 md:py-32 bg-teal-600">
-      <div className="mx-auto max-w-4xl px-6 text-center">
+    <section className="py-16 md:py-24 lg:py-32 bg-teal-600">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 text-center">
         {/* Tagline */}
-        <div className="mb-10">
-          <h2 className="font-display text-3xl font-bold text-white md:text-4xl lg:text-5xl mb-4">
+        <div className="mb-8 md:mb-10">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
             Capture everything.
             <br />
             Organize nothing.
@@ -21,7 +21,7 @@ export function FinalCTA({ appStoreUrl, playStoreUrl }: FinalCTAProps) {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-6 md:mb-8 px-4 sm:px-0">
           <Link
             href={appStoreUrl}
             className="inline-flex items-center justify-center gap-3 rounded-xl bg-white px-8 py-4 text-lg font-semibold text-teal-700 transition-all hover:bg-teal-50 hover:shadow-lg"
@@ -40,7 +40,7 @@ export function FinalCTA({ appStoreUrl, playStoreUrl }: FinalCTAProps) {
 
         {/* Trust signal */}
         <p className="text-teal-200">
-          Free to use. No account required.
+          Free to use.
         </p>
       </div>
     </section>

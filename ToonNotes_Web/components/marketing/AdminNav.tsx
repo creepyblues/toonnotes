@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+interface AdminNavProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 const navItems = [
   {
     label: 'Dashboard',
@@ -78,18 +83,30 @@ const navItems = [
   },
 ];
 
-export default function AdminNav() {
+export default function AdminNav({ isOpen, onClose }: AdminNavProps) {
   const pathname = usePathname();
 
-  return (
-    <nav className="w-64 bg-gray-900 min-h-screen p-4">
-      <div className="mb-8">
-        <Link href="/marketing" className="flex items-center space-x-2">
+  const navContent = (
+    <>
+      <div className="mb-8 flex items-center justify-between">
+        <Link href="/marketing" className="flex items-center space-x-2" onClick={onClose}>
           <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">TN</span>
           </div>
           <span className="text-white font-semibold">Marketing</span>
         </Link>
+        {/* Close button for mobile */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden p-2 text-gray-400 hover:text-white"
+            aria-label="Close menu"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <ul className="space-y-2">
@@ -103,6 +120,7 @@ export default function AdminNav() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                onClick={onClose}
                 className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-teal-600 text-white'
@@ -116,6 +134,30 @@ export default function AdminNav() {
           );
         })}
       </ul>
-    </nav>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar - hidden on mobile */}
+      <nav className="hidden md:block w-64 bg-gray-900 min-h-screen p-4">
+        {navContent}
+      </nav>
+
+      {/* Mobile drawer overlay */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={onClose}
+          />
+          {/* Drawer */}
+          <nav className="fixed inset-y-0 left-0 w-64 bg-gray-900 p-4 z-50 md:hidden">
+            {navContent}
+          </nav>
+        </>
+      )}
+    </>
   );
 }

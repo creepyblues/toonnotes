@@ -1,32 +1,32 @@
 export function TwoPillars() {
   return (
-    <section className="py-24 md:py-32 bg-warm-50">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="py-16 md:py-24 lg:py-32 bg-warm-50">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {/* Section intro */}
-        <div className="text-center mb-16">
-          <h2 className="font-display text-3xl font-bold text-warm-900 md:text-4xl mb-4">
+        <div className="text-center mb-10 md:mb-16">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-warm-900 mb-3 md:mb-4">
             ToonNotes is different.
           </h2>
-          <p className="text-xl text-warm-600">
+          <p className="text-lg md:text-xl text-warm-600">
             AI handles both organization <span className="font-semibold text-teal-600">AND</span> design.
           </p>
         </div>
 
         {/* Two pillars */}
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-4 md:gap-8 md:grid-cols-2">
           {/* AI Organization */}
-          <div className="rounded-3xl bg-white border border-warm-200 p-8 md:p-10 shadow-sm">
-            <div className="mb-6 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-teal-100">
-              <OrganizeIcon className="w-7 h-7 text-teal-600" />
+          <div className="rounded-2xl md:rounded-3xl bg-white border border-warm-200 p-5 md:p-8 lg:p-10 shadow-sm">
+            <div className="mb-4 md:mb-6 inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-teal-100">
+              <OrganizeIcon className="w-6 h-6 md:w-7 md:h-7 text-teal-600" />
             </div>
-            <h3 className="font-display text-2xl font-bold text-warm-900 mb-4">
+            <h3 className="font-display text-xl md:text-2xl font-bold text-warm-900 mb-3 md:mb-4">
               AI Organization
             </h3>
-            <p className="text-lg text-warm-600 mb-6">
+            <p className="text-base md:text-lg text-warm-600 mb-4 md:mb-6">
               Notes auto-labeled by topic, type, and theme.
               Find anything instantly.
             </p>
-            <ul className="space-y-3">
+            <ul className="space-y-2 md:space-y-3">
               <BenefitItem>No manual tagging</BenefitItem>
               <BenefitItem>Smart grouping by topic</BenefitItem>
               <BenefitItem>Search that actually works</BenefitItem>
@@ -34,18 +34,18 @@ export function TwoPillars() {
           </div>
 
           {/* AI Design */}
-          <div className="rounded-3xl bg-white border border-warm-200 p-8 md:p-10 shadow-sm">
-            <div className="mb-6 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-coral-100">
-              <PaletteIcon className="w-7 h-7 text-coral-500" />
+          <div className="rounded-2xl md:rounded-3xl bg-white border border-warm-200 p-5 md:p-8 lg:p-10 shadow-sm">
+            <div className="mb-4 md:mb-6 inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-coral-100">
+              <PaletteIcon className="w-6 h-6 md:w-7 md:h-7 text-coral-500" />
             </div>
-            <h3 className="font-display text-2xl font-bold text-warm-900 mb-4">
+            <h3 className="font-display text-xl md:text-2xl font-bold text-warm-900 mb-3 md:mb-4">
               AI Design
             </h3>
-            <p className="text-lg text-warm-600 mb-6">
+            <p className="text-base md:text-lg text-warm-600 mb-4 md:mb-6">
               Notes look beautiful with colors and styles
               that match your taste.
             </p>
-            <ul className="space-y-3">
+            <ul className="space-y-2 md:space-y-3">
               <BenefitItem>Personalized aesthetics</BenefitItem>
               <BenefitItem>No design skills needed</BenefitItem>
               <BenefitItem>Shareable outputs</BenefitItem>
@@ -54,9 +54,9 @@ export function TwoPillars() {
         </div>
 
         {/* Key insight */}
-        <div className="mt-16 text-center">
-          <div className="inline-block rounded-2xl bg-teal-50 border border-teal-200 px-8 py-6">
-            <p className="text-lg text-teal-800">
+        <div className="mt-10 md:mt-16 text-center px-2">
+          <div className="inline-block rounded-xl md:rounded-2xl bg-teal-50 border border-teal-200 px-4 py-4 md:px-8 md:py-6">
+            <p className="text-base md:text-lg text-teal-800">
               <span className="font-semibold">Key insight:</span> When notes <em>look</em> organized,
               you <em>feel</em> organized&mdash;even without folders.
             </p>

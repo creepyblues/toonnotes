@@ -11,35 +11,35 @@ export function Hero({ appStoreUrl, playStoreUrl }: HeroProps) {
       <div className="mx-auto max-w-5xl px-6 py-20 md:py-32">
         <div className="text-center">
           {/* Pain point quote */}
-          <div className="mb-8">
-            <p className="font-hand text-2xl text-warm-500 md:text-3xl">
+          <div className="mb-6 md:mb-8">
+            <p className="font-hand text-xl sm:text-2xl md:text-3xl text-warm-500">
               &ldquo;I have 100 notes somewhere.
             </p>
-            <p className="font-hand text-2xl text-warm-500 md:text-3xl">
+            <p className="font-hand text-xl sm:text-2xl md:text-3xl text-warm-500">
               I can&apos;t find anything.&rdquo;
             </p>
           </div>
 
           {/* Empathy hook */}
-          <p className="text-lg text-warm-600 md:text-xl mb-12">
+          <p className="text-base sm:text-lg md:text-xl text-warm-600 mb-8 md:mb-12">
             Sound familiar?
           </p>
 
           {/* Main value proposition */}
-          <h1 className="font-display text-4xl font-bold leading-tight text-warm-900 md:text-5xl lg:text-6xl mb-6">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-warm-900 mb-4 md:mb-6">
             AI organizes your notes.
             <br />
             <span className="text-teal-600">Beautifully.</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-lg text-warm-600 md:text-xl max-w-2xl mx-auto mb-10">
+          <p className="text-base sm:text-lg md:text-xl text-warm-600 max-w-2xl mx-auto mb-8 md:mb-10 px-2">
             ToonNotes uses AI to automatically organize your notes and make them
             look amazing&mdash;so you get the benefits of a second brain without the work.
           </p>
 
           {/* CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 md:mb-16 px-4 sm:px-0">
             <Link
               href={appStoreUrl}
               className="inline-flex items-center justify-center gap-3 rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-teal-700 hover:shadow-lg"
@@ -58,15 +58,15 @@ export function Hero({ appStoreUrl, playStoreUrl }: HeroProps) {
 
           {/* Trust signal */}
           <p className="text-sm text-warm-400">
-            Free to use. No account required.
+            Free to use.
           </p>
         </div>
       </div>
 
       {/* Subtle background gradient */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-100/40 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-coral-100/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-48 h-48 md:w-96 md:h-96 bg-teal-100/40 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 md:w-96 md:h-96 bg-coral-100/30 rounded-full blur-3xl" />
       </div>
     </section>
   );

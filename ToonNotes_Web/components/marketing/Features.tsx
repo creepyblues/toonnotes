@@ -38,17 +38,17 @@ const comingSoonFeatures = [
 
 export function Features() {
   return (
-    <section className="py-24 md:py-32 bg-white">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="py-16 md:py-24 lg:py-32 bg-white">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {/* Section intro */}
-        <div className="text-center mb-16">
-          <h2 className="font-display text-3xl font-bold text-warm-900 md:text-4xl mb-4">
+        <div className="text-center mb-10 md:mb-16">
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-warm-900 mb-4">
             Here&apos;s what you can do today.
           </h2>
         </div>
 
         {/* Feature cards */}
-        <div className="space-y-8 mb-20">
+        <div className="space-y-4 md:space-y-8 mb-12 md:mb-20">
           {features.map((feature, index) => (
             <FeatureCard key={index} feature={feature} />
           ))}
@@ -56,16 +56,16 @@ export function Features() {
 
         {/* Coming soon */}
         <div className="text-center">
-          <p className="text-lg text-warm-600 mb-6">
+          <p className="text-base md:text-lg text-warm-600 mb-4 md:mb-6">
             And we&apos;re just getting started.
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3">
             {comingSoonFeatures.map((name, index) => (
               <span
                 key={index}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-warm-100 text-warm-600 text-sm"
+                className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-warm-100 text-warm-600 text-xs md:text-sm"
               >
-                <ClockIcon className="w-4 h-4" />
+                <ClockIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 {name}
               </span>
             ))}
@@ -78,24 +78,24 @@ export function Features() {
 
 function FeatureCard({ feature }: { feature: Feature }) {
   return (
-    <div className="rounded-2xl border border-warm-200 bg-warm-50 p-8 md:p-10">
-      <div className="flex flex-col md:flex-row md:items-start gap-6">
+    <div className="rounded-2xl border border-warm-200 bg-warm-50 p-5 md:p-8 lg:p-10">
+      <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
         {/* Icon */}
         <div className="flex-shrink-0">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-teal-100">
-            <feature.icon className="w-7 h-7 text-teal-600" />
+          <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-teal-100">
+            <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-teal-600" />
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-grow">
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <h3 className="font-display text-xl font-bold text-warm-900">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 md:mb-3">
+            <h3 className="font-display text-lg md:text-xl font-bold text-warm-900">
               {feature.title}
             </h3>
             <StatusBadge status={feature.status} />
           </div>
-          <p className="text-lg text-warm-600">
+          <p className="text-base md:text-lg text-warm-600">
             {feature.description}
           </p>
         </div>
