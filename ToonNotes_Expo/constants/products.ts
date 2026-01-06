@@ -1,15 +1,29 @@
 /**
  * RevenueCat Product Configuration
  *
- * Defines coin packages available for purchase.
+ * Defines coin packages and subscriptions available for purchase.
  * Product IDs must match those configured in RevenueCat dashboard.
  */
 
+// Coin package product IDs
 export const PRODUCT_IDS = {
   STARTER: 'com.toonnotes.coins.starter',
   POPULAR: 'com.toonnotes.coins.popular',
   BEST_VALUE: 'com.toonnotes.coins.bestvalue',
 } as const;
+
+// Subscription product IDs
+export const SUBSCRIPTION_IDS = {
+  PRO_MONTHLY: 'com.toonnotes.pro.monthly',
+} as const;
+
+export type SubscriptionId = typeof SUBSCRIPTION_IDS[keyof typeof SUBSCRIPTION_IDS];
+
+// RevenueCat entitlement identifier (configured in RevenueCat dashboard)
+export const ENTITLEMENT_ID = 'pro';
+
+// Monthly coin grant amount for Pro subscribers
+export const PRO_MONTHLY_COINS = 100;
 
 export type ProductId = typeof PRODUCT_IDS[keyof typeof PRODUCT_IDS];
 

@@ -86,6 +86,7 @@ import {
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { purchaseService } from '@/services/purchaseService';
+import { subscriptionService } from '@/services/subscriptionService';
 import { initSentry } from '@/services/sentry';
 import { initFirebase, trackScreen } from '@/services/firebaseAnalytics';
 import { usePathname } from 'expo-router';
@@ -185,11 +186,26 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Initialize RevenueCat for in-app purchases
+  // Initialize RevenueCat and Subscription Service
   useEffect(() => {
-    purchaseService.initialize().catch((error) => {
-      console.error('Failed to initialize RevenueCat:', error);
-    });
+    const initPurchases = async () => {
+      try {
+        // Initialize RevenueCat first
+        await purchaseService.initialize();
+
+        // Then initialize subscription service (checks Pro status, grants renewal coins)
+        await subscriptionService.initialize();
+
+        // Set up listener for real-time subscription changes
+        subscriptionService.setupSubscriptionListener();
+
+        console.log('[RootLayout] Purchase and subscription services initialized');
+      } catch (error) {
+        console.error('[RootLayout] Failed to initialize purchase services:', error);
+      }
+    };
+
+    initPurchases();
   }, []);
 
   // Initialize Firebase Analytics & Crashlytics

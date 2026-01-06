@@ -7,8 +7,17 @@
 
 import { supabase } from './supabase';
 import { useNoteStore } from '@/stores/noteStore';
+import { useUserStore } from '@/stores/userStore';
 import { Note } from '@/types';
 import { RealtimeChannel } from '@supabase/supabase-js';
+
+/**
+ * Check if user can sync (requires Pro subscription)
+ */
+function canSync(): boolean {
+  const { isPro } = useUserStore.getState();
+  return isPro();
+}
 
 type ConflictStrategy = 'cloud_wins' | 'local_wins' | 'latest_wins';
 
@@ -24,12 +33,19 @@ interface SyncResult {
 
 /**
  * Sync notes between local store and cloud
+ * Requires Pro subscription - returns early if user is not Pro
  */
 export async function syncNotes(
   userId: string,
   options: SyncOptions = { conflictStrategy: 'latest_wins' }
 ): Promise<SyncResult> {
   const result: SyncResult = { uploaded: 0, downloaded: 0, errors: [] };
+
+  // Check Pro subscription status
+  if (!canSync()) {
+    console.log('[Sync] User is not Pro, skipping cloud sync');
+    return result;
+  }
 
   try {
     const localNotes = useNoteStore.getState().notes;
@@ -107,16 +123,26 @@ export async function syncNotes(
     // Download cloud changes to local store
     if (toDownload.length > 0) {
       const noteStore = useNoteStore.getState();
+      const newNotes: Note[] = [];
+
       for (const note of toDownload) {
         // Check if note exists locally
         const existingNote = noteStore.notes.find((n) => n.id === note.id);
         if (existingNote) {
           noteStore.updateNote(note.id, note);
         } else {
-          // Add as new note - need to handle this case
-          noteStore.notes.push(note);
+          // Collect new notes to add
+          newNotes.push(note);
         }
       }
+
+      // Add all new notes at once using setState (triggers re-render)
+      if (newNotes.length > 0) {
+        useNoteStore.setState((state) => ({
+          notes: [...newNotes, ...state.notes]
+        }));
+      }
+
       result.downloaded = toDownload.length;
     }
 

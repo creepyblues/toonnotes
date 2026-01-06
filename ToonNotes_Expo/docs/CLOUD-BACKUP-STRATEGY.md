@@ -310,3 +310,27 @@ if (shouldSync()) {
 - [Day One Pricing](https://dayoneapp.com/pricing/) - $35/year
 - [Standard Notes](https://standardnotes.com/plans) - $90/year
 - [Freemium Economics - Adapty](https://adapty.io/blog/freemium-app-monetization-strategies/)
+
+
+     │ Sources                                                                       │
+     │                                                                               │
+     │ Supabase Pricing                                                              │
+     │                                                                               │
+     │ - https://supabase.com/pricing                                                │
+     │ - https://uibakery.io/blog/supabase-pricing                                   │
+     │ - https://supabase.com/docs/guides/platform/billing-on-supabase               │
+     │                                                                               │
+     │ Competitor Pricing Research                                                   │
+     │                                                                               │
+     │ - https://bear.app - $15/year for sync                                        │
+     │ - https://dayoneapp.com/pricing/ - $35/year                                   │
+     │ - https://standardnotes.com/plans - $90/year                                  │
+     │ - https://www.craft.do - $60/year                                             │
+     │ - https://zapier.com/blog/best-note-taking-apps/                              │
+     │                                                                               │
+     │ Freemium Economics                                                            │
+     │                                                                               │
+     │ - https://adapty.io/blog/freemium-app-monetization-strategies/                │
+     │ - https://www.getmonetizely.com/articles/the-hidden-costs-of-freemium-when-fre│
+     │ e-users-strain-your-resources                                                 │
+     │ - https://www.cobloom.com/blog/saas-pricing-models 

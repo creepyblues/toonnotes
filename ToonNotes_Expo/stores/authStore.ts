@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
+import { Session, User, AuthChangeEvent, RealtimeChannel } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/services/supabase';
 import {
   signInWithOAuth,
@@ -14,6 +14,9 @@ import {
   OAuthProvider,
 } from '@/services/authService';
 import { setUserId, clearUser as clearAnalyticsUser, Analytics } from '@/services/firebaseAnalytics';
+import { syncNotes, subscribeToNotes, unsubscribeFromNotes } from '@/services/syncService';
+import { useNoteStore } from './noteStore';
+import { useUserStore } from './userStore';
 
 interface AuthState {
   // State
@@ -22,6 +25,7 @@ interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
+  realtimeChannel: RealtimeChannel | null;
 
   // Actions
   initialize: () => Promise<void>;
@@ -39,6 +43,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   isInitialized: false,
   error: null,
+  realtimeChannel: null,
 
   /**
    * Initialize auth state
@@ -82,6 +87,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
 
+      // If user already has a session, sync notes immediately (Pro only)
+      if (session?.user?.id) {
+        const { isPro } = useUserStore.getState();
+
+        // Only sync and subscribe if user is Pro
+        if (isPro()) {
+          console.log('[AuthStore] Existing Pro session found, syncing notes...');
+          syncNotes(session.user.id).then((result) => {
+            console.log('[AuthStore] Initial sync complete:', result);
+          }).catch((error) => {
+            console.error('[AuthStore] Sync error:', error);
+          });
+
+          // Set up real-time subscription
+          const channel = subscribeToNotes(
+            session.user.id,
+            (note) => {
+              const noteStore = useNoteStore.getState();
+              const existing = noteStore.notes.find(n => n.id === note.id);
+              if (existing) {
+                if (note.updatedAt > existing.updatedAt) {
+                  noteStore.updateNote(note.id, note);
+                }
+              } else {
+                useNoteStore.setState((state) => ({
+                  notes: [note, ...state.notes]
+                }));
+              }
+            },
+            (noteId) => {
+              useNoteStore.getState().permanentlyDeleteNote(noteId);
+            }
+          );
+          set({ realtimeChannel: channel });
+        } else {
+          console.log('[AuthStore] User not Pro, skipping cloud sync');
+        }
+      }
+
       // Listen for auth state changes
       const {
         data: { subscription },
@@ -102,10 +146,55 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               if (session?.user?.id) {
                 setUserId(session.user.id);
                 Analytics.login(session.user.app_metadata?.provider as 'google' | 'apple' || 'google');
+
+                // Only sync and subscribe for Pro users
+                const { isPro: checkIsPro } = useUserStore.getState();
+                if (checkIsPro()) {
+                  // Sync notes from cloud
+                  syncNotes(session.user.id).then((result) => {
+                    console.log('[AuthStore] Initial sync complete:', result);
+                  }).catch((error) => {
+                    console.error('[AuthStore] Sync error:', error);
+                  });
+
+                  // Set up real-time subscription for note changes
+                  const channel = subscribeToNotes(
+                    session.user.id,
+                    (note) => {
+                      // Update local store when cloud changes
+                      const noteStore = useNoteStore.getState();
+                      const existing = noteStore.notes.find(n => n.id === note.id);
+                      if (existing) {
+                        // Only update if cloud version is newer (avoid echo from our own uploads)
+                        if (note.updatedAt > existing.updatedAt) {
+                          noteStore.updateNote(note.id, note);
+                        }
+                      } else {
+                        // New note from cloud - add directly to store
+                        useNoteStore.setState((state) => ({
+                          notes: [note, ...state.notes]
+                        }));
+                      }
+                    },
+                    (noteId) => {
+                      // Remove from local when deleted in cloud
+                      useNoteStore.getState().permanentlyDeleteNote(noteId);
+                    }
+                  );
+                  set({ realtimeChannel: channel });
+                } else {
+                  console.log('[AuthStore] User not Pro, skipping cloud sync');
+                }
               }
               break;
             case 'SIGNED_OUT':
               console.log('[AuthStore] User signed out');
+              // Unsubscribe from real-time notes
+              const { realtimeChannel } = get();
+              if (realtimeChannel) {
+                unsubscribeFromNotes(realtimeChannel);
+                set({ realtimeChannel: null });
+              }
               // Clear user context from Firebase
               clearAnalyticsUser();
               Analytics.signOut();

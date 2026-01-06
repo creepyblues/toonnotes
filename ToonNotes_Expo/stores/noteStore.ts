@@ -10,6 +10,42 @@ import {
 import { normalizeLabel } from '@/utils/labelNormalization';
 import { debouncedStorage } from './debouncedStorage';
 import { getPresetForLabel, LabelPresetId } from '@/constants/labelPresets';
+import { uploadNote, deleteNoteFromCloud } from '@/services/syncService';
+
+// Lazy import to avoid circular dependency
+const getAuthUserId = () => {
+  // Dynamic import to break circular dependency
+  const { useAuthStore } = require('./authStore');
+  return useAuthStore.getState().user?.id;
+};
+
+// Check if user is Pro (lazy import to avoid circular dependency)
+const isPro = () => {
+  const { useUserStore } = require('./userStore');
+  return useUserStore.getState().isPro();
+};
+
+// Helper to sync note to cloud (fire and forget)
+// Only syncs for Pro users
+const syncToCloud = (note: Note) => {
+  const userId = getAuthUserId();
+  if (userId && isPro()) {
+    uploadNote(note, userId).catch((error) => {
+      console.error('[NoteStore] Cloud sync failed:', error);
+    });
+  }
+};
+
+// Helper to delete from cloud (fire and forget)
+// Only deletes for Pro users
+const deleteFromCloud = (noteId: string) => {
+  const userId = getAuthUserId();
+  if (userId && isPro()) {
+    deleteNoteFromCloud(noteId).catch((error) => {
+      console.error('[NoteStore] Cloud delete failed:', error);
+    });
+  }
+};
 
 interface NoteState {
   notes: Note[];
@@ -75,6 +111,10 @@ export const useNoteStore = create<NoteState>()(
         };
 
         set((state) => ({ notes: [newNote, ...state.notes] }));
+
+        // Sync to cloud
+        syncToCloud(newNote);
+
         return newNote;
       },
 
@@ -97,6 +137,12 @@ export const useNoteStore = create<NoteState>()(
               : note
           ),
         }));
+
+        // Sync to cloud
+        const updatedNote = get().notes.find((n) => n.id === id);
+        if (updatedNote) {
+          syncToCloud(updatedNote);
+        }
       },
 
       deleteNote: (id) => {
@@ -107,6 +153,12 @@ export const useNoteStore = create<NoteState>()(
               : note
           ),
         }));
+
+        // Sync soft delete to cloud
+        const deletedNote = get().notes.find((n) => n.id === id);
+        if (deletedNote) {
+          syncToCloud(deletedNote);
+        }
       },
 
       restoreNote: (id) => {
@@ -117,9 +169,18 @@ export const useNoteStore = create<NoteState>()(
               : note
           ),
         }));
+
+        // Sync restore to cloud
+        const restoredNote = get().notes.find((n) => n.id === id);
+        if (restoredNote) {
+          syncToCloud(restoredNote);
+        }
       },
 
       permanentlyDeleteNote: (id) => {
+        // Delete from cloud first
+        deleteFromCloud(id);
+
         set((state) => ({
           notes: state.notes.filter((note) => note.id !== id),
         }));
@@ -133,6 +194,12 @@ export const useNoteStore = create<NoteState>()(
               : note
           ),
         }));
+
+        // Sync archive to cloud
+        const archivedNote = get().notes.find((n) => n.id === id);
+        if (archivedNote) {
+          syncToCloud(archivedNote);
+        }
       },
 
       unarchiveNote: (id) => {
@@ -141,6 +208,12 @@ export const useNoteStore = create<NoteState>()(
             note.id === id ? { ...note, isArchived: false } : note
           ),
         }));
+
+        // Sync unarchive to cloud
+        const unarchivedNote = get().notes.find((n) => n.id === id);
+        if (unarchivedNote) {
+          syncToCloud(unarchivedNote);
+        }
       },
 
       pinNote: (id) => {
@@ -149,6 +222,12 @@ export const useNoteStore = create<NoteState>()(
             note.id === id ? { ...note, isPinned: true } : note
           ),
         }));
+
+        // Sync pin to cloud
+        const pinnedNote = get().notes.find((n) => n.id === id);
+        if (pinnedNote) {
+          syncToCloud(pinnedNote);
+        }
       },
 
       unpinNote: (id) => {
@@ -157,6 +236,12 @@ export const useNoteStore = create<NoteState>()(
             note.id === id ? { ...note, isPinned: false } : note
           ),
         }));
+
+        // Sync unpin to cloud
+        const unpinnedNote = get().notes.find((n) => n.id === id);
+        if (unpinnedNote) {
+          syncToCloud(unpinnedNote);
+        }
       },
 
       clearUnpinnedNotes: () => {
@@ -311,6 +396,12 @@ export const useNoteStore = create<NoteState>()(
             };
           }),
         }));
+
+        // Sync to cloud
+        const updatedNote = get().notes.find((n) => n.id === noteId);
+        if (updatedNote) {
+          syncToCloud(updatedNote);
+        }
       },
 
       removeLabelFromNote: (noteId, labelName) => {
@@ -357,6 +448,12 @@ export const useNoteStore = create<NoteState>()(
             };
           }),
         }));
+
+        // Sync to cloud
+        const updatedNote = get().notes.find((n) => n.id === noteId);
+        if (updatedNote) {
+          syncToCloud(updatedNote);
+        }
       },
 
       setActiveDesignLabel: (noteId, labelName) => {
@@ -375,6 +472,12 @@ export const useNoteStore = create<NoteState>()(
               : n
           ),
         }));
+
+        // Sync to cloud
+        const updatedNote = get().notes.find((n) => n.id === noteId);
+        if (updatedNote) {
+          syncToCloud(updatedNote);
+        }
       },
 
       assignUncategorizedLabel: (noteId) => {
@@ -419,6 +522,12 @@ export const useNoteStore = create<NoteState>()(
             };
           }),
         }));
+
+        // Sync to cloud
+        const updatedNote = get().notes.find((n) => n.id === noteId);
+        if (updatedNote) {
+          syncToCloud(updatedNote);
+        }
       },
 
       // Queries

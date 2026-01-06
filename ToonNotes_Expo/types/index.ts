@@ -163,6 +163,25 @@ export interface LabelSuggestion {
   status: 'pending' | 'accepted' | 'declined';
 }
 
+// Subscription state
+export type SubscriptionPlan = 'monthly';
+
+export interface Subscription {
+  isPro: boolean;
+  plan: SubscriptionPlan | null;
+  expiresAt: number | null;           // Unix timestamp
+  lastCoinGrantDate: number | null;   // When 100 coins were last granted
+  willRenew: boolean;                 // Auto-renew status from RevenueCat
+}
+
+export const DEFAULT_SUBSCRIPTION: Subscription = {
+  isPro: false,
+  plan: null,
+  expiresAt: null,
+  lastCoinGrantDate: null,
+  willRenew: false,
+};
+
 // User state and economy
 export interface User {
   id: string;
@@ -170,6 +189,7 @@ export interface User {
   freeDesignsUsed: number;  // Count of free designs used (0-3)
   coinBalance: number;
   createdAt: number;
+  subscription: Subscription;  // Pro subscription state
 }
 
 // In-app purchase record

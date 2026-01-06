@@ -15,17 +15,19 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Linking,
 } from 'react-native';
 import { Coin, Gift, ArrowCounterClockwise, Star, Crown, Info } from 'phosphor-react-native';
 import Constants from 'expo-constants';
-
 import { BottomSheet } from '@/src/components/sheets/BottomSheet';
 import { useUserStore } from '@/stores';
 import { useTheme } from '@/src/theme';
 import { purchaseService, PurchasesPackage } from '@/services/purchaseService';
+import { subscriptionService } from '@/services/subscriptionService';
 import { PRODUCT_CONFIG, getCoinsForProduct, ProductId } from '@/constants/products';
 import { generateUUID } from '@/utils/uuid';
 import { Purchase } from '@/types';
+import { ProSubscriptionCard } from './ProSubscriptionCard';
 
 // Check if running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -67,11 +69,66 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
   const [error, setError] = useState<string | null>(null);
   const [usingMock, setUsingMock] = useState(false);
 
+  // Subscription state
+  const [subscriptionPackages, setSubscriptionPackages] = useState<PurchasesPackage[]>([]);
+  const [subscriptionPrice, setSubscriptionPrice] = useState('$4.99');
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
+
   useEffect(() => {
     if (visible) {
       loadPackages();
+      loadSubscriptionPackages();
     }
   }, [visible]);
+
+  // Load subscription packages from RevenueCat
+  const loadSubscriptionPackages = async () => {
+    const packages = await purchaseService.getSubscriptionOffering();
+    if (packages && packages.length > 0) {
+      setSubscriptionPackages(packages);
+      // Set price from the first (monthly) package
+      setSubscriptionPrice(packages[0].product.priceString);
+    }
+  };
+
+  // Handle Pro subscription purchase
+  const handleSubscribe = async () => {
+    if (subscriptionPackages.length === 0) {
+      Alert.alert('Error', 'Subscription not available. Please try again.');
+      return;
+    }
+
+    setIsLoadingSubscription(true);
+    const result = await purchaseService.purchaseProSubscription(subscriptionPackages[0]);
+
+    if (result.success) {
+      // Handle new subscription
+      await subscriptionService.handleNewSubscription();
+
+      Alert.alert(
+        'Welcome to Pro!',
+        'You now have cloud sync and 100 bonus coins!',
+        [{ text: 'Awesome!', onPress: onClose }]
+      );
+    } else if (!result.userCancelled) {
+      Alert.alert('Purchase Failed', result.error || 'Please try again.');
+    }
+
+    setIsLoadingSubscription(false);
+  };
+
+  // Handle manage subscription
+  const handleManageSubscription = async () => {
+    const managementURL = await purchaseService.getManagementURL();
+    if (managementURL) {
+      Linking.openURL(managementURL);
+    } else {
+      Alert.alert(
+        'Manage Subscription',
+        'Please manage your subscription through the App Store settings.'
+      );
+    }
+  };
 
   const loadPackages = async () => {
     setLoading(true);
@@ -204,6 +261,32 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
             1 coin = 1 custom design
           </Text>
         </View>
+
+        {/* Pro Subscription Card */}
+        {!isExpoGo && (
+          <>
+            <ProSubscriptionCard
+              isPro={user.subscription.isPro}
+              expiresAt={user.subscription.expiresAt}
+              willRenew={user.subscription.willRenew}
+              priceString={subscriptionPrice}
+              onSubscribe={handleSubscribe}
+              onManage={handleManageSubscription}
+              isLoading={isLoadingSubscription}
+            />
+
+            {/* Divider between Pro and coins */}
+            {!user.subscription.isPro && (
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.textTertiary }]}>
+                  or buy coins
+                </Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              </View>
+            )}
+          </>
+        )}
 
         {/* Loading State */}
         {loading ? (
@@ -611,5 +694,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

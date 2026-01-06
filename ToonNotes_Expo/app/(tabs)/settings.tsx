@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Alert, ActivityIndicator, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -12,6 +12,8 @@ import {
   ArrowCounterClockwise,
   SignOut,
   User,
+  Crown,
+  Cloud,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -21,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/src/theme';
 import { CoinShop } from '@/components/shop/CoinShop';
 import { isSupabaseConfigured } from '@/services/supabase';
+import { purchaseService } from '@/services/purchaseService';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -36,6 +39,7 @@ export default function SettingsScreen() {
     resetOnboarding,
     onboarding,
     getFreeDesignsRemaining,
+    isPro,
   } = useUserStore();
   const { getArchivedNotes, getDeletedNotes, clearUnpinnedNotes, getActiveNotes } = useNoteStore();
   const { designs, clearAllDesigns } = useDesignStore();
@@ -77,6 +81,31 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const managementURL = await purchaseService.getManagementURL();
+      if (managementURL) {
+        await Linking.openURL(managementURL);
+      } else {
+        // Fallback to App Store subscriptions
+        await Linking.openURL('https://apps.apple.com/account/subscriptions');
+      }
+    } catch (error) {
+      console.error('[Settings] Error opening subscription management:', error);
+      Alert.alert('Error', 'Could not open subscription management. Please try again.');
+    }
+  };
+
+  // Format expiration date for display
+  const formatExpirationDate = (timestamp: number | null) => {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   const handleClearAllDesigns = () => {
@@ -205,6 +234,117 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
+
+        {/* Subscription Section */}
+        <View className="mt-6">
+          <Text
+            className="text-xs uppercase tracking-wider px-2 mb-2"
+            style={{ color: colors.textSecondary }}
+          >
+            Subscription
+          </Text>
+          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
+            {isPro() ? (
+              <>
+                {/* Active Pro Status */}
+                <View
+                  className="px-4 py-4"
+                  style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
+                >
+                  <View className="flex-row items-center mb-2">
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: `${colors.accent}20`,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Crown size={20} color={colors.accent} weight="fill" />
+                    </View>
+                    <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
+                      ToonNotes Pro
+                    </Text>
+                    <View
+                      style={{
+                        marginLeft: 8,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 10,
+                        backgroundColor: colors.accent,
+                      }}
+                    >
+                      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>ACTIVE</Text>
+                    </View>
+                  </View>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginLeft: 44 }}>
+                    {user.subscription.willRenew
+                      ? `Renews ${formatExpirationDate(user.subscription.expiresAt)}`
+                      : `Expires ${formatExpirationDate(user.subscription.expiresAt)}`}
+                  </Text>
+                </View>
+
+                {/* Pro Benefits */}
+                <View className="px-4 py-3" style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}>
+                  <View className="flex-row items-center">
+                    <Cloud size={16} color={colors.accent} weight="fill" />
+                    <Text className="ml-2" style={{ color: colors.textSecondary, fontSize: 14 }}>
+                      Cloud sync enabled
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Manage Subscription */}
+                <TouchableOpacity
+                  onPress={handleManageSubscription}
+                  className="flex-row items-center justify-between px-4 py-3"
+                  accessibilityLabel="Manage subscription"
+                  accessibilityRole="button"
+                >
+                  <Text style={{ color: colors.textSecondary, fontSize: 17 }}>Manage Subscription</Text>
+                  <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                {/* Non-Pro: Upgrade Prompt */}
+                <TouchableOpacity
+                  onPress={handleBuyCoins}
+                  className="flex-row items-center justify-between px-4 py-4"
+                  accessibilityLabel="Upgrade to ToonNotes Pro"
+                  accessibilityRole="button"
+                  accessibilityHint="Opens the shop to subscribe to Pro"
+                >
+                  <View className="flex-row items-center flex-1">
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: `${colors.accent}20`,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Crown size={20} color={colors.accent} weight="regular" />
+                    </View>
+                    <View className="ml-3 flex-1">
+                      <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
+                        ToonNotes Pro
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
+                        Cloud sync + 100 coins/month
+                      </Text>
+                    </View>
+                  </View>
+                  <CaretRight size={16} color={colors.textTertiary} weight="regular" />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
 
         {/* Coins Section */}
         <View className="mt-6">

@@ -10,7 +10,7 @@ import { recordError } from '@/services/firebaseAnalytics';
 
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { PRODUCT_COINS } from '@/constants/products';
+import { PRODUCT_COINS, ENTITLEMENT_ID } from '@/constants/products';
 
 // Dynamic import to prevent crash in Expo Go
 let Purchases: typeof import('react-native-purchases').default | null = null;
@@ -48,8 +48,26 @@ export interface PurchaseResult {
   userCancelled?: boolean;
 }
 
+export interface ProStatus {
+  isPro: boolean;
+  expiresAt: Date | null;
+  willRenew: boolean;
+  latestPurchaseDate: Date | null;
+  productId: string | null;
+}
+
+export interface SubscriptionPurchaseResult {
+  success: boolean;
+  error?: string;
+  userCancelled?: boolean;
+}
+
+// Customer info update listener type
+type CustomerInfoUpdateListener = (info: import('react-native-purchases').CustomerInfo) => void;
+
 class PurchaseService {
   private initialized = false;
+  private customerInfoListeners: CustomerInfoUpdateListener[] = [];
 
   /**
    * Initialize RevenueCat SDK
@@ -234,6 +252,168 @@ class PurchaseService {
       devLog('User logged out from RevenueCat');
     } catch (error) {
       console.error('Failed to log out:', error);
+    }
+  }
+
+  // ==========================================================================
+  // Subscription Methods
+  // ==========================================================================
+
+  /**
+   * Check Pro subscription status from RevenueCat
+   * Returns detailed info about the user's Pro entitlement
+   */
+  async checkProStatus(): Promise<ProStatus> {
+    const defaultStatus: ProStatus = {
+      isPro: false,
+      expiresAt: null,
+      willRenew: false,
+      latestPurchaseDate: null,
+      productId: null,
+    };
+
+    if (!this.initialized || !Purchases) {
+      return defaultStatus;
+    }
+
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
+
+      if (!entitlement) {
+        return defaultStatus;
+      }
+
+      return {
+        isPro: true,
+        expiresAt: entitlement.expirationDate ? new Date(entitlement.expirationDate) : null,
+        willRenew: entitlement.willRenew,
+        latestPurchaseDate: entitlement.latestPurchaseDate
+          ? new Date(entitlement.latestPurchaseDate)
+          : null,
+        productId: entitlement.productIdentifier,
+      };
+    } catch (error) {
+      console.error('Failed to check Pro status:', error);
+      return defaultStatus;
+    }
+  }
+
+  /**
+   * Get subscription offering (Pro packages)
+   * Returns the subscription packages from the current offering
+   */
+  async getSubscriptionOffering(): Promise<import('react-native-purchases').PurchasesPackage[] | null> {
+    if (!this.initialized || !Purchases) {
+      devWarn('RevenueCat not initialized');
+      return null;
+    }
+
+    try {
+      const offerings = await Purchases.getOfferings();
+      if (!offerings.current) return null;
+
+      // Filter to only subscription packages (not consumables)
+      // Subscription packages have 'subscription' in their package type
+      const subscriptionPackages = offerings.current.availablePackages.filter((pkg) => {
+        // RevenueCat package types: MONTHLY, ANNUAL, WEEKLY, etc. for subscriptions
+        // Consumables have CUSTOM or LIFETIME
+        return ['MONTHLY', 'ANNUAL', 'WEEKLY', 'SIX_MONTH', 'THREE_MONTH', 'TWO_MONTH'].includes(
+          pkg.packageType
+        );
+      });
+
+      return subscriptionPackages.length > 0 ? subscriptionPackages : null;
+    } catch (error) {
+      console.error('Failed to get subscription offering:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Purchase Pro subscription
+   */
+  async purchaseProSubscription(
+    pkg: import('react-native-purchases').PurchasesPackage
+  ): Promise<SubscriptionPurchaseResult> {
+    if (!this.initialized || !Purchases) {
+      return {
+        success: false,
+        error: 'Purchase service not initialized',
+      };
+    }
+
+    try {
+      await Purchases.purchasePackage(pkg);
+
+      devLog('Pro subscription purchased successfully');
+      return { success: true };
+    } catch (error) {
+      const purchaseError = error as PurchasesError;
+
+      if (purchaseError.userCancelled) {
+        return { success: false, userCancelled: true };
+      }
+
+      console.error('Subscription purchase failed:', purchaseError);
+      recordError(new Error(purchaseError.message || 'Subscription purchase failed'), {
+        service: 'purchase',
+        method: 'purchaseProSubscription',
+      });
+
+      return {
+        success: false,
+        error: purchaseError.message || 'Subscription purchase failed. Please try again.',
+      };
+    }
+  }
+
+  /**
+   * Add listener for customer info updates
+   * Use this to detect subscription renewals and status changes
+   */
+  addCustomerInfoListener(callback: CustomerInfoUpdateListener): void {
+    if (!this.initialized || !Purchases) {
+      devWarn('Cannot add listener: RevenueCat not initialized');
+      return;
+    }
+
+    this.customerInfoListeners.push(callback);
+
+    // If this is the first listener, set up the RevenueCat listener
+    if (this.customerInfoListeners.length === 1) {
+      Purchases.addCustomerInfoUpdateListener((info) => {
+        devLog('Customer info updated:', info.entitlements.active);
+        this.customerInfoListeners.forEach((listener) => listener(info));
+      });
+    }
+  }
+
+  /**
+   * Remove customer info listener
+   */
+  removeCustomerInfoListener(callback: CustomerInfoUpdateListener): void {
+    const index = this.customerInfoListeners.indexOf(callback);
+    if (index > -1) {
+      this.customerInfoListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Get management URL to manage subscriptions
+   * Returns URL to App Store/Play Store subscription management
+   */
+  async getManagementURL(): Promise<string | null> {
+    if (!this.initialized || !Purchases) {
+      return null;
+    }
+
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      return customerInfo.managementURL;
+    } catch (error) {
+      console.error('Failed to get management URL:', error);
+      return null;
     }
   }
 }

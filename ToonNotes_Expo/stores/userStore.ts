@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User, AppSettings, NoteColor, Purchase } from '@/types';
+import { User, AppSettings, NoteColor, Purchase, Subscription, DEFAULT_SUBSCRIPTION } from '@/types';
+import { PRO_MONTHLY_COINS } from '@/constants/products';
 import { generateUUID } from '@/utils/uuid';
 import { debouncedStorage } from './debouncedStorage';
 import { CoachMarkId } from '@/constants/onboardingConfig';
@@ -63,6 +64,12 @@ interface UserState {
   incrementNotesCreated: () => void;
   resetOnboarding: () => void; // For testing/debugging
   setOnboardingVersion: (version: number) => void;
+
+  // Subscription actions
+  setSubscription: (subscription: Partial<Subscription>) => void;
+  isPro: () => boolean;
+  grantMonthlyCoins: () => boolean; // Returns true if coins were granted
+  clearSubscription: () => void;
 }
 
 // Free design quota constant (exported for UI)
@@ -73,6 +80,7 @@ const INITIAL_USER: User = {
   freeDesignsUsed: 0, // Production: users start with 0 used, 3 free designs available
   coinBalance: 5, // New users start with 5 coins
   createdAt: Date.now(),
+  subscription: DEFAULT_SUBSCRIPTION,
 };
 
 const INITIAL_SETTINGS: AppSettings = {
@@ -226,6 +234,60 @@ export const useUserStore = create<UserState>()(
           onboarding: { ...state.onboarding, onboardingVersion: version },
         }));
       },
+
+      // ========================================================================
+      // Subscription Actions
+      // ========================================================================
+
+      setSubscription: (subscription: Partial<Subscription>) => {
+        set((state) => ({
+          user: {
+            ...state.user,
+            subscription: {
+              ...state.user.subscription,
+              ...subscription,
+            },
+          },
+        }));
+      },
+
+      isPro: () => {
+        const { user } = get();
+        if (!user.subscription.isPro) return false;
+
+        // Check if subscription is still valid (not expired)
+        if (user.subscription.expiresAt) {
+          return user.subscription.expiresAt > Date.now();
+        }
+
+        return user.subscription.isPro;
+      },
+
+      grantMonthlyCoins: () => {
+        const { user, addCoins, setSubscription } = get();
+
+        // Only grant if user is Pro
+        if (!user.subscription.isPro) return false;
+
+        // Grant the monthly coins
+        addCoins(PRO_MONTHLY_COINS);
+
+        // Update last grant date
+        setSubscription({
+          lastCoinGrantDate: Date.now(),
+        });
+
+        return true;
+      },
+
+      clearSubscription: () => {
+        set((state) => ({
+          user: {
+            ...state.user,
+            subscription: DEFAULT_SUBSCRIPTION,
+          },
+        }));
+      },
     }),
     {
       name: 'toonnotes-user',
@@ -236,11 +298,12 @@ export const useUserStore = create<UserState>()(
         onboarding: state.onboarding,
         settings: state.settings,
       }),
-      // Migration: Convert old freeDesignUsed boolean to new freeDesignsUsed number
+      // Migration: Handle schema changes for existing users
       onRehydrateStorage: () => (state) => {
         if (state?.user) {
           const user = state.user as User & { freeDesignUsed?: boolean };
-          // Migrate from old boolean field to new number field
+
+          // Migration 1: Convert old freeDesignUsed boolean to new freeDesignsUsed number
           if (typeof user.freeDesignUsed === 'boolean') {
             user.freeDesignsUsed = user.freeDesignUsed ? 1 : 0;
             delete user.freeDesignUsed;
@@ -248,6 +311,11 @@ export const useUserStore = create<UserState>()(
           // Ensure freeDesignsUsed exists (for very old users)
           if (typeof user.freeDesignsUsed !== 'number') {
             user.freeDesignsUsed = 0;
+          }
+
+          // Migration 2: Add subscription field for users who don't have it
+          if (!user.subscription) {
+            user.subscription = DEFAULT_SUBSCRIPTION;
           }
         }
       },
