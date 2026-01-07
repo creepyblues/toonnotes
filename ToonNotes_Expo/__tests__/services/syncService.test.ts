@@ -33,6 +33,23 @@ const mockNoteStoreState: { notes: any[]; updateNote: jest.Mock } = {
 jest.mock('@/stores/noteStore', () => ({
   useNoteStore: {
     getState: () => mockNoteStoreState,
+    setState: jest.fn((fn) => {
+      if (typeof fn === 'function') {
+        const newState = fn(mockNoteStoreState);
+        Object.assign(mockNoteStoreState, newState);
+      } else {
+        Object.assign(mockNoteStoreState, fn);
+      }
+    }),
+  },
+}));
+
+// Mock user store - Pro user by default for sync tests
+jest.mock('@/stores/userStore', () => ({
+  useUserStore: {
+    getState: () => ({
+      isPro: () => true,
+    }),
   },
 }));
 
