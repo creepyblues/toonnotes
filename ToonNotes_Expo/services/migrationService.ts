@@ -13,6 +13,7 @@ import { useNoteStore } from '@/stores/noteStore';
 import { useUserStore } from '@/stores/userStore';
 import { useDesignStore } from '@/stores/designStore';
 import { useBoardStore } from '@/stores/boardStore';
+import { useLabelStore } from '@/stores/labelStore';
 import { Note, Label, NoteDesign, Board } from '@/types';
 
 export interface MigrationResult {
@@ -39,11 +40,12 @@ export async function migrateLocalDataToCloud(userId: string): Promise<Migration
     const userStore = useUserStore.getState();
     const designStore = useDesignStore.getState();
     const boardStore = useBoardStore.getState();
+    const labelStore = useLabelStore.getState();
 
     console.log('[Migration] Starting migration for user:', userId);
     console.log('[Migration] Local data:', {
       notes: noteStore.notes.length,
-      labels: noteStore.labels.length,
+      labels: labelStore.labels.length,
       designs: designStore.designs.length,
       boards: boardStore.boards.length,
     });
@@ -67,8 +69,8 @@ export async function migrateLocalDataToCloud(userId: string): Promise<Migration
     }
 
     // 2. Migrate labels
-    if (noteStore.labels.length > 0) {
-      const labelsToInsert = noteStore.labels.map((label) => ({
+    if (labelStore.labels.length > 0) {
+      const labelsToInsert = labelStore.labels.map((label) => ({
         id: label.id,
         user_id: userId,
         name: label.name,
@@ -244,10 +246,11 @@ export function getLocalDataCounts(): {
   const noteStore = useNoteStore.getState();
   const designStore = useDesignStore.getState();
   const boardStore = useBoardStore.getState();
+  const labelStore = useLabelStore.getState();
 
   return {
     notes: noteStore.notes.length,
-    labels: noteStore.labels.length,
+    labels: labelStore.labels.length,
     designs: designStore.designs.length,
     boards: boardStore.boards.length,
   };

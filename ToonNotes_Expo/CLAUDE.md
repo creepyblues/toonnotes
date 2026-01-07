@@ -135,11 +135,12 @@ ToonNotes_Expo/
 │       ├── tags/             # TagPill
 │       └── Icon.tsx
 ├── stores/                   # Zustand state management
-│   ├── noteStore.ts          # Note CRUD with debounced persistence
+│   ├── noteStore.ts          # Note CRUD with debounced persistence + cloud sync
 │   ├── userStore.ts          # User, economy & settings
-│   ├── designStore.ts        # Saved designs
-│   ├── boardStore.ts         # Board/hashtag management
-│   ├── authStore.ts          # Authentication state (user, session)
+│   ├── designStore.ts        # Saved designs + cloud sync
+│   ├── boardStore.ts         # Board/hashtag management + cloud sync
+│   ├── labelStore.ts         # Label entities + cloud sync
+│   ├── authStore.ts          # Authentication state + sync orchestration
 │   ├── boardDesignStore.ts   # Board-specific design state
 │   ├── labelSuggestionStore.ts # AI label suggestion queue
 │   ├── debouncedStorage.ts   # Batched AsyncStorage writes
@@ -219,16 +220,45 @@ await signInWithGoogle();
 
 ### Cloud Sync (Pro Feature)
 
+Full bidirectional sync for all user data types:
+
+| Data Type | Sync Function | Real-time |
+|-----------|---------------|-----------|
+| Notes | `syncNotes()` | Yes |
+| Designs | `syncDesigns()` | Yes |
+| Boards | `syncBoards()` | Yes |
+| Labels | `syncLabels()` | Yes |
+
 ```typescript
-// Sync service handles bidirectional sync
-import { syncNotes, migrateToCloud } from '@/services/syncService';
+// Sync service handles bidirectional sync for all data types
+import {
+  syncNotes,
+  syncDesigns,
+  syncBoards,
+  syncLabels,
+  subscribeToNotes,
+  subscribeToDesigns,
+  subscribeToBoards,
+  subscribeToLabels,
+} from '@/services/syncService';
 
-// Migration moves local data to Supabase
-await migrateToCloud();
+// Migration moves local data to Supabase (first sign-in)
+import { migrateLocalDataToCloud } from '@/services/migrationService';
+await migrateLocalDataToCloud(userId);
 
-// Sync pulls/pushes changes
-await syncNotes();
+// Full sync pulls/pushes all data types
+await Promise.all([
+  syncNotes(userId),
+  syncDesigns(userId),
+  syncBoards(userId),
+  syncLabels(userId),
+]);
 ```
+
+**Sync triggers:**
+- On sign-in (full sync)
+- After every local change (fire-and-forget upload)
+- Real-time subscription for changes from other devices
 
 ### Theme System (Single Source of Truth)
 

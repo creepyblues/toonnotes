@@ -10,7 +10,6 @@ import {
 import { normalizeLabel } from '@/utils/labelNormalization';
 import { debouncedStorage } from './debouncedStorage';
 import { getPresetForLabel, LabelPresetId } from '@/constants/labelPresets';
-import { uploadNote, deleteNoteFromCloud } from '@/services/syncService';
 
 // Lazy import to avoid circular dependency
 const getAuthUserId = () => {
@@ -26,22 +25,24 @@ const isPro = () => {
 };
 
 // Helper to sync note to cloud (fire and forget)
-// Only syncs for Pro users
+// Only syncs for Pro users - uses lazy import to avoid circular dependency
 const syncToCloud = (note: Note) => {
   const userId = getAuthUserId();
   if (userId && isPro()) {
-    uploadNote(note, userId).catch((error) => {
+    const { uploadNote } = require('@/services/syncService');
+    uploadNote(note, userId).catch((error: Error) => {
       console.error('[NoteStore] Cloud sync failed:', error);
     });
   }
 };
 
 // Helper to delete from cloud (fire and forget)
-// Only deletes for Pro users
+// Only deletes for Pro users - uses lazy import to avoid circular dependency
 const deleteFromCloud = (noteId: string) => {
   const userId = getAuthUserId();
   if (userId && isPro()) {
-    deleteNoteFromCloud(noteId).catch((error) => {
+    const { deleteNoteFromCloud } = require('@/services/syncService');
+    deleteNoteFromCloud(noteId).catch((error: Error) => {
       console.error('[NoteStore] Cloud delete failed:', error);
     });
   }

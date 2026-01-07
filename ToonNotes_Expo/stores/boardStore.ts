@@ -4,6 +4,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Board, BoardStyle, BoardData, Note, NoteColor } from '@/types';
 import { generateUUID } from '@/utils/uuid';
 
+// Lazy getters to avoid circular dependency
+const getAuthUserId = () => {
+  const { useAuthStore } = require('./authStore');
+  return useAuthStore.getState().user?.id;
+};
+
+const isPro = () => {
+  const { useUserStore } = require('./userStore');
+  return useUserStore.getState().isPro();
+};
+
+// Lazy import for sync function
+const syncToCloud = (board: Board) => {
+  const userId = getAuthUserId();
+  if (userId && isPro()) {
+    const { uploadBoard } = require('@/services/syncService');
+    uploadBoard(board, userId).catch((error: Error) => {
+      console.error('[BoardStore] Cloud sync failed:', error);
+    });
+  }
+};
+
+const deleteFromCloud = (boardId: string) => {
+  const userId = getAuthUserId();
+  if (userId && isPro()) {
+    const { deleteBoardFromCloud } = require('@/services/syncService');
+    deleteBoardFromCloud(boardId).catch((error: Error) => {
+      console.error('[BoardStore] Cloud delete failed:', error);
+    });
+  }
+};
+
 interface BoardState {
   // Persisted board customizations
   boards: Board[];
@@ -30,13 +62,15 @@ export const useBoardStore = create<BoardState>()(
 
         if (existing) {
           // Update existing board
+          const updatedBoard = { ...existing, customStyle: style, updatedAt: Date.now() };
           set((state) => ({
             boards: state.boards.map((b) =>
               b.hashtag.toLowerCase() === hashtag.toLowerCase()
-                ? { ...b, customStyle: style, updatedAt: Date.now() }
+                ? updatedBoard
                 : b
             ),
           }));
+          syncToCloud(updatedBoard);
         } else {
           // Create new board entry
           const now = Date.now();
@@ -48,17 +82,24 @@ export const useBoardStore = create<BoardState>()(
             updatedAt: now,
           };
           set((state) => ({ boards: [...state.boards, newBoard] }));
+          syncToCloud(newBoard);
         }
       },
 
       clearBoardStyle: (hashtag) => {
+        let updatedBoard: Board | undefined;
         set((state) => ({
-          boards: state.boards.map((b) =>
-            b.hashtag.toLowerCase() === hashtag.toLowerCase()
-              ? { ...b, customStyle: undefined, updatedAt: Date.now() }
-              : b
-          ),
+          boards: state.boards.map((b) => {
+            if (b.hashtag.toLowerCase() === hashtag.toLowerCase()) {
+              updatedBoard = { ...b, customStyle: undefined, updatedAt: Date.now() };
+              return updatedBoard;
+            }
+            return b;
+          }),
         }));
+        if (updatedBoard) {
+          syncToCloud(updatedBoard);
+        }
       },
 
       getBoardByHashtag: (hashtag) =>
@@ -73,13 +114,15 @@ export const useBoardStore = create<BoardState>()(
 
         if (existing) {
           // Update existing board with design
+          const updatedBoard = { ...existing, boardDesignId: designId, updatedAt: Date.now() };
           set((state) => ({
             boards: state.boards.map((b) =>
               b.hashtag.toLowerCase() === hashtag.toLowerCase()
-                ? { ...b, boardDesignId: designId, updatedAt: Date.now() }
+                ? updatedBoard
                 : b
             ),
           }));
+          syncToCloud(updatedBoard);
         } else {
           // Create new board entry with design
           const now = Date.now();
@@ -91,17 +134,24 @@ export const useBoardStore = create<BoardState>()(
             updatedAt: now,
           };
           set((state) => ({ boards: [...state.boards, newBoard] }));
+          syncToCloud(newBoard);
         }
       },
 
       clearDesign: (hashtag) => {
+        let updatedBoard: Board | undefined;
         set((state) => ({
-          boards: state.boards.map((b) =>
-            b.hashtag.toLowerCase() === hashtag.toLowerCase()
-              ? { ...b, boardDesignId: undefined, updatedAt: Date.now() }
-              : b
-          ),
+          boards: state.boards.map((b) => {
+            if (b.hashtag.toLowerCase() === hashtag.toLowerCase()) {
+              updatedBoard = { ...b, boardDesignId: undefined, updatedAt: Date.now() };
+              return updatedBoard;
+            }
+            return b;
+          }),
         }));
+        if (updatedBoard) {
+          syncToCloud(updatedBoard);
+        }
       },
     }),
     {

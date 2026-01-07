@@ -14,9 +14,30 @@ import {
   OAuthProvider,
 } from '@/services/authService';
 import { setUserId, clearUser as clearAnalyticsUser, Analytics } from '@/services/firebaseAnalytics';
-import { syncNotes, subscribeToNotes, unsubscribeFromNotes } from '@/services/syncService';
+import {
+  syncNotes,
+  subscribeToNotes,
+  unsubscribeFromNotes,
+  syncDesigns,
+  subscribeToDesigns,
+  syncBoards,
+  subscribeToBoards,
+  syncLabels,
+  subscribeToLabels,
+} from '@/services/syncService';
 import { useNoteStore } from './noteStore';
 import { useUserStore } from './userStore';
+import { useDesignStore } from './designStore';
+import { useBoardStore } from './boardStore';
+import { useLabelStore } from './labelStore';
+import { NoteDesign, Board, Label } from '@/types';
+
+interface RealtimeChannels {
+  notes: RealtimeChannel | null;
+  designs: RealtimeChannel | null;
+  boards: RealtimeChannel | null;
+  labels: RealtimeChannel | null;
+}
 
 interface AuthState {
   // State
@@ -25,7 +46,7 @@ interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
-  realtimeChannel: RealtimeChannel | null;
+  realtimeChannels: RealtimeChannels;
 
   // Actions
   initialize: () => Promise<void>;
@@ -36,6 +57,149 @@ interface AuthState {
   setSession: (session: Session | null) => void;
 }
 
+// Helper to set up all real-time subscriptions
+const setupRealtimeSubscriptions = (userId: string): RealtimeChannels => {
+  // Notes subscription
+  const notesChannel = subscribeToNotes(
+    userId,
+    (note) => {
+      const noteStore = useNoteStore.getState();
+      const existing = noteStore.notes.find((n) => n.id === note.id);
+      if (existing) {
+        if (note.updatedAt > existing.updatedAt) {
+          noteStore.updateNote(note.id, note);
+        }
+      } else {
+        useNoteStore.setState((state) => ({
+          notes: [note, ...state.notes],
+        }));
+      }
+    },
+    (noteId) => {
+      useNoteStore.getState().permanentlyDeleteNote(noteId);
+    }
+  );
+
+  // Designs subscription
+  const designsChannel = subscribeToDesigns(
+    userId,
+    (design: NoteDesign) => {
+      const designStore = useDesignStore.getState();
+      const existing = designStore.designs.find((d) => d.id === design.id);
+      if (existing) {
+        if (design.createdAt > existing.createdAt) {
+          designStore.updateDesign(design.id, design);
+        }
+      } else {
+        useDesignStore.setState((state) => ({
+          designs: [design, ...state.designs],
+        }));
+      }
+    },
+    (designId: string) => {
+      useDesignStore.setState((state) => ({
+        designs: state.designs.filter((d) => d.id !== designId),
+      }));
+    }
+  );
+
+  // Boards subscription
+  const boardsChannel = subscribeToBoards(
+    userId,
+    (board: Board) => {
+      const boardStore = useBoardStore.getState();
+      const existing = boardStore.boards.find((b) => b.id === board.id);
+      if (existing) {
+        if (board.updatedAt > existing.updatedAt) {
+          useBoardStore.setState((state) => ({
+            boards: state.boards.map((b) => (b.id === board.id ? board : b)),
+          }));
+        }
+      } else {
+        useBoardStore.setState((state) => ({
+          boards: [...state.boards, board],
+        }));
+      }
+    },
+    (boardId: string) => {
+      useBoardStore.setState((state) => ({
+        boards: state.boards.filter((b) => b.id !== boardId),
+      }));
+    }
+  );
+
+  // Labels subscription
+  const labelsChannel = subscribeToLabels(
+    userId,
+    (label: Label) => {
+      const labelStore = useLabelStore.getState();
+      const existing = labelStore.labels.find((l) => l.id === label.id);
+      if (existing) {
+        const existingTime = existing.lastUsedAt || existing.createdAt;
+        const incomingTime = label.lastUsedAt || label.createdAt;
+        if (incomingTime > existingTime) {
+          labelStore.updateLabel(label.id, label);
+        }
+      } else {
+        useLabelStore.setState((state) => ({
+          labels: [label, ...state.labels],
+        }));
+      }
+    },
+    (labelId: string) => {
+      useLabelStore.setState((state) => ({
+        labels: state.labels.filter((l) => l.id !== labelId),
+      }));
+    }
+  );
+
+  return {
+    notes: notesChannel,
+    designs: designsChannel,
+    boards: boardsChannel,
+    labels: labelsChannel,
+  };
+};
+
+// Helper to perform full sync for Pro users
+const performFullSync = async (userId: string): Promise<void> => {
+  console.log('[AuthStore] Starting full sync for all data types...');
+
+  const results = await Promise.all([
+    syncNotes(userId),
+    syncDesigns(userId),
+    syncBoards(userId),
+    syncLabels(userId),
+  ]);
+
+  console.log('[AuthStore] Full sync complete:', {
+    notes: results[0],
+    designs: results[1],
+    boards: results[2],
+    labels: results[3],
+  });
+};
+
+// Helper to clean up realtime subscriptions
+const cleanupRealtimeSubscriptions = async (channels: RealtimeChannels): Promise<void> => {
+  const cleanupPromises: Promise<void>[] = [];
+
+  if (channels.notes) {
+    cleanupPromises.push(unsubscribeFromNotes(channels.notes));
+  }
+  if (channels.designs) {
+    cleanupPromises.push(unsubscribeFromNotes(channels.designs));
+  }
+  if (channels.boards) {
+    cleanupPromises.push(unsubscribeFromNotes(channels.boards));
+  }
+  if (channels.labels) {
+    cleanupPromises.push(unsubscribeFromNotes(channels.labels));
+  }
+
+  await Promise.all(cleanupPromises);
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   // Initial state
   session: null,
@@ -43,7 +207,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   isInitialized: false,
   error: null,
-  realtimeChannel: null,
+  realtimeChannels: {
+    notes: null,
+    designs: null,
+    boards: null,
+    labels: null,
+  },
 
   /**
    * Initialize auth state
@@ -87,40 +256,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
 
-      // If user already has a session, sync notes immediately (Pro only)
+      // If user already has a session, sync all data immediately (Pro only)
       if (session?.user?.id) {
         const { isPro } = useUserStore.getState();
 
         // Only sync and subscribe if user is Pro
         if (isPro()) {
-          console.log('[AuthStore] Existing Pro session found, syncing notes...');
-          syncNotes(session.user.id).then((result) => {
-            console.log('[AuthStore] Initial sync complete:', result);
-          }).catch((error) => {
+          console.log('[AuthStore] Existing Pro session found, syncing all data...');
+
+          // Perform full sync
+          performFullSync(session.user.id).catch((error) => {
             console.error('[AuthStore] Sync error:', error);
           });
 
-          // Set up real-time subscription
-          const channel = subscribeToNotes(
-            session.user.id,
-            (note) => {
-              const noteStore = useNoteStore.getState();
-              const existing = noteStore.notes.find(n => n.id === note.id);
-              if (existing) {
-                if (note.updatedAt > existing.updatedAt) {
-                  noteStore.updateNote(note.id, note);
-                }
-              } else {
-                useNoteStore.setState((state) => ({
-                  notes: [note, ...state.notes]
-                }));
-              }
-            },
-            (noteId) => {
-              useNoteStore.getState().permanentlyDeleteNote(noteId);
-            }
-          );
-          set({ realtimeChannel: channel });
+          // Set up real-time subscriptions for all data types
+          const channels = setupRealtimeSubscriptions(session.user.id);
+          set({ realtimeChannels: channels });
         } else {
           console.log('[AuthStore] User not Pro, skipping cloud sync');
         }
@@ -150,38 +301,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 // Only sync and subscribe for Pro users
                 const { isPro: checkIsPro } = useUserStore.getState();
                 if (checkIsPro()) {
-                  // Sync notes from cloud
-                  syncNotes(session.user.id).then((result) => {
-                    console.log('[AuthStore] Initial sync complete:', result);
-                  }).catch((error) => {
+                  // Perform full sync for all data types
+                  performFullSync(session.user.id).catch((error) => {
                     console.error('[AuthStore] Sync error:', error);
                   });
 
-                  // Set up real-time subscription for note changes
-                  const channel = subscribeToNotes(
-                    session.user.id,
-                    (note) => {
-                      // Update local store when cloud changes
-                      const noteStore = useNoteStore.getState();
-                      const existing = noteStore.notes.find(n => n.id === note.id);
-                      if (existing) {
-                        // Only update if cloud version is newer (avoid echo from our own uploads)
-                        if (note.updatedAt > existing.updatedAt) {
-                          noteStore.updateNote(note.id, note);
-                        }
-                      } else {
-                        // New note from cloud - add directly to store
-                        useNoteStore.setState((state) => ({
-                          notes: [note, ...state.notes]
-                        }));
-                      }
-                    },
-                    (noteId) => {
-                      // Remove from local when deleted in cloud
-                      useNoteStore.getState().permanentlyDeleteNote(noteId);
-                    }
-                  );
-                  set({ realtimeChannel: channel });
+                  // Set up real-time subscriptions for all data types
+                  const channels = setupRealtimeSubscriptions(session.user.id);
+                  set({ realtimeChannels: channels });
                 } else {
                   console.log('[AuthStore] User not Pro, skipping cloud sync');
                 }
@@ -189,12 +316,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               break;
             case 'SIGNED_OUT':
               console.log('[AuthStore] User signed out');
-              // Unsubscribe from real-time notes
-              const { realtimeChannel } = get();
-              if (realtimeChannel) {
-                unsubscribeFromNotes(realtimeChannel);
-                set({ realtimeChannel: null });
-              }
+              // Unsubscribe from all real-time channels
+              const { realtimeChannels } = get();
+              cleanupRealtimeSubscriptions(realtimeChannels);
+              set({
+                realtimeChannels: {
+                  notes: null,
+                  designs: null,
+                  boards: null,
+                  labels: null,
+                },
+              });
               // Clear user context from Firebase
               clearAnalyticsUser();
               Analytics.signOut();

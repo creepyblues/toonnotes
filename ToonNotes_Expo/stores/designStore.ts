@@ -9,6 +9,38 @@ import { labelPresetToNoteDesign } from '@/services/designEngine';
 // Cache for label preset designs (no need to persist - computed from constants)
 const labelPresetDesignCache: Map<string, NoteDesign> = new Map();
 
+// Lazy getters to avoid circular dependency
+const getAuthUserId = () => {
+  const { useAuthStore } = require('./authStore');
+  return useAuthStore.getState().user?.id;
+};
+
+const isPro = () => {
+  const { useUserStore } = require('./userStore');
+  return useUserStore.getState().isPro();
+};
+
+// Lazy import for sync function
+const syncToCloud = (design: NoteDesign) => {
+  const userId = getAuthUserId();
+  if (userId && isPro()) {
+    const { uploadDesign } = require('@/services/syncService');
+    uploadDesign(design, userId).catch((error: Error) => {
+      console.error('[DesignStore] Cloud sync failed:', error);
+    });
+  }
+};
+
+const deleteFromCloud = (designId: string) => {
+  const userId = getAuthUserId();
+  if (userId && isPro()) {
+    const { deleteDesignFromCloud } = require('@/services/syncService');
+    deleteDesignFromCloud(designId).catch((error: Error) => {
+      console.error('[DesignStore] Cloud delete failed:', error);
+    });
+  }
+};
+
 interface DesignState {
   designs: NoteDesign[];
 
@@ -32,20 +64,30 @@ export const useDesignStore = create<DesignState>()(
         set((state) => ({
           designs: [design, ...state.designs],
         }));
+        syncToCloud(design);
       },
 
       deleteDesign: (id) => {
         set((state) => ({
           designs: state.designs.filter((d) => d.id !== id),
         }));
+        deleteFromCloud(id);
       },
 
       updateDesign: (id, updates) => {
+        let updatedDesign: NoteDesign | undefined;
         set((state) => ({
-          designs: state.designs.map((d) =>
-            d.id === id ? { ...d, ...updates } : d
-          ),
+          designs: state.designs.map((d) => {
+            if (d.id === id) {
+              updatedDesign = { ...d, ...updates };
+              return updatedDesign;
+            }
+            return d;
+          }),
         }));
+        if (updatedDesign) {
+          syncToCloud(updatedDesign);
+        }
       },
 
       clearAllDesigns: () => {

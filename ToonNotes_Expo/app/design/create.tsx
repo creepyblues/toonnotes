@@ -18,6 +18,7 @@ import {
   Image as RNImage,
   ScrollView,
 } from 'react-native';
+import { generateUUID } from '@/utils/uuid';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -172,7 +173,7 @@ export default function CreateDesignScreen() {
 
   const createCustomDesign = (): NoteDesign => {
     const now = Date.now();
-    const id = `custom-${now}`;
+    const id = generateUUID();
 
     // Start with current design's properties or defaults
     const baseDesign = currentDesign || {
