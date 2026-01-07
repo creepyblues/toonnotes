@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-ToonNotes is a mobile note-taking app for webtoon/anime fans built with Expo (React Native). The app features AI-powered custom note designs generated from uploaded images.
+ToonNotes is a mobile note-taking app for webtoon/anime fans built with Expo (React Native). The app features AI-powered custom note designs, cloud sync, OAuth authentication, and premium subscription tiers.
 
 **Project Root**: `/Users/sungholee/code/toonnotes/ToonNotes_Expo`
 
@@ -35,12 +35,28 @@ npx tsc --noEmit     # Type check without emitting
 - **Icons**: Phosphor Icons (React Native)
 - **Validation**: Zod (API response validation)
 - **Error Monitoring**: Sentry (configured, needs DSN)
-- **Secure Storage**: expo-secure-store (API keys)
+- **Authentication**: Supabase Auth (Google/Apple OAuth)
+- **Database**: Supabase (PostgreSQL) for cloud sync
+- **Analytics**: Firebase Analytics
+- **Secure Storage**: expo-secure-store (via Supabase adapter)
+- **AI**: Google Gemini API (via Vercel edge functions)
+- **Payments**: In-app purchases (iOS/Android native)
 
 ## Project Structure
 
 ```
 ToonNotes_Expo/
+├── api/                      # Vercel Edge Functions (10 endpoints)
+│   ├── generate-theme.ts           # AI note design from image
+│   ├── generate-lucky-theme.ts     # Randomized chaotic design
+│   ├── extract-colors.ts           # Color palette extraction
+│   ├── generate-board-design.ts    # Board/hashtag backgrounds
+│   ├── generate-character-mascot.ts # AI sticker generation
+│   ├── generate-label-design.ts    # Label-specific designs
+│   ├── generate-typography-poster.ts # Typography art
+│   ├── analyze-note-content.ts     # NLP for label suggestions
+│   ├── onboarding-config.ts        # Remote config for onboarding
+│   └── remove-background.ts        # Background removal (unified)
 ├── app/                      # Expo Router pages
 │   ├── (tabs)/
 │   │   ├── _layout.tsx       # Tab navigator
@@ -48,68 +64,171 @@ ToonNotes_Expo/
 │   │   ├── boards.tsx        # Boards/hashtag view
 │   │   ├── designs.tsx       # My Designs
 │   │   └── settings.tsx      # Settings
+│   ├── auth/                 # Authentication flow
+│   │   ├── index.tsx         # OAuth sign-in screen
+│   │   ├── callback.tsx      # OAuth callback handler
+│   │   └── _layout.tsx       # Auth stack layout
 │   ├── note/
 │   │   └── [id].tsx          # Note editor modal
 │   ├── board/
-│   │   └── [hashtag].tsx     # Board detail
+│   │   ├── [hashtag].tsx     # Board detail
+│   │   └── design/create.tsx # Board design creation
 │   ├── design/
 │   │   └── create.tsx        # Design creation flow
 │   ├── archive.tsx           # Archived notes
 │   ├── trash.tsx             # Deleted notes
 │   ├── +not-found.tsx        # 404 page
 │   └── _layout.tsx           # Root layout (providers, error boundary)
-├── components/               # Reusable UI components
+├── components/               # Reusable UI components (41 files)
 │   ├── notes/
 │   │   └── NoteCard.tsx      # Memoized note card with accessibility
 │   ├── boards/
-│   │   └── BoardCard.tsx     # Board preview card
+│   │   ├── BoardCard.tsx     # Board preview card
+│   │   ├── BoardCardPreview.tsx
+│   │   ├── BoardAccentLayer.tsx
+│   │   ├── StickyNote.tsx
+│   │   ├── StickyNotesRow.tsx
+│   │   └── NotePreview.tsx
 │   ├── editor/
-│   │   ├── ChecklistEditor.tsx  # Google Keep style checklist (stable IDs)
+│   │   ├── ChecklistEditor.tsx  # Google Keep style checklist
 │   │   ├── BulletEditor.tsx     # Bullet list editor
-│   │   └── index.ts             # Editor component exports
+│   │   ├── CheckboxOverlay.tsx
+│   │   ├── HashtagAutocomplete.tsx
+│   │   ├── EditorToolbar.tsx
+│   │   ├── EditorContent.tsx
+│   │   └── index.ts
+│   ├── designs/
+│   │   └── DesignCard.tsx    # Design gallery card
+│   ├── shop/                 # In-app purchase UI
+│   │   ├── CoinShop.tsx
+│   │   ├── ProSubscriptionCard.tsx
+│   │   └── UpgradeModal.tsx
+│   ├── labels/               # Label suggestion UI
+│   │   ├── LabelSuggestionSheet.tsx
+│   │   └── LabelSuggestionToast.tsx
+│   ├── onboarding/           # Onboarding system
+│   │   ├── CoachMarksProvider.tsx
+│   │   ├── CoachMarkTooltip.tsx
+│   │   └── WelcomeCarousel.tsx
+│   ├── settings/
+│   │   └── LogoPreview.tsx
 │   ├── ErrorBoundary.tsx     # Global error fallback UI
 │   ├── Themed.tsx            # Theme-aware Text/View components
+│   ├── AccentLayer.tsx       # Design accent layer
+│   ├── BackgroundLayer.tsx   # Design background layer
+│   ├── ThemePicker.tsx       # Theme selection
 │   └── useColorScheme.ts     # Dark mode hook
 ├── src/
-│   └── theme/                # Design token system (single source of truth)
-│       ├── tokens/
-│       │   ├── colors.ts     # iOS HIG colors (light/dark)
-│       │   ├── typography.ts # Font styles
-│       │   ├── spacing.ts    # Spacing scale
-│       │   └── effects.ts    # Shadows, radii
-│       ├── useTheme.ts       # Theme hook
-│       └── index.ts          # Re-exports
+│   ├── theme/                # Design token system (single source of truth)
+│   │   ├── tokens/
+│   │   │   ├── colors.ts     # iOS HIG colors (light/dark)
+│   │   │   ├── typography.ts # Font styles
+│   │   │   ├── spacing.ts    # Spacing scale
+│   │   │   ├── effects.ts    # Shadows, radii
+│   │   │   └── index.ts
+│   │   ├── useTheme.ts       # Theme hook
+│   │   └── index.ts          # Re-exports
+│   └── components/           # Base UI components
+│       ├── buttons/          # Button, IconButton
+│       ├── inputs/           # TextInput wrapper
+│       ├── sheets/           # BottomSheet
+│       ├── tags/             # TagPill
+│       └── Icon.tsx
 ├── stores/                   # Zustand state management
 │   ├── noteStore.ts          # Note CRUD with debounced persistence
 │   ├── userStore.ts          # User, economy & settings
 │   ├── designStore.ts        # Saved designs
 │   ├── boardStore.ts         # Board/hashtag management
+│   ├── authStore.ts          # Authentication state (user, session)
+│   ├── boardDesignStore.ts   # Board-specific design state
+│   ├── labelSuggestionStore.ts # AI label suggestion queue
 │   ├── debouncedStorage.ts   # Batched AsyncStorage writes
 │   └── index.ts              # Export all stores
-├── services/                 # External services
-│   ├── geminiService.ts      # Gemini AI (with response validation)
-│   ├── secureStorage.ts      # expo-secure-store wrapper
-│   ├── purchaseService.ts    # RevenueCat integration (skeleton)
+├── services/                 # External services (14 files)
+│   ├── geminiService.ts      # Gemini AI (calls Vercel edge functions)
 │   ├── designEngine.ts       # Design composition engine
-│   └── sentry.ts             # Error monitoring configuration
+│   ├── authService.ts        # OAuth authentication (Google/Apple)
+│   ├── supabase.ts           # Supabase client configuration
+│   ├── syncService.ts        # Cloud sync (Pro feature)
+│   ├── migrationService.ts   # Local-to-cloud data migration
+│   ├── subscriptionService.ts # Premium/Pro tier management
+│   ├── purchaseService.ts    # In-app purchase handling
+│   ├── firebaseAnalytics.ts  # Analytics tracking
+│   ├── labelingEngine.ts     # AI-powered label suggestions
+│   ├── onboardingService.ts  # Onboarding flow management
+│   ├── shareService.ts       # Share as image functionality
+│   ├── sentry.ts             # Error monitoring configuration
+│   └── index.ts              # Service exports
 ├── utils/
 │   ├── validation/
 │   │   └── apiResponse.ts    # Zod schemas for API responses
 │   ├── validation.ts         # Input sanitization
-│   └── uuid.ts               # UUID generation
+│   ├── uuid.ts               # UUID generation
+│   ├── analytics.ts          # Analytics helpers
+│   ├── devLog.ts             # Development logging
+│   ├── labelNormalization.ts # Label text normalization
+│   └── shadows.ts            # Shadow style utilities
 ├── types/
-│   └── index.ts              # TypeScript interfaces (500+ lines)
+│   └── index.ts              # TypeScript interfaces (600+ lines)
 ├── constants/
 │   ├── themes.ts             # Pre-made design themes
 │   ├── patterns.ts           # Background patterns
 │   ├── boardPresets.ts       # Board styling presets (20 category-based)
-│   └── labelPresets.ts       # Label/note styling presets (30 presets)
+│   ├── labelPresets.ts       # Label/note styling presets (30 presets)
+│   ├── fonts.ts              # Font definitions
+│   ├── products.ts           # In-app purchase product definitions
+│   └── onboardingConfig.ts   # Onboarding flow configuration
 ├── tailwind.config.js        # Tailwind theme (iOS HIG colors)
 ├── global.css                # Tailwind imports
 └── metro.config.js           # Metro + NativeWind
 ```
 
+## API Routes (Vercel Edge Functions)
+
+All AI features are powered by Vercel edge functions that call Google Gemini API:
+
+| Endpoint | Purpose | Input |
+|----------|---------|-------|
+| `/api/generate-theme` | Generate note design from image | imageData, mimeType |
+| `/api/generate-lucky-theme` | Chaotic random design variant | imageData, mimeType |
+| `/api/extract-colors` | Extract harmonizing colors | imageData, baseColors |
+| `/api/generate-board-design` | Board/hashtag backgrounds | boardName, category |
+| `/api/generate-character-mascot` | AI character sticker | analysis, noteContent, style |
+| `/api/generate-label-design` | Label-specific design | labelName, category |
+| `/api/generate-typography-poster` | Typography art poster | analysis, noteContent, style |
+| `/api/analyze-note-content` | NLP analysis for labels | noteTitle, noteContent |
+| `/api/onboarding-config` | Remote onboarding config | (none) |
+| `/api/remove-background` | Background removal (unified) | imageData, type |
+
+**Note**: The app calls these via `services/geminiService.ts`. The base URL is `https://toonnotes-api.vercel.app`.
+
 ## Architecture Patterns
+
+### Authentication Flow
+
+```typescript
+// OAuth with Supabase (Google/Apple)
+import { useAuthStore } from '@/stores';
+import { signInWithGoogle, signInWithApple, signOut } from '@/services/authService';
+
+const { user, session, isAuthenticated } = useAuthStore();
+
+// Sign in triggers OAuth flow, callback handled in app/auth/callback.tsx
+await signInWithGoogle();
+```
+
+### Cloud Sync (Pro Feature)
+
+```typescript
+// Sync service handles bidirectional sync
+import { syncNotes, migrateToCloud } from '@/services/syncService';
+
+// Migration moves local data to Supabase
+await migrateToCloud();
+
+// Sync pulls/pushes changes
+await syncNotes();
+```
 
 ### Theme System (Single Source of Truth)
 
@@ -159,7 +278,7 @@ The app uses a layered color system with distinct purposes:
 
 ```typescript
 // Zustand stores with debounced persistence
-import { useNoteStore, useUserStore, useDesignStore } from '@/stores';
+import { useNoteStore, useUserStore, useDesignStore, useAuthStore } from '@/stores';
 
 // Auto-save pattern (note editor)
 const prevValuesRef = useRef({ title, content });
@@ -168,16 +287,6 @@ useEffect(() => {
   const timeout = setTimeout(() => updateNote(id, { title, content }), 500);
   return () => clearTimeout(timeout);
 }, [title, content]);
-```
-
-### Secure Storage
-
-```typescript
-// API keys use expo-secure-store (encrypted)
-import { saveApiKey, getApiKey, deleteApiKey } from '@/services/secureStorage';
-
-await saveApiKey(key);  // Keychain (iOS) / EncryptedSharedPrefs (Android)
-const key = await getApiKey();
 ```
 
 ### API Response Validation
@@ -199,6 +308,10 @@ export { ErrorBoundary } from '@/components/ErrorBoundary';
 // Manual error capture
 import { captureException } from '@/services/sentry';
 captureException(error, { context: 'design-generation' });
+
+// Firebase error logging
+import { recordError } from '@/services/firebaseAnalytics';
+recordError(error, 'design_generation_failed');
 ```
 
 ### Accessibility
@@ -246,27 +359,45 @@ See `components/editor/ChecklistEditor.tsx` for full implementation.
 
 - **Note**: Core entity with title, content, color, labels, designId, archive/delete status
 - **NoteDesign**: AI-generated theme with colors, border style, sticker
-- **User**: Economy state (coins, free design flag) - starts with 0 coins, 1 free design
-- **AppSettings**: Preferences (darkMode, defaultNoteColor, geminiApiKey)
+- **User**: Economy state (coins, subscription tier) + Supabase auth
+- **AppSettings**: Preferences (darkMode, defaultNoteColor)
 - **Label**: Tag for note organization
+- **Board**: Hashtag-based note grouping with custom design
+- **Subscription**: Pro tier status and expiration
+
+## Subscription Tiers
+
+| Feature | Free | Pro |
+|---------|------|-----|
+| Notes | Unlimited | Unlimited |
+| Designs | 1 free, then coins | Unlimited |
+| Cloud Sync | No | Yes |
+| AI Label Suggestions | Limited | Unlimited |
+| Character Stickers | Coins | Unlimited |
 
 ## Production Readiness
 
 ### Configured & Ready
 - [x] Error boundary with styled fallback UI
 - [x] Sentry integration (add DSN to enable)
-- [x] Secure API key storage (expo-secure-store)
+- [x] Secure storage (expo-secure-store via Supabase)
 - [x] API response validation (Zod)
 - [x] Accessibility labels on interactive elements
 - [x] FlatList optimization for lists
 - [x] Debounced state persistence
+- [x] OAuth authentication (Google/Apple)
+- [x] Cloud database (Supabase)
+- [x] Firebase Analytics
+- [x] In-app purchases
 
 ### Environment Variables
 
 ```bash
 # .env or app.config.js
-EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn-here  # Error monitoring
-EXPO_PUBLIC_API_URL=https://your-api.vercel.app  # Production API
+EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn-here
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+GEMINI_API_KEY=your-gemini-key  # For Vercel edge functions
 ```
 
 ### Sentry Setup
@@ -303,31 +434,56 @@ eas build --platform ios --profile development
 - Modal presentation for note editor, archive, trash views
 - useRef pattern to prevent unnecessary re-renders in auto-save
 - Memoized list items with custom `arePropsEqual`
-
-## Economy System
-
-- Users start with 0 coins and 1 free design
-- Additional designs cost 1 coin each
-- RevenueCat skeleton ready (configure API keys for production)
+- Supabase for authentication and cloud sync
+- Vercel edge functions for AI features
 
 ## Implemented Features
 
+### Core Features
 - [x] Dark mode (toggle in Settings, persisted)
-- [x] Gemini API key management (secure storage)
 - [x] Archive view (view and manage archived notes)
 - [x] Trash view (restore or permanently delete)
 - [x] Design application to notes
 - [x] Image picker for design creation
-- [x] Gemini API integration
 - [x] Error boundary with recovery
 - [x] Accessibility support
 - [x] Performance optimized lists
 - [x] Checklist mode (Google Keep style with visual checkboxes)
 - [x] Bullet list mode
+- [x] Board/hashtag organization system
+
+### Authentication & Cloud
+- [x] OAuth authentication (Google, Apple)
+- [x] Supabase cloud sync (Pro feature)
+- [x] Local-to-cloud data migration
+- [x] Session management
+
+### AI Features
+- [x] Gemini API integration (via Vercel edge functions)
+- [x] AI note design generation
+- [x] "Feeling Lucky" random designs
+- [x] Character sticker generation
+- [x] Background removal for stickers
+- [x] Typography poster generation
+- [x] AI-powered label suggestions
+
+### Monetization
+- [x] Pro subscription tier
+- [x] In-app purchases
+- [x] Coin economy system
+
+### Analytics & Monitoring
+- [x] Firebase Analytics
+- [x] Sentry error monitoring (needs DSN)
+
+### Onboarding
+- [x] Welcome carousel
+- [x] Coach marks system
+- [x] Remote config for onboarding
 
 ## Quality Score: 85/100
 
-Last assessed: December 2024
+Last assessed: January 2025
 
 | Pillar | Score |
 |--------|-------|
@@ -342,8 +498,7 @@ Last assessed: December 2024
 
 ## TODO
 
-- [ ] Configure RevenueCat API keys (when ready for IAP)
 - [ ] Add Sentry DSN for production monitoring
-- [ ] Add share as image functionality
-- [ ] Background removal for stickers
+- [ ] Share as image (partially implemented)
 - [ ] Daily rewards system
+- [ ] Offline-first improvements
