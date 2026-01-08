@@ -121,6 +121,13 @@ export async function signOut(): Promise<void> {
   console.log('[Auth] Signing out');
   const { error } = await supabase.auth.signOut();
   if (error) {
+    // If session is missing/invalid, force clear local session
+    if (error.message?.includes('Auth session missing')) {
+      console.log('[Auth] No server session, clearing local session');
+      // Use scope: 'local' to clear the cached session without server call
+      await supabase.auth.signOut({ scope: 'local' });
+      return;
+    }
     console.error('[Auth] Sign out error:', error);
     throw error;
   }

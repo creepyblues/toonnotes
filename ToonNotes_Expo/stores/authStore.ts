@@ -287,12 +287,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({
             session,
             user: session?.user ?? null,
+            // Clear error if we have a valid session (defense in depth)
+            error: session ? null : get().error,
           });
 
           // Handle specific events
           switch (event) {
             case 'SIGNED_IN':
               console.log('[AuthStore] User signed in:', session?.user?.email);
+              // Clear any error state on successful sign-in
+              set({ error: null });
               // Set user context for Firebase Analytics/Crashlytics
               if (session?.user?.id) {
                 setUserId(session.user.id);
@@ -385,6 +389,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       console.log('[AuthStore] Sign out successful');
     } catch (error) {
+      // Handle "no session" error gracefully - just clear local state
+      if (error instanceof Error && error.message.includes('Auth session missing')) {
+        console.log('[AuthStore] No session to sign out from, clearing local state');
+        set({
+          session: null,
+          user: null,
+          isLoading: false,
+        });
+        return;
+      }
+
       console.error('[AuthStore] Sign out error:', error);
       set({
         error: error instanceof Error ? error.message : 'Sign out failed',
