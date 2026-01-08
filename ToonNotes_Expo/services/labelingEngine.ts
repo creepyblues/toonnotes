@@ -24,26 +24,8 @@ import {
 import { LabelPresetId, LABEL_PRESETS, LabelPreset, ALL_PRESET_IDS } from '@/constants/labelPresets';
 import { normalizeLabel } from '@/utils/labelNormalization';
 
-import { Platform } from 'react-native';
-
-// API endpoints - localhost for dev, Vercel for production
-// Android emulators can't access localhost, use 10.0.2.2 or the host IP
-const getDevApiUrl = () => {
-  if (Platform.OS === 'android') {
-    // Android emulator uses 10.0.2.2 to reach host localhost
-    // For physical devices, adb reverse or host IP is needed
-    return 'http://10.0.2.2:3001';
-  }
-  // iOS simulator and web can use localhost
-  return 'http://localhost:3001';
-};
-
-// Log the API URL at startup for debugging
-devLog(`🏷️ Labeling API Base URL: ${__DEV__ ? getDevApiUrl() : 'production'}`);
-
-const API_BASE_URL = __DEV__
-  ? getDevApiUrl()
-  : 'https://toonnotes-api.vercel.app';
+// API base URL - always use production Vercel (matches geminiService.ts pattern)
+const API_BASE_URL = 'https://toonnotes-api.vercel.app';
 
 const ANALYZE_API_URL = `${API_BASE_URL}/api/analyze-note-content`;
 const GENERATE_DESIGN_API_URL = `${API_BASE_URL}/api/generate-label-design`;
