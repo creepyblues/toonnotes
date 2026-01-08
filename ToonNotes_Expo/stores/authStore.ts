@@ -31,6 +31,7 @@ import { useDesignStore } from './designStore';
 import { useBoardStore } from './boardStore';
 import { useLabelStore } from './labelStore';
 import { NoteDesign, Board, Label } from '@/types';
+import { purchaseService } from '@/services/purchaseService';
 
 interface RealtimeChannels {
   notes: RealtimeChannel | null;
@@ -200,6 +201,40 @@ const cleanupRealtimeSubscriptions = async (channels: RealtimeChannels): Promise
   await Promise.all(cleanupPromises);
 };
 
+// Helper to check beta tester status from Supabase and grant Pro if true
+const checkBetaTesterStatus = async (userId: string): Promise<boolean> => {
+  if (!isSupabaseConfigured()) {
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_beta_tester')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      // Profile might not exist yet, that's okay
+      if (error.code !== 'PGRST116') {
+        console.error('[AuthStore] Error checking beta tester status:', error);
+      }
+      return false;
+    }
+
+    if (data?.is_beta_tester) {
+      console.log('[AuthStore] User is beta tester, granting Pro status');
+      useUserStore.getState().setSubscription({ isPro: true });
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('[AuthStore] Error checking beta tester status:', error);
+    return false;
+  }
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   // Initial state
   session: null,
@@ -256,11 +291,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
 
-      // If user already has a session, sync all data immediately (Pro only)
+      // If user already has a session, link to RevenueCat and sync (Pro only)
       if (session?.user?.id) {
+        // Link Supabase user ID to RevenueCat for subscription tracking
+        purchaseService.setUserId(session.user.id);
+
+        // Check if user is a beta tester (grants Pro status if true)
+        await checkBetaTesterStatus(session.user.id);
+
         const { isPro } = useUserStore.getState();
 
-        // Only sync and subscribe if user is Pro
+        // Only sync and subscribe if user is Pro (including beta testers)
         if (isPro()) {
           console.log('[AuthStore] Existing Pro session found, syncing all data...');
 
@@ -300,22 +341,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               // Set user context for Firebase Analytics/Crashlytics
               if (session?.user?.id) {
                 setUserId(session.user.id);
+                // Link Supabase user ID to RevenueCat for subscription tracking
+                purchaseService.setUserId(session.user.id);
                 Analytics.login(session.user.app_metadata?.provider as 'google' | 'apple' || 'google');
 
-                // Only sync and subscribe for Pro users
-                const { isPro: checkIsPro } = useUserStore.getState();
-                if (checkIsPro()) {
-                  // Perform full sync for all data types
-                  performFullSync(session.user.id).catch((error) => {
-                    console.error('[AuthStore] Sync error:', error);
-                  });
+                // Check if user is a beta tester (grants Pro status if true)
+                checkBetaTesterStatus(session.user.id).then(() => {
+                  // Only sync and subscribe for Pro users (including beta testers)
+                  const { isPro: checkIsPro } = useUserStore.getState();
+                  if (checkIsPro()) {
+                    // Perform full sync for all data types
+                    performFullSync(session.user.id).catch((error) => {
+                      console.error('[AuthStore] Sync error:', error);
+                    });
 
-                  // Set up real-time subscriptions for all data types
-                  const channels = setupRealtimeSubscriptions(session.user.id);
-                  set({ realtimeChannels: channels });
-                } else {
-                  console.log('[AuthStore] User not Pro, skipping cloud sync');
-                }
+                    // Set up real-time subscriptions for all data types
+                    const channels = setupRealtimeSubscriptions(session.user.id);
+                    set({ realtimeChannels: channels });
+                  } else {
+                    console.log('[AuthStore] User not Pro, skipping cloud sync');
+                  }
+                });
               }
               break;
             case 'SIGNED_OUT':
@@ -331,9 +377,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                   labels: null,
                 },
               });
-              // Clear user context from Firebase
+              // Clear user context from Firebase and RevenueCat
               clearAnalyticsUser();
               Analytics.signOut();
+              purchaseService.logOut();
               break;
             case 'TOKEN_REFRESHED':
               console.log('[AuthStore] Token refreshed');
