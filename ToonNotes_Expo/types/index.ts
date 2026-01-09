@@ -80,6 +80,9 @@ export interface NoteDesign {
   // Label preset fields
   labelPresetId?: string;     // Reference to LabelPresetId
   isLabelPreset?: boolean;    // True for auto-generated from label preset
+
+  // Quality assessment (for AI-generated stickers)
+  stickerQualityMetadata?: QualityMetadata;  // Quality signals for sticker generation
 }
 
 // Background override for per-note customization
@@ -585,4 +588,45 @@ export interface CharacterMascotResponse {
   characterDescription: string;  // What the AI drew
   poseDescription: string;       // How character relates to text
   artistNotes: string;
+}
+
+// ============================================
+// AI Image Quality Assessment Types
+// ============================================
+
+// Edge sharpness detection result
+export type EdgeSharpness = 'clean' | 'rough' | 'unknown';
+
+// Processing method used for image
+export type ProcessingMethod = 'ai' | 'threshold' | 'fallback';
+
+// Quality signals from image analysis
+export interface QualitySignals {
+  hasTransparency: boolean;       // Did we detect any transparent pixels?
+  transparencyRatio: number;      // % of image that is transparent (0-1)
+  edgeSharpness: EdgeSharpness;   // Quality of subject edges
+  processingMethod: ProcessingMethod;  // How the image was processed
+  confidenceScore: number;        // Overall quality confidence (0-1)
+}
+
+// Quality metadata returned from AI generation endpoints
+export interface QualityMetadata {
+  qualitySignals: QualitySignals;
+  warnings: string[];             // Human-readable quality issues
+}
+
+// Quality event types for tracking
+export type QualityEventType = 'generation' | 'accepted' | 'rejected' | 'retry';
+export type QualityGenerationType = 'sticker' | 'character' | 'background_removal';
+
+// Quality event for database tracking
+export interface QualityEvent {
+  id: string;
+  userId: string;
+  eventType: QualityEventType;
+  generationType: QualityGenerationType;
+  qualityScore: number;
+  qualitySignals: QualitySignals;
+  fallbackUsed: boolean;
+  createdAt: number;
 }

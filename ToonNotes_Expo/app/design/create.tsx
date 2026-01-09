@@ -17,6 +17,7 @@ import {
   Alert,
   Image as RNImage,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { generateUUID } from '@/utils/uuid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,10 +35,13 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { useUserStore, useDesignStore, useNoteStore } from '@/stores';
 import { FREE_DESIGN_QUOTA } from '@/stores/userStore';
-import { NoteDesign } from '@/types';
-import { generateStickerFromImage } from '@/services/geminiService';
+import { NoteDesign, QualityMetadata } from '@/types';
+import { generateStickerFromImageWithQuality, StickerFromImageResult } from '@/services/geminiService';
 import { useTheme } from '@/src/theme';
 import { UpgradeModal } from '@/components/shop/UpgradeModal';
+import { QualityPreview } from '@/components/designs/QualityPreview';
+import { isLowQuality, DEFAULT_SUCCESS_QUALITY } from '@/utils/validation/apiResponse';
+import { trackQualityDecision } from '@/services/qualityService';
 import {
   trackDesignFlowStarted,
   trackDesignGenerated,
@@ -61,6 +65,11 @@ export default function CreateDesignScreen() {
   const [selectedOption, setSelectedOption] = useState<ApplyOption>('both');
   const [step, setStep] = useState<'select' | 'options'>('select');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Quality preview state
+  const [showQualityPreview, setShowQualityPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<StickerFromImageResult | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const cost = getDesignCost();
   const canAfford = canAffordDesign();
@@ -115,9 +124,23 @@ export default function CreateDesignScreen() {
   const generateSticker = async (imageUri: string) => {
     setIsGenerating(true);
     try {
-      const stickerUri = await generateStickerFromImage(imageUri);
-      setGeneratedStickerUri(stickerUri);
-      setStep('options');
+      const result = await generateStickerFromImageWithQuality(imageUri);
+
+      if (result) {
+        // Check if we should show quality preview
+        if (isLowQuality(result.qualityMetadata)) {
+          // Show preview modal for user to accept/retry
+          setPreviewData(result);
+          setShowQualityPreview(true);
+        } else {
+          // Quality is good, proceed directly
+          setGeneratedStickerUri(result.uri);
+          setStep('options');
+        }
+      } else {
+        // Generation failed, allow using image as background
+        setStep('options');
+      }
     } catch (error: any) {
       console.error('Sticker generation failed:', error);
       // Even if sticker generation fails, allow using image as background
@@ -125,6 +148,45 @@ export default function CreateDesignScreen() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Quality preview handlers
+  const handleAcceptQuality = () => {
+    if (previewData) {
+      setGeneratedStickerUri(previewData.uri);
+      trackQualityDecision('accepted', 'sticker', previewData.qualityMetadata);
+    }
+    setShowQualityPreview(false);
+    setPreviewData(null);
+    setStep('options');
+  };
+
+  const handleRetryQuality = async () => {
+    if (!selectedImage) return;
+
+    setIsRetrying(true);
+    trackQualityDecision('retry', 'sticker', previewData?.qualityMetadata);
+
+    try {
+      const result = await generateStickerFromImageWithQuality(selectedImage);
+
+      if (result) {
+        setPreviewData(result);
+        // Don't auto-proceed on retry - always show preview
+      }
+    } catch (error) {
+      console.error('Retry failed:', error);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  const handleCancelQuality = () => {
+    trackQualityDecision('rejected', 'sticker', previewData?.qualityMetadata);
+    setShowQualityPreview(false);
+    setPreviewData(null);
+    setSelectedImage(null);
+    setStep('select');
   };
 
   const handleApplyDesign = async () => {
@@ -643,6 +705,33 @@ export default function CreateDesignScreen() {
         visible={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
+
+      {/* Quality Preview Modal */}
+      <Modal
+        visible={showQualityPreview}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelQuality}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <QualityPreview
+            imageUri={previewData?.uri || ''}
+            qualityMetadata={previewData?.qualityMetadata || DEFAULT_SUCCESS_QUALITY}
+            onAccept={handleAcceptQuality}
+            onRetry={handleRetryQuality}
+            onCancel={handleCancelQuality}
+            isRetrying={isRetrying}
+            title="Sticker Preview"
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

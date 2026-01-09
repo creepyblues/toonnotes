@@ -4,6 +4,122 @@ import sharp from 'sharp';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Quality signals interface for type safety
+interface QualitySignals {
+  hasTransparency: boolean;
+  transparencyRatio: number;
+  edgeSharpness: 'clean' | 'rough' | 'unknown';
+  processingMethod: 'ai' | 'threshold' | 'fallback';
+  confidenceScore: number;
+}
+
+interface QualityMetadata {
+  qualitySignals: QualitySignals;
+  warnings: string[];
+}
+
+/**
+ * Analyze transparency quality of processed image
+ * Uses pixel-level analysis to detect transparency and edge quality
+ */
+async function analyzeTransparencyQuality(
+  processedBase64: string
+): Promise<QualitySignals> {
+  try {
+    const processedBuffer = Buffer.from(processedBase64, 'base64');
+    const image = sharp(processedBuffer);
+    const metadata = await image.metadata();
+    const { width, height } = metadata;
+
+    if (!width || !height) {
+      return {
+        hasTransparency: false,
+        transparencyRatio: 0,
+        edgeSharpness: 'unknown',
+        processingMethod: 'threshold',
+        confidenceScore: 0.3,
+      };
+    }
+
+    const rawBuffer = await image.ensureAlpha().raw().toBuffer();
+    const totalPixels = width * height;
+
+    let transparentPixels = 0;
+    let semiTransparentPixels = 0;
+
+    // Analyze each pixel's alpha channel
+    for (let i = 0; i < rawBuffer.length; i += 4) {
+      const alpha = rawBuffer[i + 3];
+      if (alpha === 0) {
+        transparentPixels++;
+      } else if (alpha > 0 && alpha < 255) {
+        // Semi-transparent pixels indicate smooth edges (anti-aliasing)
+        semiTransparentPixels++;
+      }
+    }
+
+    const transparencyRatio = transparentPixels / totalPixels;
+
+    // Edge quality: more semi-transparent pixels = smoother edges
+    const edgeSharpness: 'clean' | 'rough' | 'unknown' =
+      semiTransparentPixels > 100 ? 'clean' : 'rough';
+
+    // Calculate confidence based on transparency ratio
+    // Sweet spot: 10-90% transparency indicates good subject extraction
+    let confidenceScore: number;
+    if (transparencyRatio > 0.1 && transparencyRatio < 0.9) {
+      confidenceScore = 0.85;
+    } else if (transparencyRatio > 0.05 && transparencyRatio < 0.95) {
+      confidenceScore = 0.65;
+    } else {
+      // Too little or too much transparency = likely failure
+      confidenceScore = 0.35;
+    }
+
+    return {
+      hasTransparency: transparencyRatio > 0.05,
+      transparencyRatio,
+      edgeSharpness,
+      processingMethod: 'threshold',
+      confidenceScore,
+    };
+  } catch (error) {
+    console.error('Error analyzing transparency quality:', error);
+    return {
+      hasTransparency: false,
+      transparencyRatio: 0,
+      edgeSharpness: 'unknown',
+      processingMethod: 'threshold',
+      confidenceScore: 0.3,
+    };
+  }
+}
+
+/**
+ * Generate human-readable warnings based on quality signals
+ */
+function generateWarnings(signals: QualitySignals): string[] {
+  const warnings: string[] = [];
+
+  if (!signals.hasTransparency) {
+    warnings.push('Background may not be removed');
+  }
+
+  if (signals.transparencyRatio < 0.1) {
+    warnings.push('Very little background detected');
+  }
+
+  if (signals.transparencyRatio > 0.9) {
+    warnings.push('Subject may be too small or lost');
+  }
+
+  if (signals.edgeSharpness === 'rough') {
+    warnings.push('Edges may appear rough');
+  }
+
+  return warnings;
+}
+
 // Helper function to convert white background to transparent
 async function convertBackgroundToTransparent(imageBase64: string): Promise<string> {
   try {
@@ -158,12 +274,26 @@ Output a PNG with the subject on a solid white background.`;
 
     if (!outputImage) {
       console.warn(`${logPrefix}: Gemini did not return an image, falling back to original`);
+
+      // Fallback quality metadata
+      const fallbackQuality: QualityMetadata = {
+        qualitySignals: {
+          hasTransparency: false,
+          transparencyRatio: 0,
+          edgeSharpness: 'unknown',
+          processingMethod: 'fallback',
+          confidenceScore: 0.2,
+        },
+        warnings: ['Gemini could not process image - using original'],
+      };
+
       return res.status(200).json({
         stickerData: inputImage,
         stickerBase64: inputImage,  // For backwards compat
         mimeType: mimeType || 'image/jpeg',
         fallback: true,
         transformed: false,
+        qualityMetadata: fallbackQuality,
         ...(themeData?.themeId && { themeId: themeData.themeId }),
         ...(themeData?.artStyle && { artStyleApplied: themeData.artStyle }),
         message: 'Gemini could not process image - using original'
@@ -174,7 +304,13 @@ Output a PNG with the subject on a solid white background.`;
     console.log(`${logPrefix}: Converting white background to transparent...`);
     const transparentSticker = await convertBackgroundToTransparent(outputImage);
 
-    console.log(`${logPrefix}: Background removed and made transparent`);
+    // Analyze transparency quality
+    console.log(`${logPrefix}: Analyzing transparency quality...`);
+    const qualitySignals = await analyzeTransparencyQuality(transparentSticker);
+    const warnings = generateWarnings(qualitySignals);
+    const qualityMetadata: QualityMetadata = { qualitySignals, warnings };
+
+    console.log(`${logPrefix}: Background removed and made transparent (confidence: ${qualitySignals.confidenceScore.toFixed(2)})`);
 
     return res.status(200).json({
       stickerData: transparentSticker,
@@ -182,6 +318,7 @@ Output a PNG with the subject on a solid white background.`;
       mimeType: 'image/png',
       fallback: false,
       transformed: true,
+      qualityMetadata,
       ...(themeData?.themeId && { themeId: themeData.themeId }),
       ...(themeData?.artStyle && { artStyleApplied: themeData.artStyle }),
     });

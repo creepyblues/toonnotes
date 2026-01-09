@@ -3,6 +3,92 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Quality signals interface for type safety
+interface QualitySignals {
+  hasTransparency: boolean;
+  transparencyRatio: number;
+  edgeSharpness: 'clean' | 'rough' | 'unknown';
+  processingMethod: 'ai' | 'threshold' | 'fallback';
+  confidenceScore: number;
+}
+
+interface QualityMetadata {
+  qualitySignals: QualitySignals;
+  warnings: string[];
+}
+
+interface CharacterConfig {
+  name: string;
+  artDirection: string;
+  proportions: string;
+  expressionStyle: string;
+}
+
+/**
+ * Extract quality signals from character generation response
+ * Analyzes the AI's text output to detect style alignment and potential issues
+ */
+function extractCharacterQuality(
+  description: string | undefined,
+  artistNotes: string | undefined,
+  config: CharacterConfig,
+  requestedMood: string
+): QualityMetadata {
+  const warnings: string[] = [];
+  let confidence = 1.0;
+
+  // Check if description exists and has meaningful content
+  if (!description || description.length < 10) {
+    warnings.push('Character description missing');
+    confidence -= 0.2;
+  }
+
+  // Check for style keyword alignment
+  const styleWords = config.name.toLowerCase().split(' ').filter(w => w.length > 2);
+  const combinedText = ((description || '') + ' ' + (artistNotes || '')).toLowerCase();
+
+  const matchedStyleWords = styleWords.filter(word => combinedText.includes(word));
+  if (matchedStyleWords.length < styleWords.length / 2) {
+    warnings.push(`Style may not match ${config.name}`);
+    confidence -= 0.2;
+  }
+
+  // Check mood alignment
+  if (!combinedText.includes(requestedMood.toLowerCase())) {
+    warnings.push(`Mood may not match "${requestedMood}"`);
+    confidence -= 0.15;
+  }
+
+  // Check for transparency mention (we requested transparent PNG)
+  const mentionsTransparency =
+    combinedText.includes('transparent') ||
+    combinedText.includes('png') ||
+    combinedText.includes('alpha');
+  if (!mentionsTransparency) {
+    warnings.push('Transparency not confirmed in response');
+    confidence -= 0.1;
+  }
+
+  // Check for character-related keywords to confirm generation
+  const characterKeywords = ['character', 'draw', 'illustrat', 'creat', 'design'];
+  const hasCharacterContent = characterKeywords.some(kw => combinedText.includes(kw));
+  if (!hasCharacterContent) {
+    warnings.push('Character generation not confirmed');
+    confidence -= 0.15;
+  }
+
+  return {
+    qualitySignals: {
+      hasTransparency: mentionsTransparency,
+      transparencyRatio: 0, // Unknown without image analysis
+      edgeSharpness: 'unknown', // Would need image analysis
+      processingMethod: 'ai',
+      confidenceScore: Math.max(0.2, Math.min(1.0, confidence)),
+    },
+    warnings,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -133,7 +219,15 @@ Make the character appealing and full of personality!`;
       throw new Error('No image generated');
     }
 
-    console.log(`Character Mascot: ${charConfig.name} character generated!`);
+    // Extract quality signals from the response
+    const qualityMetadata = extractCharacterQuality(
+      characterDescription,
+      artistNotes,
+      charConfig,
+      analysis.mood.primary
+    );
+
+    console.log(`Character Mascot: ${charConfig.name} character generated! (confidence: ${qualityMetadata.qualitySignals.confidenceScore.toFixed(2)})`);
 
     return res.status(200).json({
       imageBase64,
@@ -141,7 +235,8 @@ Make the character appealing and full of personality!`;
       characterType,
       characterDescription: characterDescription || `A ${charConfig.name} style character`,
       poseDescription: `Character is ${pose}, expressing ${analysis.mood.primary} energy`,
-      artistNotes: artistNotes || `Created in ${charConfig.name} style with ${charConfig.expressionStyle}`
+      artistNotes: artistNotes || `Created in ${charConfig.name} style with ${charConfig.expressionStyle}`,
+      qualityMetadata
     });
 
   } catch (error: any) {

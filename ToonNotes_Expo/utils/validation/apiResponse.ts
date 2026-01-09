@@ -227,3 +227,165 @@ export function sanitizeColor(color: string, defaultColor: string = '#8B5CF6'): 
   console.warn(`Invalid color "${color}", using default: ${defaultColor}`);
   return defaultColor;
 }
+
+// ============================================
+// Quality Assessment Response Schemas
+// ============================================
+
+/**
+ * Quality signals schema for AI image generation
+ */
+export const QualitySignalsSchema = z.object({
+  hasTransparency: z.boolean(),
+  transparencyRatio: z.number().min(0).max(1),
+  edgeSharpness: z.enum(['clean', 'rough', 'unknown']),
+  processingMethod: z.enum(['ai', 'threshold', 'fallback']),
+  confidenceScore: z.number().min(0).max(1),
+});
+
+export type ValidatedQualitySignals = z.infer<typeof QualitySignalsSchema>;
+
+/**
+ * Quality metadata schema
+ */
+export const QualityMetadataSchema = z.object({
+  qualitySignals: QualitySignalsSchema,
+  warnings: z.array(z.string()),
+});
+
+export type ValidatedQualityMetadata = z.infer<typeof QualityMetadataSchema>;
+
+/**
+ * Enhanced sticker response with quality metadata
+ */
+export const EnhancedStickerResponseSchema = z.object({
+  stickerData: z.string(),
+  stickerBase64: z.string().optional(), // Backward compat
+  mimeType: z.string().default('image/png'),
+  fallback: z.boolean().optional(),
+  transformed: z.boolean().optional(),
+  qualityMetadata: QualityMetadataSchema.optional(),
+  error: z.string().optional(),
+});
+
+export type ValidatedEnhancedStickerResponse = z.infer<typeof EnhancedStickerResponseSchema>;
+
+/**
+ * Enhanced character mascot response with quality metadata
+ */
+export const EnhancedCharacterResponseSchema = z.object({
+  imageBase64: z.string(),
+  mimeType: z.string().default('image/png'),
+  characterType: z.string().optional(),
+  characterDescription: z.string().optional(),
+  poseDescription: z.string().optional(),
+  artistNotes: z.string().optional(),
+  qualityMetadata: QualityMetadataSchema.optional(),
+  error: z.string().optional(),
+});
+
+export type ValidatedEnhancedCharacterResponse = z.infer<typeof EnhancedCharacterResponseSchema>;
+
+/**
+ * Default quality signals for fallback scenarios
+ */
+export const DEFAULT_FALLBACK_QUALITY: ValidatedQualityMetadata = {
+  qualitySignals: {
+    hasTransparency: false,
+    transparencyRatio: 0,
+    edgeSharpness: 'unknown',
+    processingMethod: 'fallback',
+    confidenceScore: 0.3,
+  },
+  warnings: ['Original image used as fallback - processing may have failed'],
+};
+
+/**
+ * Default quality signals for successful generation with no metadata
+ */
+export const DEFAULT_SUCCESS_QUALITY: ValidatedQualityMetadata = {
+  qualitySignals: {
+    hasTransparency: true,
+    transparencyRatio: 0.5,
+    edgeSharpness: 'unknown',
+    processingMethod: 'ai',
+    confidenceScore: 0.7,
+  },
+  warnings: [],
+};
+
+/**
+ * Parse enhanced sticker response with quality metadata
+ * Adds default quality metadata if missing (backward compatibility)
+ */
+export function parseEnhancedStickerResponse(
+  data: unknown
+): ValidatedEnhancedStickerResponse | null {
+  const result = EnhancedStickerResponseSchema.safeParse(data);
+
+  if (!result.success) {
+    console.warn('Invalid enhanced sticker response:', result.error.issues);
+    return null;
+  }
+
+  if (result.data.error) {
+    console.warn('Sticker generation error:', result.data.error);
+    return null;
+  }
+
+  // Add default quality metadata if missing (backward compat)
+  if (!result.data.qualityMetadata) {
+    result.data.qualityMetadata = result.data.fallback
+      ? DEFAULT_FALLBACK_QUALITY
+      : DEFAULT_SUCCESS_QUALITY;
+  }
+
+  return result.data;
+}
+
+/**
+ * Parse enhanced character response with quality metadata
+ */
+export function parseEnhancedCharacterResponse(
+  data: unknown
+): ValidatedEnhancedCharacterResponse | null {
+  const result = EnhancedCharacterResponseSchema.safeParse(data);
+
+  if (!result.success) {
+    console.warn('Invalid enhanced character response:', result.error.issues);
+    return null;
+  }
+
+  if (result.data.error) {
+    console.warn('Character generation error:', result.data.error);
+    return null;
+  }
+
+  // Add default quality metadata if missing
+  if (!result.data.qualityMetadata) {
+    result.data.qualityMetadata = DEFAULT_SUCCESS_QUALITY;
+  }
+
+  return result.data;
+}
+
+/**
+ * Check if quality metadata indicates low quality result
+ */
+export function isLowQuality(metadata: ValidatedQualityMetadata | undefined): boolean {
+  if (!metadata) return false;
+  return metadata.qualitySignals.confidenceScore < 0.6 || metadata.warnings.length > 0;
+}
+
+/**
+ * Get quality level description for UI display
+ */
+export function getQualityLevel(
+  metadata: ValidatedQualityMetadata | undefined
+): 'good' | 'fair' | 'poor' {
+  if (!metadata) return 'fair';
+  const score = metadata.qualitySignals.confidenceScore;
+  if (score >= 0.8) return 'good';
+  if (score >= 0.5) return 'fair';
+  return 'poor';
+}

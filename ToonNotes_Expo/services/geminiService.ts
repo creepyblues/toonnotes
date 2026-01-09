@@ -9,9 +9,15 @@ import {
   parseThemeResponse,
   parseLuckyThemeResponse,
   parseStickerResponse,
+  parseEnhancedStickerResponse,
+  parseEnhancedCharacterResponse,
   ValidatedThemeResponse,
   ValidatedLuckyThemeResponse,
+  ValidatedQualityMetadata,
+  DEFAULT_SUCCESS_QUALITY,
+  DEFAULT_FALLBACK_QUALITY,
 } from '@/utils/validation/apiResponse';
+import { QualityMetadata } from '@/types';
 
 // API endpoint - always use production Vercel API
 // (localhost doesn't work on physical devices for testing)
@@ -87,14 +93,22 @@ async function imageUriToBase64(uri: string): Promise<{ base64: string; mimeType
 }
 
 /**
+ * Result of sticker generation including quality metadata
+ */
+interface StickerGenerationResult {
+  uri: string;
+  qualityMetadata: QualityMetadata;
+}
+
+/**
  * Generate a sticker with background removed
- * Returns the local URI of the saved sticker image
+ * Returns the local URI of the saved sticker image and quality metadata
  */
 async function generateSticker(
   base64: string,
   mimeType: string,
   characterDescription?: string
-): Promise<string | null> {
+): Promise<StickerGenerationResult | null> {
   try {
     devLog('Generating sticker with background removal...');
 
@@ -116,7 +130,8 @@ async function generateSticker(
     }
 
     const rawData = await response.json();
-    const data = parseStickerResponse(rawData);
+    // Use enhanced parser that includes quality metadata
+    const data = parseEnhancedStickerResponse(rawData);
 
     if (!data || !data.stickerData) {
       console.error('Sticker generation failed or returned invalid data');
@@ -142,8 +157,12 @@ async function generateSticker(
 
     devLog('Sticker saved to:', stickerPath);
     devLog('Fallback used:', data.fallback);
+    devLog('Quality confidence:', data.qualityMetadata?.qualitySignals.confidenceScore);
 
-    return stickerPath;
+    return {
+      uri: stickerPath,
+      qualityMetadata: data.qualityMetadata || (data.fallback ? DEFAULT_FALLBACK_QUALITY : DEFAULT_SUCCESS_QUALITY),
+    };
   } catch (error) {
     console.error('Failed to generate sticker:', error);
     return null;
@@ -199,7 +218,7 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
 
       // Generate sticker with background removal (runs in parallel conceptually, but after theme)
       devLog('Generating sticker with background removal...');
-      const stickerUri = await generateSticker(base64, mimeType);
+      const stickerResult = await generateSticker(base64, mimeType);
 
       // Convert API response to NoteDesign format
       const design: NoteDesign = {
@@ -225,12 +244,14 @@ export async function generateDesign(imageUri: string): Promise<NoteDesign> {
         },
         sticker: {
           id: Crypto.randomUUID(),
-          imageUri: stickerUri || imageUri, // Fallback to original if sticker generation fails
+          imageUri: stickerResult?.uri || imageUri, // Fallback to original if sticker generation fails
           description: 'Character from uploaded image',
           suggestedPosition: 'bottom-right',
           scale: 'medium',
         },
         designSummary: `Theme "${themeData.name}" generated from your image.`,
+        // Include sticker quality metadata if available
+        stickerQualityMetadata: stickerResult?.qualityMetadata,
       };
 
       return design;
@@ -520,7 +541,8 @@ async function generateThemedSticker(
       console.error('Themed sticker API error:', response.status);
       // Fall back to regular sticker generation if themed endpoint not available
       if (imageBase64 && mimeType) {
-        return await generateSticker(imageBase64, mimeType);
+        const result = await generateSticker(imageBase64, mimeType);
+        return result?.uri || null;
       }
       return null;
     }
@@ -531,7 +553,8 @@ async function generateThemedSticker(
       console.error('Themed sticker generation error:', data.error);
       // Fall back to regular sticker generation
       if (imageBase64 && mimeType) {
-        return await generateSticker(imageBase64, mimeType);
+        const result = await generateSticker(imageBase64, mimeType);
+        return result?.uri || null;
       }
       return null;
     }
@@ -559,7 +582,8 @@ async function generateThemedSticker(
     console.error('Failed to generate themed sticker:', error);
     // Fall back to regular sticker generation
     if (imageBase64 && mimeType) {
-      return await generateSticker(imageBase64, mimeType);
+      const result = await generateSticker(imageBase64, mimeType);
+      return result?.uri || null;
     }
     return null;
   }
@@ -694,7 +718,8 @@ export async function generateLabelPresetSticker(
       console.error('Label preset sticker API error:', response.status);
       // Fall back to themed sticker generation if endpoint not available
       if (imageBase64 && mimeType) {
-        return await generateSticker(imageBase64, mimeType, preset.name);
+        const result = await generateSticker(imageBase64, mimeType, preset.name);
+        return result?.uri || null;
       }
       return null;
     }
@@ -705,7 +730,8 @@ export async function generateLabelPresetSticker(
       console.error('Label preset sticker generation error:', data.error);
       // Fall back to regular sticker generation
       if (imageBase64 && mimeType) {
-        return await generateSticker(imageBase64, mimeType, preset.name);
+        const result = await generateSticker(imageBase64, mimeType, preset.name);
+        return result?.uri || null;
       }
       return null;
     }
@@ -733,7 +759,8 @@ export async function generateLabelPresetSticker(
     console.error('Failed to generate label preset sticker:', error);
     // Fall back to regular sticker generation
     if (imageBase64 && mimeType) {
-      return await generateSticker(imageBase64, mimeType, preset.name);
+      const result = await generateSticker(imageBase64, mimeType, preset.name);
+      return result?.uri || null;
     }
     return null;
   }
@@ -1109,11 +1136,30 @@ export async function saveCharacterMascot(
 // ============================================
 
 /**
+ * Result of sticker generation from image with quality metadata
+ */
+export interface StickerFromImageResult {
+  uri: string;
+  qualityMetadata: QualityMetadata;
+}
+
+/**
  * Generate a character sticker from an image (background removal)
  * Returns the URI of the saved sticker image, or null if failed
  */
 export async function generateStickerFromImage(imageUri: string): Promise<string | null> {
-  devLog('🎨 Generating sticker from image...');
+  const result = await generateStickerFromImageWithQuality(imageUri);
+  return result?.uri || null;
+}
+
+/**
+ * Generate a character sticker from an image with quality metadata
+ * Returns both the URI and quality assessment data for preview
+ */
+export async function generateStickerFromImageWithQuality(
+  imageUri: string
+): Promise<StickerFromImageResult | null> {
+  devLog('🎨 Generating sticker from image with quality metadata...');
 
   // Convert image to base64
   const { base64, mimeType } = await imageUriToBase64(imageUri);
@@ -1135,14 +1181,20 @@ export async function generateStickerFromImage(imageUri: string): Promise<string
     devLog('📡 Sticker API response status:', stickerResponse.status);
 
     if (stickerResponse.ok) {
-      const data = await stickerResponse.json();
-      devLog('📦 Sticker data received, has stickerData:', !!data.stickerData);
+      const rawData = await stickerResponse.json();
+      const data = parseEnhancedStickerResponse(rawData);
+      devLog('📦 Sticker data received, has stickerData:', !!data?.stickerData);
 
-      if (data.stickerData) {
+      if (data?.stickerData) {
         // Save sticker to local storage
         const stickerUri = await saveStickerImage(data.stickerData, data.mimeType || 'image/png');
         devLog('✅ Sticker generated and saved:', stickerUri);
-        return stickerUri;
+        devLog('📊 Quality confidence:', data.qualityMetadata?.qualitySignals.confidenceScore);
+
+        return {
+          uri: stickerUri,
+          qualityMetadata: data.qualityMetadata || DEFAULT_SUCCESS_QUALITY,
+        };
       } else {
         devWarn('⚠️ API returned OK but no stickerData in response');
         return null;
