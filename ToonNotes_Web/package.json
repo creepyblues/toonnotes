@@ -26,6 +26,7 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
     "remark-gfm": "^4.0.1",
+    "resend": "^6.7.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   },
