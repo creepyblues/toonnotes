@@ -15,6 +15,11 @@ import { useBoardStore } from '@/stores/boardStore';
 import { useLabelStore } from '@/stores/labelStore';
 import { Note, NoteDesign, Board, Label } from '@/types';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import {
+  migrateNoteImages,
+  isLocalUri,
+  uploadDesignAsset,
+} from './imageStorageService';
 
 /**
  * Check if user can sync (requires Pro subscription)
@@ -120,11 +125,24 @@ export async function syncNotes(
 
     console.log('[Sync] To upload:', toUpload.length, 'To download:', toDownload.length);
 
-    // Upload local changes
+    // Upload local changes (with image migration)
     if (toUpload.length > 0) {
+      // Migrate images for all notes being uploaded
+      const migratedNotes = await Promise.all(
+        toUpload.map(async (note) => {
+          if (note.images?.some(isLocalUri)) {
+            const migratedImages = await migrateNoteImages(note.images, userId, note.id);
+            // Update local store with migrated URLs
+            useNoteStore.getState().updateNote(note.id, { images: migratedImages });
+            return { ...note, images: migratedImages };
+          }
+          return note;
+        })
+      );
+
       const { error: uploadError } = await supabase
         .from('notes')
-        .upsert(toUpload.map((n) => mapLocalToCloud(n, userId)));
+        .upsert(migratedNotes.map((n) => mapLocalToCloud(n, userId)));
 
       if (uploadError) {
         result.errors.push(`Upload error: ${uploadError.message}`);
@@ -266,12 +284,24 @@ export async function unsubscribeFromNotes(channel: RealtimeChannel): Promise<vo
 
 /**
  * Upload a single note to cloud (for immediate sync on save)
+ * Migrates any local images to Supabase Storage before uploading
  */
 export async function uploadNote(note: Note, userId: string): Promise<boolean> {
   try {
+    // Migrate any local images to Supabase Storage
+    let noteToUpload = note;
+    if (note.images?.some(isLocalUri)) {
+      const migratedImages = await migrateNoteImages(note.images, userId, note.id);
+      noteToUpload = { ...note, images: migratedImages };
+
+      // Update local store with migrated URLs (so we don't re-migrate)
+      const noteStore = useNoteStore.getState();
+      noteStore.updateNote(note.id, { images: migratedImages });
+    }
+
     const { error } = await supabase
       .from('notes')
-      .upsert(mapLocalToCloud(note, userId));
+      .upsert(mapLocalToCloud(noteToUpload, userId));
 
     if (error) {
       console.error('[Sync] Error uploading note:', error);
