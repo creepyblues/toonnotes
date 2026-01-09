@@ -118,7 +118,11 @@ import {
   analyzeNoteContent,
   LabelAnalysisResponse,
 } from '@/services/labelingEngine';
-import { LabelSuggestionToast, LabelSuggestionSheet } from '@/components/labels';
+import {
+  LabelSuggestionToast,
+  LabelSuggestionSheet,
+  AnalysisProgressModal,
+} from '@/components/labels';
 import { composeStyle } from '@/services/designEngine';
 import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { DesignCard } from '@/components/designs/DesignCard';
@@ -160,7 +164,6 @@ export default function NoteEditorScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const {
-    getNoteById,
     updateNote,
     deleteNote,
     archiveNote,
@@ -172,6 +175,10 @@ export default function NoteEditorScreen() {
     removeLabelFromNote,
     setActiveDesignLabel,
   } = useNoteStore();
+
+  // Subscribe directly to the specific note - this ensures re-render when note.designId changes
+  const note = useNoteStore((state) => state.notes.find((n) => n.id === id));
+
   const { designs, getDesignById } = useDesignStore();
   const { settings } = useUserStore();
   const { isDark, colors } = useTheme();
@@ -181,8 +188,6 @@ export default function NoteEditorScreen() {
   const showAutoApplyToast = useLabelSuggestionStore((state) => state.showAutoApplyToast);
   const getSuggestionsForNote = useLabelSuggestionStore((state) => state.getSuggestionsForNote);
   const clearSuggestions = useLabelSuggestionStore((state) => state.clearSuggestions);
-
-  const note = getNoteById(id || '');
   const currentDesign = note?.designId ? getDesignById(note.designId) : null;
 
   // Check if Google Fonts are loaded
@@ -292,6 +297,9 @@ export default function NoteEditorScreen() {
 
   // Track pending navigation action for beforeRemove listener
   const pendingNavigationRef = useRef<any>(null);
+
+  // Track if analysis is complete to prevent re-triggering on subsequent navigation
+  const analysisCompleteRef = useRef(false);
 
   // Use the editor content hook for parsing
   const { parsedLines, checkboxLines } = useEditorContent(content);
@@ -630,40 +638,22 @@ export default function NoteEditorScreen() {
   // Callback when toast is confirmed/dismissed
   const handleToastComplete = useCallback(() => {
     setWaitingForToast(false);
+    // Mark analysis as complete to prevent re-triggering on subsequent navigation
+    analysisCompleteRef.current = true;
+
     // Dispatch the pending navigation action that was stored when beforeRemove fired
     if (pendingNavigationRef.current) {
       navigation.dispatch(pendingNavigationRef.current);
       pendingNavigationRef.current = null;
     } else {
-      // Fallback: if no pending action (e.g., programmatic back button press), use router.back()
+      // Fallback: if no pending action, use router.back()
       router.back();
     }
   }, [navigation, router]);
 
-  const handleBack = async () => {
-    // Dismiss keyboard first
+  const handleBack = () => {
+    // Dismiss keyboard first, then let beforeRemove handle save, analysis, and navigation
     Keyboard.dismiss();
-
-    // Save before leaving (including designId to prevent design loss)
-    updateNote(note.id, { title, content, color, designId });
-
-    // If note is empty, delete it
-    if (!title.trim() && !content.trim()) {
-      deleteNote(note.id);
-      router.back();
-      return;
-    }
-
-    // Trigger label analysis if note has content (even if it already has labels)
-    // This allows suggesting additional labels for notes created from boards
-    if (title.trim() || content.trim()) {
-      const hasSuggestions = await analyzeForLabels();
-      if (hasSuggestions) {
-        setWaitingForToast(true);
-        return; // Wait for toast confirmation before navigating
-      }
-    }
-
     router.back();
   };
 
@@ -750,6 +740,12 @@ export default function NoteEditorScreen() {
 
       // Don't block if we're waiting for toast (toast will handle navigation)
       if (waitingForToast) {
+        return;
+      }
+
+      // Skip if analysis already completed (prevents double-trigger after toast dismiss)
+      if (analysisCompleteRef.current) {
+        analysisCompleteRef.current = false; // Reset for next time
         return;
       }
 
@@ -1891,7 +1887,10 @@ export default function NoteEditorScreen() {
         </View>
       </Modal>
 
-      {/* Label suggestion toast - shows before closing note */}
+      {/* Analysis progress indicator - shows while analyzing note */}
+      {isAnalyzing && <AnalysisProgressModal />}
+
+      {/* Label suggestion toast - shows after analysis completes */}
       <LabelSuggestionToast onComplete={handleToastComplete} />
 
     </SafeAreaView>
