@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores';
 import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
+import { CommandPalette } from '@/components/CommandPalette';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -32,6 +33,9 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal />
+
+      {/* Command Palette */}
+      <CommandPalette />
     </div>
   );
 }
