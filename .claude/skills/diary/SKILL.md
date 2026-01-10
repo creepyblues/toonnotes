@@ -1,0 +1,276 @@
+---
+name: diary
+description: Development diary automation for ToonNotes. This skill should be used when capturing development session insights, generating daily diary entries from Claude Code history and git commits, or managing the Draft -> Review -> Publish workflow for the public development diary at toonnotes.com/development_diary.
+---
+
+# Development Diary Skill
+
+Automates the creation and management of development diary entries for ToonNotes, capturing work sessions from Claude Code history and git commits.
+
+## When to Use This Skill
+
+- At the end of a development session to generate a diary entry
+- During sessions to capture important insights or decisions
+- To take screenshots of completed features for the diary
+- To review and publish draft entries
+- To check diary status and recent entries
+
+## Commands
+
+### Generate Entry
+
+Generate a diary entry for today or a specific date.
+
+```
+/diary generate                    # Generate today's entry
+/diary generate --date=2026-01-08  # Generate for specific date
+/diary generate --screenshot       # Include screenshot capture
+```
+
+### Add Insight
+
+Capture an insight or decision during a session.
+
+```
+/diary add "insight text"
+/diary add --category=decision "Chose confidence threshold of 0.7"
+/diary add --category=learning "Background removal fails on low-contrast images"
+```
+
+Categories: `decision`, `learning`, `insight`, `todo`
+
+### Capture Screenshot
+
+Take a screenshot of current app state.
+
+```
+/diary screenshot                           # Auto-named
+/diary screenshot --name="quality-preview"  # Custom name
+/diary screenshot --url=http://localhost:3000/some-page
+```
+
+### Manage Entries
+
+```
+/diary list                    # List recent entries
+/diary list --drafts           # List only drafts
+/diary publish 2026-01-09      # Publish a draft
+/diary status                  # Show today's progress
+```
+
+## Generation Workflow
+
+When `/diary generate` is invoked:
+
+### Step 1: Collect Claude Code History
+
+Run `scripts/collect_history.py` to parse `~/.claude/history.jsonl`:
+
+```bash
+python3 .claude/skills/diary/scripts/collect_history.py --date=2026-01-09
+```
+
+This extracts:
+- User prompts from sessions for the ToonNotes project
+- Timestamps and session IDs
+- Groupings by session
+
+### Step 2: Analyze Git Commits
+
+Run `scripts/analyze_commits.py` to get git activity:
+
+```bash
+python3 .claude/skills/diary/scripts/analyze_commits.py --date=2026-01-09
+```
+
+This extracts:
+- Commit messages and timestamps
+- Files changed (names only, no code)
+- Lines added/deleted statistics
+- Auto-categorization based on commit messages
+
+### Step 3: Correlate and Categorize
+
+Match prompts with commits by timestamp proximity. Categorize all activities using these keywords:
+
+| Category | Keywords |
+|----------|----------|
+| Research | research, investigate, explore, analyze, study, compare |
+| Planning | plan, design, architect, structure, decide, spec |
+| Implementation | implement, create, add, build, develop, feature |
+| Bug Fix | fix, bug, issue, error, crash, resolve, debug |
+| Refactoring | refactor, cleanup, reorganize, simplify, improve |
+| Documentation | doc, document, readme, update docs |
+| Testing | test, e2e, playwright, unit test, coverage |
+
+### Step 4: Load Manual Insights
+
+Check for insights added during the day via `/diary add`:
+
+```
+marketing/development_diary/drafts/.insights-2026-01-09.json
+```
+
+### Step 5: Capture Screenshots (if --screenshot)
+
+Use Playwright MCP to capture current app state:
+
+```
+mcp__plugin_playwright_playwright__browser_navigate
+mcp__plugin_playwright_playwright__browser_take_screenshot
+```
+
+Save to: `marketing/development_diary/screenshots/2026-01-09/`
+
+### Step 6: Generate Entry
+
+Use the template at `marketing/development_diary/templates/daily-entry.md` to generate a complete entry with:
+
+- YAML frontmatter (date, status, categories, etc.)
+- Daily summary (2-3 sentences)
+- Work sessions with timestamps
+- Categorized activity lists
+- Screenshots with captions
+- Statistics table
+- Tomorrow's focus section
+
+### Step 7: Save Draft
+
+Write to: `marketing/development_diary/drafts/2026-01-09.md`
+
+## Privacy Guidelines
+
+**DO NOT include in entries:**
+- Actual code snippets
+- API keys, secrets, or credentials
+- Internal business logic details
+- User data or PII
+
+**DO include:**
+- Feature names and descriptions
+- File counts and change statistics
+- High-level architectural decisions
+- Public-facing UI screenshots
+
+## Output Locations
+
+| Type | Path |
+|------|------|
+| Drafts | `marketing/development_diary/drafts/YYYY-MM-DD.md` |
+| Published | `marketing/development_diary/published/YYYY/MM/YYYY-MM-DD.md` |
+| Screenshots | `marketing/development_diary/screenshots/YYYY-MM-DD/` |
+| Insights | `marketing/development_diary/drafts/.insights-YYYY-MM-DD.json` |
+
+## Web Dashboard
+
+- Public: `toonnotes.com/development_diary`
+- Admin: `toonnotes.com/marketing/diary`
+
+## Example Generated Entry
+
+```markdown
+---
+date: 2026-01-09
+status: draft
+author: Sung Ho Lee
+session_count: 3
+commit_count: 7
+categories: [Implementation, Bug Fix, Documentation]
+highlight: "Shipped quality assessment feature for AI design generation"
+tags: [ai-design, quality, gemini]
+---
+
+# Development Diary - January 9, 2026
+
+## Daily Summary
+
+Focused on implementing quality assessment for AI-generated designs. Added server-side validation to catch hallucinations before returning results to users. Also fixed a background removal edge case and updated documentation.
+
+---
+
+## Work Sessions
+
+### Session 1: Morning Research (8:00 AM - 10:30 AM)
+
+**Focus:** Quality Assessment Research
+
+Activities:
+- Researched Gemini image generation hallucination patterns
+- Analyzed existing design results for failure modes
+
+**Key Prompts:**
+- "Research Gemini hallucination patterns for image generation"
+- "What quality checks can we add to detect bad generations?"
+
+---
+
+### Session 2: Implementation (11:00 AM - 3:00 PM)
+
+**Focus:** Quality Service Implementation
+
+Activities:
+- Created quality service for assessing generated designs
+- Added database migration for quality tracking
+- Integrated quality checks into design generation flow
+
+**Files Changed:** 5 files (+342/-28 lines)
+
+---
+
+## Categorized Work
+
+### Implementation
+- Quality service for design assessment
+- Database migration for quality tracking
+
+### Bug Fix
+- Fixed background removal edge case for transparent images
+
+### Documentation
+- Updated CLAUDE.md with quality service documentation
+
+---
+
+## Screenshots
+
+![Quality Preview](/marketing/development_diary/screenshots/2026-01-09/quality-preview.png)
+*Quality assessment UI showing confidence scores*
+
+---
+
+## Insights & Learnings
+
+> **Decision:** Chose to implement retry logic on client side rather than server to reduce Gemini API costs.
+
+> **Learning:** Background removal API fails silently on very low contrast images.
+
+---
+
+## Statistics
+
+| Metric | Value |
+|--------|-------|
+| Sessions | 3 |
+| Commits | 7 |
+| Files Changed | 12 |
+| Lines Added | 487 |
+| Lines Deleted | 56 |
+| Primary Category | Implementation |
+
+---
+
+## Tomorrow's Focus
+
+- Complete quality service integration tests
+- Deploy to staging for user testing
+
+---
+
+*Generated with ToonNotes Development Diary*
+```
+
+## Related Skills
+
+- `/marketing-campaign` - For diary entries tied to feature launches
+- `/marketing-report` - For generating summary reports from diary data
+- `/deploy-staging` - Often used together after implementation sessions

@@ -1,0 +1,23 @@
+{
+  "name": "toonnotes",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "dev:expo": "turbo dev --filter=@toonnotes/expo",
+    "dev:web": "turbo dev --filter=@toonnotes/web",
+    "dev:webapp": "turbo dev --filter=@toonnotes/webapp",
+    "build:web": "turbo build --filter=@toonnotes/web",
+    "build:webapp": "turbo build --filter=@toonnotes/webapp"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,103 @@
+# Development Diary Configuration
+
+name: ToonNotes Development Diary
+description: Daily journal of ToonNotes development for blog publishing
+author: Sung Ho Lee
+url: https://toonnotes.com/development_diary
+
+# Entry settings
+entry:
+  format: daily  # daily | per-session | per-feature
+  timezone: America/Los_Angeles
+
+# Categories for classifying work
+categories:
+  - Research
+  - Planning
+  - Implementation
+  - Bug Fix
+  - Refactoring
+  - Documentation
+  - Testing
+
+# Category detection keywords (for auto-categorization)
+category_keywords:
+  Research:
+    - research
+    - investigate
+    - explore
+    - analyze
+    - study
+    - compare
+    - understand
+  Planning:
+    - plan
+    - design
+    - architect
+    - structure
+    - decide
+    - spec
+    - strategy
+  Implementation:
+    - implement
+    - create
+    - add
+    - build
+    - develop
+    - feature
+    - new
+  Bug Fix:
+    - fix
+    - bug
+    - issue
+    - error
+    - crash
+    - resolve
+    - debug
+  Refactoring:
+    - refactor
+    - cleanup
+    - reorganize
+    - simplify
+    - improve
+    - optimize
+  Documentation:
+    - doc
+    - document
+    - readme
+    - claude.md
+    - update docs
+    - comment
+  Testing:
+    - test
+    - e2e
+    - playwright
+    - unit test
+    - coverage
+    - verify
+
+# Privacy settings
+privacy:
+  show_code_snippets: false
+  show_file_names: true
+  show_commit_messages: true
+  redact_secrets: true
+
+# Source data paths
+sources:
+  claude_history: ~/.claude/history.jsonl
+  project_filter: /Users/sungholee/code/toonnotes
+
+# Output paths (relative to development_diary/)
+paths:
+  drafts: drafts/
+  published: published/
+  screenshots: screenshots/
+  templates: templates/
+
+# Screenshot settings
+screenshots:
+  enabled: true
+  format: png
+  width: 1280
+  height: 800
