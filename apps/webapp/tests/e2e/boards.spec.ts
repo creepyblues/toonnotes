@@ -271,3 +271,155 @@ test.describe('Empty Board Detail State', () => {
     await expect(page.getByText(/add #empty-board to your notes/i)).toBeVisible();
   });
 });
+
+// Board Styling Tests
+test.describe('Board Styling', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockAuthenticatedUser(page);
+  });
+
+  test.skip('should display board cards with preset colors', async ({ page }) => {
+    await page.goto('/boards');
+    await page.waitForLoadState('networkidle');
+
+    // Board cards should have gradient backgrounds
+    const workBoard = page.locator('article').filter({ hasText: 'work' });
+    await expect(workBoard).toBeVisible();
+
+    // The preview area should have a gradient background (from preset)
+    const previewArea = workBoard.locator('.aspect-\\[4\\/3\\]');
+    await expect(previewArea).toHaveCSS('background', /linear-gradient/);
+  });
+
+  test.skip('should display preset badge on board cards', async ({ page }) => {
+    await page.goto('/boards');
+    await page.waitForLoadState('networkidle');
+
+    // Should see preset name badges
+    const workBoard = page.locator('article').filter({ hasText: 'work' });
+    // Work hashtag should auto-match to a preset or show auto-generated name
+    await expect(workBoard.locator('span').filter({ hasText: /\w+/ })).toBeVisible();
+  });
+
+  test.skip('should display styled header on board detail page', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    // Header should have gradient background
+    const header = page.locator('header').first();
+    await expect(header).toHaveCSS('background', /linear-gradient/);
+  });
+
+  test.skip('should display style picker button on board detail page', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    // Should see the style picker button (Palette icon)
+    await expect(page.getByLabel('Change board style')).toBeVisible();
+  });
+
+  test.skip('should open style picker modal when clicking style button', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    // Click the style picker button
+    await page.getByLabel('Change board style').click();
+
+    // Modal should appear
+    await expect(page.getByText('Board Style')).toBeVisible();
+    await expect(page.getByText(/choose a style for #work/i)).toBeVisible();
+  });
+
+  test.skip('should display category tabs in style picker', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Change board style').click();
+
+    // Should see category tabs
+    await expect(page.getByRole('button', { name: 'All' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Productivity' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reading' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Creative' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Content' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Personal' })).toBeVisible();
+  });
+
+  test.skip('should display preset cards in style picker', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Change board style').click();
+
+    // Should see preset cards (at least the first few)
+    await expect(page.getByText('Todo')).toBeVisible();
+    await expect(page.getByText('Important')).toBeVisible();
+    await expect(page.getByText('Reading')).toBeVisible();
+  });
+
+  test.skip('should close style picker when clicking outside', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Change board style').click();
+    await expect(page.getByText('Board Style')).toBeVisible();
+
+    // Click the backdrop
+    await page.locator('.fixed.inset-0.bg-black\\/50').click({ position: { x: 10, y: 10 } });
+
+    // Modal should close
+    await expect(page.getByText('Board Style')).not.toBeVisible();
+  });
+
+  test.skip('should close style picker when clicking close button', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Change board style').click();
+    await expect(page.getByText('Board Style')).toBeVisible();
+
+    // Click close button
+    await page.getByLabel('Close').click();
+
+    // Modal should close
+    await expect(page.getByText('Board Style')).not.toBeVisible();
+  });
+
+  test.skip('should filter presets by category', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Change board style').click();
+
+    // Click Productivity category
+    await page.getByRole('button', { name: 'Productivity' }).click();
+
+    // Should see productivity presets
+    await expect(page.getByText('Todo')).toBeVisible();
+    await expect(page.getByText('Important')).toBeVisible();
+    await expect(page.getByText('Goals')).toBeVisible();
+
+    // Should NOT see non-productivity presets
+    await expect(page.getByText('Reading')).not.toBeVisible();
+  });
+
+  test.skip('should show decorations on board cards', async ({ page }) => {
+    await page.goto('/boards');
+    await page.waitForLoadState('networkidle');
+
+    // Boards with presets that have decorations should show emoji decorations
+    // This depends on which hashtags match which presets
+    const boardCard = page.locator('article').first();
+    await expect(boardCard).toBeVisible();
+  });
+
+  test.skip('should display preset name in board detail header', async ({ page }) => {
+    await page.goto('/boards/work');
+    await page.waitForLoadState('networkidle');
+
+    // Should see the preset name in the header subtitle
+    // The preset name depends on the auto-matching logic
+    const header = page.locator('header').first();
+    await expect(header.getByText(/\d+ notes? · \w+/)).toBeVisible();
+  });
+});

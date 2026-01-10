@@ -11,6 +11,9 @@ export type TypographyVibe = 'modern' | 'classic' | 'cute' | 'dramatic';
 
 export type MoodTone = 'playful' | 'elegant' | 'dark' | 'warm' | 'cool' | 'energetic';
 
+// Editor mode for notes
+export type EditorMode = 'plain' | 'checklist' | 'bullet';
+
 // Note background colors (refreshed to harmonize with purple theme)
 export enum NoteColor {
   White = '#FFFFFF',
@@ -100,6 +103,7 @@ export interface Note {
   content: string;            // Rich text (format TBD)
   labels: string[];           // Array of label names
   color: NoteColor;           // Basic background color
+  editorMode?: EditorMode;    // Editor mode: plain, checklist, or bullet
   designId?: string;          // Reference to NoteDesign
   activeDesignLabelId?: string;  // When multiple labels have presets, which one's design to use
   backgroundOverride?: BackgroundOverride;  // Per-note background customization
