@@ -38,6 +38,11 @@ interface UIState {
   // Active section for navigation highlighting
   activeSection: 'notes' | 'boards' | 'designs' | 'archive' | 'trash' | 'settings';
   setActiveSection: (section: UIState['activeSection']) => void;
+
+  // Keyboard shortcuts modal
+  shortcutsModalOpen: boolean;
+  setShortcutsModalOpen: (open: boolean) => void;
+  toggleShortcutsModal: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -76,6 +81,11 @@ export const useUIStore = create<UIState>()(
       // Active section
       activeSection: 'notes',
       setActiveSection: (section) => set({ activeSection: section }),
+
+      // Keyboard shortcuts modal
+      shortcutsModalOpen: false,
+      setShortcutsModalOpen: (open) => set({ shortcutsModalOpen: open }),
+      toggleShortcutsModal: () => set((state) => ({ shortcutsModalOpen: !state.shortcutsModalOpen })),
     }),
     {
       name: 'toonnotes-ui',

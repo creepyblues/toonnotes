@@ -34,6 +34,7 @@ describe('UIStore', () => {
       searchQuery: '',
       selectedNoteId: null,
       activeSection: 'notes',
+      shortcutsModalOpen: false,
     });
   });
 
@@ -173,6 +174,31 @@ describe('UIStore', () => {
         useUIStore.getState().setActiveSection(section);
         expect(useUIStore.getState().activeSection).toBe(section);
       });
+    });
+  });
+
+  describe('Keyboard Shortcuts Modal', () => {
+    it('should start with shortcuts modal closed', () => {
+      expect(useUIStore.getState().shortcutsModalOpen).toBe(false);
+    });
+
+    it('should open shortcuts modal', () => {
+      useUIStore.getState().setShortcutsModalOpen(true);
+      expect(useUIStore.getState().shortcutsModalOpen).toBe(true);
+    });
+
+    it('should close shortcuts modal', () => {
+      useUIStore.getState().setShortcutsModalOpen(true);
+      useUIStore.getState().setShortcutsModalOpen(false);
+      expect(useUIStore.getState().shortcutsModalOpen).toBe(false);
+    });
+
+    it('should toggle shortcuts modal', () => {
+      useUIStore.getState().toggleShortcutsModal();
+      expect(useUIStore.getState().shortcutsModalOpen).toBe(true);
+
+      useUIStore.getState().toggleShortcutsModal();
+      expect(useUIStore.getState().shortcutsModalOpen).toBe(false);
     });
   });
 

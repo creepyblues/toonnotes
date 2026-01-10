@@ -3,6 +3,8 @@
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores';
+import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
+import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -10,6 +12,9 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+
+  // Enable global keyboard shortcuts
+  useKeyboardShortcuts({ enabled: true });
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
@@ -24,6 +29,9 @@ export function AppShell({ children }: AppShellProps) {
       >
         {children}
       </main>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal />
     </div>
   );
 }
