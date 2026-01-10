@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useNoteStore, useDesignStore } from '@/stores';
 import { useSupabaseSync } from '@/lib/hooks/useSupabaseSync';
 import { Note, NoteDesign, Label } from '@toonnotes/types';
@@ -30,25 +30,24 @@ export function StoreProvider({
     designs: initialDesigns.length,
   });
 
-  useEffect(() => {
-    // Only hydrate once on mount
-    if (!initialized.current) {
-      initialized.current = true;
+  // Hydrate stores SYNCHRONOUSLY before first render
+  // This ensures data is available immediately, not after useEffect
+  if (!initialized.current) {
+    initialized.current = true;
 
-      console.log('[StoreProvider] Hydrating stores...');
+    console.log('[StoreProvider] Hydrating stores synchronously...');
 
-      // Hydrate note store - always set, even if empty (to sync with server state)
-      useNoteStore.getState().setNotes(initialNotes);
-      console.log('[StoreProvider] Notes hydrated:', initialNotes.length);
+    // Hydrate note store - always set, even if empty (to sync with server state)
+    useNoteStore.getState().setNotes(initialNotes);
+    console.log('[StoreProvider] Notes hydrated:', initialNotes.length);
 
-      useNoteStore.getState().setLabels(initialLabels);
-      console.log('[StoreProvider] Labels hydrated:', initialLabels.length);
+    useNoteStore.getState().setLabels(initialLabels);
+    console.log('[StoreProvider] Labels hydrated:', initialLabels.length);
 
-      // Hydrate design store
-      useDesignStore.getState().setDesigns(initialDesigns);
-      console.log('[StoreProvider] Designs hydrated:', initialDesigns.length);
-    }
-  }, [initialNotes, initialLabels, initialDesigns]);
+    // Hydrate design store
+    useDesignStore.getState().setDesigns(initialDesigns);
+    console.log('[StoreProvider] Designs hydrated:', initialDesigns.length);
+  }
 
   return <>{children}</>;
 }
