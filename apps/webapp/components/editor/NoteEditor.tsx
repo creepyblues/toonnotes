@@ -22,8 +22,11 @@ import {
   TextStrikethrough,
   ListBullets,
   CheckSquare,
+  TextT,
+  Tag,
 } from '@phosphor-icons/react';
-import { Note, NoteColor } from '@toonnotes/types';
+import { LabelPill, LabelPicker } from '@/components/labels';
+import { Note, NoteColor, EditorMode } from '@toonnotes/types';
 import { useNoteStore } from '@/stores';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +61,9 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   const [title, setTitle] = useState(note?.title || '');
   const [color, setColor] = useState<NoteColor>(note?.color || NoteColor.White);
+  const [editorMode, setEditorMode] = useState<EditorMode>(note?.editorMode || 'plain');
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showLabelPicker, setShowLabelPicker] = useState(false);
 
   // Track content changes via a counter instead of the actual content string
   // This avoids the memory leak from putting editor?.getHTML() in deps
@@ -150,6 +155,13 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
     }
   }, [color, noteId, updateNote, note]);
 
+  // Save editor mode changes immediately
+  useEffect(() => {
+    if (note && editorMode !== note.editorMode) {
+      updateNote(noteId, { editorMode });
+    }
+  }, [editorMode, noteId, updateNote, note]);
+
   // Focus title on mount if new note
   useEffect(() => {
     if (!title && titleRef.current) {
@@ -207,6 +219,28 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           >
             <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
+        </div>
+
+        {/* Mode selector */}
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <ModeButton
+            onClick={() => setEditorMode('plain')}
+            active={editorMode === 'plain'}
+            icon={<TextT size={18} />}
+            label="Plain Text"
+          />
+          <ModeButton
+            onClick={() => setEditorMode('checklist')}
+            active={editorMode === 'checklist'}
+            icon={<CheckSquare size={18} />}
+            label="Checklist"
+          />
+          <ModeButton
+            onClick={() => setEditorMode('bullet')}
+            active={editorMode === 'bullet'}
+            icon={<ListBullets size={18} />}
+            label="Bullet List"
+          />
         </div>
 
         {/* Formatting toolbar */}
@@ -348,18 +382,38 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           />
 
           {/* Labels */}
-          {note.labels.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {note.labels.map((label) => (
-                <span
-                  key={label}
-                  className="text-sm px-3 py-1 rounded-full bg-gray-200/60 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300"
-                >
-                  #{label}
-                </span>
-              ))}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {note.labels.map((label) => (
+              <LabelPill
+                key={label}
+                label={label}
+                size="md"
+                showIcon={true}
+              />
+            ))}
+            <div className="relative">
+              <button
+                onClick={() => setShowLabelPicker(!showLabelPicker)}
+                className={cn(
+                  'flex items-center gap-1 px-3 py-1 rounded-full text-sm transition-colors',
+                  'bg-gray-200/60 dark:bg-gray-800/60 text-gray-600 dark:text-gray-400',
+                  'hover:bg-gray-300/60 dark:hover:bg-gray-700/60'
+                )}
+              >
+                <Tag size={14} />
+                <span>Add label</span>
+              </button>
+              {showLabelPicker && (
+                <div className="absolute left-0 top-full mt-2 z-50">
+                  <LabelPicker
+                    noteId={noteId}
+                    currentLabels={note.labels}
+                    onClose={() => setShowLabelPicker(false)}
+                  />
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* TipTap Editor */}
           <EditorContent
@@ -388,6 +442,31 @@ function ToolbarButton({ onClick, active, icon, label }: ToolbarButtonProps) {
         active
           ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+      )}
+      aria-label={label}
+      title={label}
+    >
+      {icon}
+    </button>
+  );
+}
+
+interface ModeButtonProps {
+  onClick: () => void;
+  active?: boolean;
+  icon: React.ReactNode;
+  label: string;
+}
+
+function ModeButton({ onClick, active, icon, label }: ModeButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'p-1.5 rounded transition-colors flex items-center gap-1',
+        active
+          ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
       )}
       aria-label={label}
       title={label}

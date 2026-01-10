@@ -5,6 +5,7 @@ import { PushPin, Archive, Trash } from '@phosphor-icons/react';
 import { Note } from '@toonnotes/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { LabelPill } from '@/components/labels';
 
 interface NoteCardProps {
   note: Note;
@@ -81,12 +82,12 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
               )}
             >
               {note.labels.slice(0, 3).map((label) => (
-                <span
+                <LabelPill
                   key={label}
-                  className="text-xs px-2 py-0.5 rounded-full bg-gray-200/60 dark:bg-gray-800/40 text-gray-700 dark:text-gray-600"
-                >
-                  #{label}
-                </span>
+                  label={label}
+                  size="sm"
+                  showIcon={isGrid}
+                />
               ))}
               {note.labels.length > 3 && (
                 <span className="text-xs text-gray-500">

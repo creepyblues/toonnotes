@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { Note, NoteColor, Label } from '@toonnotes/types';
 import { v4 as generateUUID } from 'uuid';
+import { getPresetForLabel, type LabelPreset } from '@toonnotes/constants';
 
 interface NoteState {
   notes: Note[];
@@ -156,6 +157,9 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
       return;
     }
 
+    // Check if this label has a preset
+    const preset = getPresetForLabel(normalizedName);
+
     // Ensure label exists in labels collection
     const existingLabel = get().labels.find((l) => normalizeLabel(l.name) === normalizedName);
     if (!existingLabel) {
@@ -163,24 +167,36 @@ export const useNoteStore = create<NoteState>()((set, get) => ({
       const newLabel: Label = {
         id: generateUUID(),
         name: normalizedName,
+        presetId: preset?.id,
         createdAt: now,
         lastUsedAt: now,
       };
       set((state) => ({ labels: [...state.labels, newLabel] }));
     } else {
-      // Update lastUsedAt
+      // Update lastUsedAt and presetId if not set
       set((state) => ({
         labels: state.labels.map((l) =>
-          normalizeLabel(l.name) === normalizedName ? { ...l, lastUsedAt: Date.now() } : l
+          normalizeLabel(l.name) === normalizedName
+            ? { ...l, lastUsedAt: Date.now(), presetId: l.presetId || preset?.id }
+            : l
         ),
       }));
     }
 
     // Add label to note
+    // Auto-apply preset design if note has no custom design and preset exists
+    const shouldApplyPresetDesign = preset && !note.designId && !note.activeDesignLabelId;
+
     set((state) => ({
       notes: state.notes.map((n) =>
         n.id === noteId
-          ? { ...n, labels: [...n.labels, normalizedName], updatedAt: Date.now() }
+          ? {
+              ...n,
+              labels: [...n.labels, normalizedName],
+              updatedAt: Date.now(),
+              // Set activeDesignLabelId to apply preset styling
+              ...(shouldApplyPresetDesign ? { activeDesignLabelId: normalizedName } : {}),
+            }
           : n
       ),
     }));
