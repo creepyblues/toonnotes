@@ -28,7 +28,7 @@ import {
 import { LabelPill, LabelPicker } from '@/components/labels';
 import { Note, NoteColor, EditorMode } from '@toonnotes/types';
 import { useNoteStore } from '@/stores';
-import { cn } from '@/lib/utils';
+import { cn, textToHtml } from '@/lib/utils';
 
 interface NoteEditorProps {
   noteId: string;
@@ -68,7 +68,9 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   // Track content changes via a counter instead of the actual content string
   // This avoids the memory leak from putting editor?.getHTML() in deps
   const [contentVersion, setContentVersion] = useState(0);
-  const contentRef = useRef(note?.content || '');
+  // Convert plain text to HTML for TipTap
+  const initialHtml = textToHtml(note?.content || '');
+  const contentRef = useRef(initialHtml);
 
   const editor = useEditor({
     immediatelyRender: false, // Disable SSR to avoid hydration mismatch
@@ -101,7 +103,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
         },
       }),
     ],
-    content: note?.content || '',
+    content: initialHtml,
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px]',
@@ -116,7 +118,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   // Auto-save effect with debounce - triggered by title or content version changes
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSavedRef = useRef({ title: note?.title, content: note?.content });
+  const lastSavedRef = useRef({ title: note?.title, content: initialHtml });
 
   useEffect(() => {
     if (!note) return;

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 
 :root {
   --background: 0 0% 100%;
@@ -80,4 +81,40 @@
 /* Dark mode adjustments */
 .dark .task-list li > label > input[type="checkbox"] {
   accent-color: hsl(var(--primary));
+}
+
+/* TipTap Editor Prose Styles */
+.ProseMirror {
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.ProseMirror p:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.ProseMirror li p {
+  margin: 0;
 }
