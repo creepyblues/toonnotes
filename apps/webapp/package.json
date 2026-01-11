@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
+    "prebuild": "npx tsx scripts/generate-release-data.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

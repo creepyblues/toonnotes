@@ -275,7 +275,7 @@ interface PresetRowProps {
 function PresetRow({ label, preset, onClick }: PresetRowProps) {
   // Get icon component
   const iconName = preset?.noteIcon || 'Tag';
-  const IconComponent = (PhosphorIcons as Record<string, React.ComponentType<{ size?: number; weight?: string; className?: string }>>)[iconName] || PhosphorIcons.Tag;
+  const IconComponent = (PhosphorIcons as unknown as Record<string, React.ComponentType<{ size?: number; weight?: string; className?: string; style?: React.CSSProperties }>>)[iconName] || PhosphorIcons.Tag;
 
   const bgColor = preset?.colors.bg || 'transparent';
   const textColor = preset?.colors.text || 'inherit';

@@ -71,12 +71,8 @@ export type LabelCategory =
 
 export type PresetBgStyle = 'solid' | 'gradient' | 'pattern' | 'texture' | 'illustration';
 
-export type PresetFontStyle =
-  | 'sans-serif'
-  | 'serif'
-  | 'display'
-  | 'handwritten'
-  | 'mono';
+// PresetFontStyle is imported from fonts.ts (not re-exported to avoid duplicate export)
+import type { PresetFontStyle } from './fonts';
 
 export type PresetStickerType = 'corner' | 'floating' | 'border' | 'stamp' | 'none';
 

@@ -1,0 +1,306 @@
+{
+  "commits": [
+    {
+      "hash": "21938e1ff",
+      "message": "feat: Add feature-launcher skill and marketing improvements",
+      "date": "2026-01-11T08:56:26-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "3e84caa74",
+      "message": "fix(webapp): Fix line breaks not rendering in notes",
+      "date": "2026-01-11T08:36:43-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "b0482c03b",
+      "message": "fix(constants): Resolve conflicting CATEGORY_LABELS export",
+      "date": "2026-01-11T00:05:08-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "7203bf304",
+      "message": "docs: Add Vercel deployment guide",
+      "date": "2026-01-10T21:17:59-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "40dd08815",
+      "message": "feat(webapp): Add bidirectional real-time sync with Supabase",
+      "date": "2026-01-10T16:00:01-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "de96684bf",
+      "message": "feat(webapp): Add board styling with preset picker",
+      "date": "2026-01-10T15:59:33-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "bde4956ea",
+      "message": "feat(webapp): Add label presets with auto-apply design",
+      "date": "2026-01-10T15:50:19-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "080755f64",
+      "message": "feat(webapp): Add command palette with search",
+      "date": "2026-01-10T15:01:44-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "653567393",
+      "message": "feat(webapp): Add keyboard shortcuts system",
+      "date": "2026-01-10T14:58:50-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "e2c8d82f7",
+      "message": "docs(webapp): Add PRD.md for webapp development",
+      "date": "2026-01-10T13:31:34-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "b6346ddcc",
+      "message": "fix(webapp): Fix hydration timing - data now loads on login",
+      "date": "2026-01-10T10:51:04-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "4d3fdd771",
+      "message": "feat(webapp): Add comprehensive test suite and fix sync issues",
+      "date": "2026-01-10T10:09:48-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "e088f725e",
+      "message": "chore: Trigger Vercel redeploy with pnpm 10.x fix",
+      "date": "2026-01-09T22:31:13-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "e1e395c8d",
+      "message": "fix: Update to pnpm 10.x for Vercel compatibility",
+      "date": "2026-01-09T21:31:47-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "2be85255f",
+      "message": "refactor: Migrate to pnpm + Turborepo monorepo structure",
+      "date": "2026-01-09T20:26:55-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "85f5dd2c8",
+      "message": "feat: Add cross-platform web app foundation and monorepo migration plan",
+      "date": "2026-01-09T11:58:47-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "d7c04a5cb",
+      "message": "fix: Prevent double-trigger of label analysis on note close",
+      "date": "2026-01-09T11:03:07-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "50109bc95",
+      "message": "feat: Add AI image generation quality assessment pipeline",
+      "date": "2026-01-09T08:09:51-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "7125351bd",
+      "message": "feat: Add early access promo page for waitlist and hypothesis validation",
+      "date": "2026-01-08T21:42:38-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "e2a8d8c26",
+      "message": "fix: Use production API for label analysis in dev mode",
+      "date": "2026-01-08T12:12:20-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "fcb9c35aa",
+      "message": "feat: Add beta testers admin page for managing Pro status",
+      "date": "2026-01-08T10:34:09-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "6bc6d9038",
+      "message": "feat: Add beta tester override for cloud sync",
+      "date": "2026-01-08T10:09:40-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "1365a36a2",
+      "message": "docs: Add competitor analysis to onboarding profiling plan",
+      "date": "2026-01-07T16:08:55-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "2d77ed19f",
+      "message": "fix: Handle AuthSessionMissingError gracefully on sign-out",
+      "date": "2026-01-07T16:00:19-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "4fce40191",
+      "message": "chore: Bump iOS build number to 11 for TestFlight",
+      "date": "2026-01-07T13:07:47-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "73be664b8",
+      "message": "feat: Add full cloud sync for designs, boards, and labels",
+      "date": "2026-01-07T13:01:18-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "b8bb6b599",
+      "message": "production readiness check",
+      "date": "2026-01-07T11:54:45-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "4188aee10",
+      "message": "docs: Add production readiness report and fix test mocks",
+      "date": "2026-01-07T11:53:19-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "6b7952d0e",
+      "message": "docs: Update CLAUDE.md to match actual implementation",
+      "date": "2026-01-06T23:18:17-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "495dd29e8",
+      "message": "fix: Consolidate 4 sticker API endpoints into 1 (Vercel function limit)",
+      "date": "2026-01-06T11:15:38-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "297eee30a",
+      "message": "trigger deploy",
+      "date": "2026-01-06T11:02:32-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "d9f860ca9",
+      "message": "trigger deploy",
+      "date": "2026-01-06T11:00:58-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "0e4f25b78",
+      "message": "trigger deploy",
+      "date": "2026-01-06T10:56:41-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "12a14e995",
+      "message": "marketing update & delete account & privacy policy update",
+      "date": "2026-01-06T10:46:06-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "d900a1bb2",
+      "message": "docs: Update privacy policy for accuracy",
+      "date": "2026-01-06T10:31:23-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "939169e13",
+      "message": "messaging update",
+      "date": "2026-01-05T21:24:37-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "bdea0900f",
+      "message": "for ver 1.2.1",
+      "date": "2026-01-05T20:52:09-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "06bb1a652",
+      "message": "docs: Add multi-platform architecture plan",
+      "date": "2026-01-05T19:18:53-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "7dd961742",
+      "message": "docs: Remove usage limits and mega pack from monetization strategy",
+      "date": "2026-01-05T19:11:12-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "d7234debb",
+      "message": "fix(web): Handle all Date fields from YAML parsing in products page",
+      "date": "2026-01-04T23:19:26-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "5aa959f99",
+      "message": "fix(web): Handle Date object from YAML parsing in products page",
+      "date": "2026-01-04T23:13:49-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "a2d0373ad",
+      "message": "feat(web): Add ToonNotes_Web with static generation for marketing pages",
+      "date": "2026-01-04T22:46:03-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "9d2c41593",
+      "message": "chore: Configure EAS submit and bump iOS build number",
+      "date": "2026-01-04T03:10:46-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "65419bac5",
+      "message": "feat: Add admin users migration for Supabase",
+      "date": "2026-01-04T00:43:16-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "7b4fc871a",
+      "message": "feat: Add Firebase analytics, share service, and cloud backup strategy",
+      "date": "2026-01-04T00:42:50-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "39a5605c0",
+      "message": "fix: Trigger auto-labeling on swipe-down modal dismissal",
+      "date": "2026-01-03T14:57:34-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "f69f65af6",
+      "message": "feat: Implement freemium monetization with 3 free designs",
+      "date": "2026-01-02T17:36:44-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "75a88b516",
+      "message": "fix: Resolve iOS build errors with React Native Firebase",
+      "date": "2026-01-02T17:30:36-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "c21421c99",
+      "message": "Delete ToonNotes_React_AIStudio directory",
+      "date": "2026-01-03T11:04:37-08:00",
+      "author": "creepyblues"
+    },
+    {
+      "hash": "7068645cc",
+      "message": "feat: Add Sign in with Apple auth and TestFlight setup",
+      "date": "2026-01-02T09:41:07-08:00",
+      "author": "Sungho Lee"
+    }
+  ],
+  "generatedAt": "2026-01-11T17:28:38.371Z",
+  "totalCount": 50
+}

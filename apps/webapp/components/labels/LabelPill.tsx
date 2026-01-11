@@ -37,7 +37,7 @@ export function LabelPill({
 
   // Get the Phosphor icon component dynamically
   const IconComponent = preset?.noteIcon
-    ? (PhosphorIcons as Record<string, React.ComponentType<{ size?: number; weight?: string; className?: string }>>)[preset.noteIcon]
+    ? (PhosphorIcons as unknown as Record<string, React.ComponentType<{ size?: number; weight?: string; className?: string }>>)[preset.noteIcon]
     : PhosphorIcons.Tag;
 
   const backgroundColor = preset?.colors.bg || 'rgba(229, 231, 235, 0.6)';

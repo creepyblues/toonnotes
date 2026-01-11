@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { TopBar } from '@/components/layout';
+import { ReleaseUpdateSection } from '@/components/settings';
 import { useUIStore, useNoteStore } from '@/stores';
 import { Moon, Sun, Archive, Trash, SignOut } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -147,6 +148,9 @@ export default function SettingsPage() {
               </form>
             </div>
           </section>
+
+          {/* Release Updates Section */}
+          <ReleaseUpdateSection />
 
           {/* Footer */}
           <footer className="text-center text-xs text-gray-400 dark:text-gray-600 pt-4">
