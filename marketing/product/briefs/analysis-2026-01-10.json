@@ -1,0 +1,1947 @@
+{
+  "analysis_date": "2026-01-10",
+  "period": {
+    "since": "last 7 days",
+    "to": "HEAD"
+  },
+  "summary": {
+    "commit_count": 44,
+    "features_detected": 5,
+    "high_potential": 5,
+    "apps_affected": [
+      "expo",
+      "web",
+      "marketing",
+      "webapp"
+    ]
+  },
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Add bidirectional real-time sync with Supabase",
+      "source": "commit",
+      "commits": [
+        "40dd0881",
+        "de96684b",
+        "bde4956e",
+        "080755f6",
+        "65356739",
+        "4d3fdd77"
+      ],
+      "category": "New Feature",
+      "apps": [
+        "webapp"
+      ],
+      "files_changed": 87,
+      "marketing_potential": "high",
+      "suggested_pillar": "ai-organization",
+      "description": "Add bidirectional real-time sync with Supabase",
+      "user_benefit": null
+    },
+    {
+      "id": "feat-002",
+      "name": "Fix hydration timing - data now loads on login",
+      "source": "commit",
+      "commits": [
+        "b6346ddc"
+      ],
+      "category": "Bug Fix",
+      "apps": [
+        "webapp"
+      ],
+      "files_changed": 1,
+      "marketing_potential": "high",
+      "suggested_pillar": "general",
+      "description": "Fix hydration timing - data now loads on login",
+      "user_benefit": null
+    },
+    {
+      "id": "feat-003",
+      "name": "Add cross-platform web app foundation and monor...",
+      "source": "commit",
+      "commits": [
+        "85f5dd2c",
+        "50109bc9",
+        "7125351b",
+        "fcb9c35a",
+        "7b4fc871",
+        "f69f65af"
+      ],
+      "category": "New Feature",
+      "apps": [
+        "expo",
+        "web",
+        "marketing"
+      ],
+      "files_changed": 78,
+      "marketing_potential": "high",
+      "suggested_pillar": "ai-design",
+      "description": "Add cross-platform web app foundation and monorepo migration plan",
+      "user_benefit": null
+    },
+    {
+      "id": "feat-004",
+      "name": "Prevent double-trigger of label analysis on not...",
+      "source": "commit",
+      "commits": [
+        "d7c04a5c",
+        "495dd29e"
+      ],
+      "category": "Bug Fix",
+      "apps": [
+        "expo"
+      ],
+      "files_changed": 9,
+      "marketing_potential": "high",
+      "suggested_pillar": "both",
+      "description": "Prevent double-trigger of label analysis on note close",
+      "user_benefit": null
+    },
+    {
+      "id": "feat-005",
+      "name": "Add ToonNotes_Web with static generation for ma...",
+      "source": "commit",
+      "commits": [
+        "a2d0373a"
+      ],
+      "category": "New Feature",
+      "apps": [
+        "web",
+        "marketing"
+      ],
+      "files_changed": 56,
+      "marketing_potential": "high",
+      "suggested_pillar": "ai-design",
+      "description": "Add ToonNotes_Web with static generation for marketing pages",
+      "user_benefit": null
+    }
+  ],
+  "commits": [
+    {
+      "hash": "40dd0881",
+      "type": "feat",
+      "scope": "webapp",
+      "message": "Add bidirectional real-time sync with Supabase",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 16:00:01 -0800",
+      "files_changed": 5,
+      "insertions": 1045,
+      "deletions": 3,
+      "files": [
+        "apps/webapp/components/layout/TopBar.tsx",
+        "apps/webapp/lib/hooks/useSupabaseSync.ts",
+        "apps/webapp/stores/uiStore.ts",
+        "apps/webapp/tests/e2e/sync.spec.ts",
+        "apps/webapp/tests/unit/sync.test.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "medium"
+    },
+    {
+      "hash": "de96684b",
+      "type": "feat",
+      "scope": "webapp",
+      "message": "Add board styling with preset picker",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 15:59:33 -0800",
+      "files_changed": 9,
+      "insertions": 864,
+      "deletions": 40,
+      "files": [
+        "apps/webapp/app/(main)/boards/[hashtag]/page.tsx",
+        "apps/webapp/components/boards/BoardCard.tsx",
+        "apps/webapp/components/boards/BoardStylePicker.tsx",
+        "apps/webapp/components/boards/index.ts",
+        "apps/webapp/stores/boardStore.ts",
+        "apps/webapp/stores/index.ts",
+        "apps/webapp/tests/e2e/boards.spec.ts",
+        "apps/webapp/tests/unit/boardStore.test.ts",
+        "packages/types/src/index.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "bde4956e",
+      "type": "feat",
+      "scope": "webapp",
+      "message": "Add label presets with auto-apply design",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 15:50:19 -0800",
+      "files_changed": 8,
+      "insertions": 1266,
+      "deletions": 20,
+      "files": [
+        "apps/webapp/components/editor/NoteEditor.tsx",
+        "apps/webapp/components/labels/LabelPicker.tsx",
+        "apps/webapp/components/labels/LabelPill.tsx",
+        "apps/webapp/components/labels/index.ts",
+        "apps/webapp/components/notes/NoteCard.tsx",
+        "apps/webapp/stores/noteStore.ts",
+        "apps/webapp/tests/e2e/labels.spec.ts",
+        "apps/webapp/tests/unit/labelPresets.test.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "080755f6",
+      "type": "feat",
+      "scope": "webapp",
+      "message": "Add command palette with search",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 15:01:44 -0800",
+      "files_changed": 4,
+      "insertions": 741,
+      "deletions": 0,
+      "files": [
+        "apps/webapp/components/CommandPalette.tsx",
+        "apps/webapp/components/layout/AppShell.tsx",
+        "apps/webapp/tests/e2e/command-palette.spec.ts",
+        "apps/webapp/tests/unit/commandPalette.test.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "65356739",
+      "type": "feat",
+      "scope": "webapp",
+      "message": "Add keyboard shortcuts system",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 14:58:50 -0800",
+      "files_changed": 8,
+      "insertions": 758,
+      "deletions": 0,
+      "files": [
+        "apps/webapp/components/KeyboardShortcutsModal.tsx",
+        "apps/webapp/components/layout/AppShell.tsx",
+        "apps/webapp/lib/hooks/index.ts",
+        "apps/webapp/lib/hooks/useKeyboardShortcuts.ts",
+        "apps/webapp/stores/uiStore.ts",
+        "apps/webapp/tests/e2e/keyboard.spec.ts",
+        "apps/webapp/tests/unit/keyboardShortcuts.test.ts",
+        "apps/webapp/tests/unit/uiStore.test.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "medium"
+    },
+    {
+      "hash": "e2c8d82f",
+      "type": "docs",
+      "scope": "webapp",
+      "message": "Add PRD.md for webapp development",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 13:31:34 -0800",
+      "files_changed": 1,
+      "insertions": 694,
+      "deletions": 0,
+      "files": [
+        "apps/webapp/PRD.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "b6346ddc",
+      "type": "fix",
+      "scope": "webapp",
+      "message": "Fix hydration timing - data now loads on login",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 10:51:04 -0800",
+      "files_changed": 1,
+      "insertions": 15,
+      "deletions": 16,
+      "files": [
+        "apps/webapp/components/providers/StoreProvider.tsx"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "4d3fdd77",
+      "type": "feat",
+      "scope": "webapp",
+      "message": "Add comprehensive test suite and fix sync issues",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-10 10:09:48 -0800",
+      "files_changed": 53,
+      "insertions": 7808,
+      "deletions": 402,
+      "files": [
+        "apps/webapp/app/(main)/archive/page.tsx",
+        "apps/webapp/app/(main)/boards/[hashtag]/page.tsx",
+        "apps/webapp/app/(main)/boards/page.tsx",
+        "apps/webapp/app/(main)/designs/page.tsx",
+        "apps/webapp/app/(main)/layout.tsx",
+        "apps/webapp/app/(main)/notes/[id]/page.tsx",
+        "apps/webapp/app/(main)/page.tsx",
+        "apps/webapp/app/(main)/settings/page.tsx",
+        "apps/webapp/app/(main)/trash/page.tsx",
+        "apps/webapp/app/globals.css",
+        "apps/webapp/app/layout.tsx",
+        "apps/webapp/app/notes/[id]/not-found.tsx",
+        "apps/webapp/app/notes/[id]/page.tsx",
+        "apps/webapp/app/page.tsx",
+        "apps/webapp/app/settings/page.tsx",
+        "apps/webapp/components/boards/BoardCard.tsx",
+        "apps/webapp/components/boards/BoardGrid.tsx",
+        "apps/webapp/components/boards/index.ts",
+        "apps/webapp/components/designs/DesignCard.tsx",
+        "apps/webapp/components/designs/DesignGallery.tsx",
+        "apps/webapp/components/designs/index.ts",
+        "apps/webapp/components/editor/NoteEditor.tsx",
+        "apps/webapp/components/editor/index.ts",
+        "apps/webapp/components/layout/AppShell.tsx",
+        "apps/webapp/components/layout/Sidebar.tsx",
+        "apps/webapp/components/layout/TopBar.tsx",
+        "apps/webapp/components/layout/index.ts",
+        "apps/webapp/components/notes/NoteCard.tsx",
+        "apps/webapp/components/notes/NoteGrid.tsx",
+        "apps/webapp/components/notes/index.ts",
+        "apps/webapp/components/providers/StoreProvider.tsx",
+        "apps/webapp/components/providers/ThemeProvider.tsx",
+        "apps/webapp/components/providers/index.ts",
+        "apps/webapp/lib/hooks/useSupabaseSync.ts",
+        "apps/webapp/lib/utils.ts",
+        "apps/webapp/package.json",
+        "apps/webapp/playwright.config.ts",
+        "apps/webapp/stores/designStore.ts",
+        "apps/webapp/stores/index.ts",
+        "apps/webapp/stores/noteStore.ts",
+        "apps/webapp/stores/uiStore.ts",
+        "apps/webapp/tests/e2e/archive-trash.spec.ts",
+        "apps/webapp/tests/e2e/auth.spec.ts",
+        "apps/webapp/tests/e2e/boards.spec.ts",
+        "apps/webapp/tests/e2e/notes.spec.ts",
+        "apps/webapp/tests/e2e/settings.spec.ts",
+        "apps/webapp/tests/e2e/sidebar.spec.ts",
+        "apps/webapp/tests/setup.ts",
+        "apps/webapp/tests/unit/designStore.test.ts",
+        "apps/webapp/tests/unit/noteStore.test.ts",
+        "apps/webapp/tests/unit/uiStore.test.ts",
+        "apps/webapp/vitest.config.ts",
+        "pnpm-lock.yaml"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "e088f725",
+      "type": "chore",
+      "scope": null,
+      "message": "Trigger Vercel redeploy with pnpm 10.x fix",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-09 22:31:13 -0800",
+      "files_changed": 1,
+      "insertions": 1,
+      "deletions": 0,
+      "files": [
+        "apps/web/next.config.ts"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "e1e395c8",
+      "type": "fix",
+      "scope": null,
+      "message": "Update to pnpm 10.x for Vercel compatibility",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-09 21:31:47 -0800",
+      "files_changed": 2,
+      "insertions": 4,
+      "deletions": 4,
+      "files": [
+        "package.json",
+        "pnpm-lock.yaml"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "2be85255",
+      "type": "refactor",
+      "scope": null,
+      "message": "Migrate to pnpm + Turborepo monorepo structure",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-09 20:26:55 -0800",
+      "files_changed": 444,
+      "insertions": 24005,
+      "deletions": 750,
+      "files": [
+        ".claude/skills/diary/SKILL.md",
+        ".claude/skills/diary/scripts/analyze_commits.py",
+        ".claude/skills/diary/scripts/collect_history.py",
+        ".claude/skills/diary/scripts/generate_entry.py",
+        ".gitignore",
+        ".npmrc",
+        ".playwright-mcp/app-login-page.png",
+        ".playwright-mcp/early-access-card-selected.png",
+        ".playwright-mcp/early-access-email-step.png",
+        ".playwright-mcp/early-access-hero.png",
+        ".playwright-mcp/early-access-pain-cards.png",
+        ".playwright-mcp/early-access-signup-form.png",
+        ".playwright-mcp/early-access-success.png",
+        "ToonNotes_Web/app/app/auth/callback/page.tsx",
+        "ToonNotes_Web/app/app/auth/login/page.tsx",
+        "ToonNotes_Web/app/app/layout.tsx",
+        "ToonNotes_Web/app/app/notes/[id]/not-found.tsx",
+        "ToonNotes_Web/app/app/notes/[id]/page.tsx",
+        "ToonNotes_Web/app/app/page.tsx",
+        "ToonNotes_Web/app/app/settings/page.tsx",
+        "apps/expo/.claude/agents/ui-designer.md",
+        "apps/expo/.claude/agents/webtoon-artist.md",
+        "apps/expo/.claude/skills/content-research-writer/skills.md",
+        "apps/expo/.claude/skills/cost-report/SKILL.md",
+        "apps/expo/.claude/skills/deploy-functions/SKILL.md",
+        "apps/expo/.claude/skills/deploy-staging/SKILL.md",
+        "apps/expo/.claude/skills/health-check/SKILL.md",
+        "apps/expo/.claude/skills/lead-research-assistant/skills.md",
+        "apps/expo/.claude/skills/safe-migrate/SKILL.md",
+        "apps/expo/.claude/skills/skill-creator/LICENSE.txt",
+        "apps/expo/.claude/skills/skill-creator/SKILL.md",
+        "apps/expo/.claude/skills/skill-creator/scripts/init_skill.py",
+        "apps/expo/.claude/skills/skill-creator/scripts/package_skill.py",
+        "apps/expo/.claude/skills/skill-creator/scripts/quick_validate.py",
+        "apps/expo/.claude/skills/stripe-integration/skills.md",
+        "apps/expo/.claude/skills/test-e2e/SKILL.md",
+        "apps/expo/.claude/skills/test-e2e/templates/auth.template.ts",
+        "apps/expo/.gitignore",
+        "apps/expo/.playwright-mcp/app-running.png",
+        "apps/expo/.playwright-mcp/auth-test-1.png",
+        "apps/expo/.playwright-mcp/board-test.png",
+        "apps/expo/.playwright-mcp/design-create-page.png",
+        "apps/expo/.playwright-mcp/homepage-redesign-desktop.png",
+        "apps/expo/.playwright-mcp/homepage-redesign-full.png",
+        "apps/expo/.vercelignore",
+        "apps/expo/.vscode/extensions.json",
+        "apps/expo/.vscode/settings.json",
+        "apps/expo/CLAUDE.md",
+        "apps/expo/DESIGN_ENGINE_PLAN.md",
+        "apps/expo/GoogleService-Info.plist",
+        "apps/expo/PRD.md",
+        "apps/expo/PRIVACY_POLICY.md",
+        "apps/expo/TESTING_QUICKSTART.md",
+        "apps/expo/TEST_SUMMARY.md",
+        "apps/expo/__tests__/README.md",
+        "apps/expo/__tests__/constants/boardPresets.test.ts",
+        "apps/expo/__tests__/constants/labelPresets.fuzzy.test.ts",
+        "apps/expo/__tests__/constants/patterns.test.ts",
+        "apps/expo/__tests__/constants/themes.test.ts",
+        "apps/expo/__tests__/integration/designCreationFlow.test.ts",
+        "apps/expo/__tests__/services/authService.test.ts",
+        "apps/expo/__tests__/services/designEngine.test.ts",
+        "apps/expo/__tests__/services/geminiService.test.ts",
+        "apps/expo/__tests__/services/syncService.test.ts",
+        "apps/expo/__tests__/stores/authStore.test.ts",
+        "apps/expo/__tests__/stores/boardStore.test.ts",
+        "apps/expo/__tests__/stores/designStore.test.ts",
+        "apps/expo/__tests__/stores/labelSuggestionStore.test.ts",
+        "apps/expo/__tests__/stores/noteStore.test.ts",
+        "apps/expo/__tests__/stores/userStore.onboarding.test.ts",
+        "apps/expo/__tests__/stores/userStore.test.ts",
+        "apps/expo/__tests__/utils/apiResponse.test.ts",
+        "apps/expo/__tests__/utils/uuid.test.ts",
+        "apps/expo/__tests__/utils/validation.test.ts",
+        "apps/expo/api/analyze-note-content.ts",
+        "apps/expo/api/extract-colors.ts",
+        "apps/expo/api/generate-board-design.ts",
+        "apps/expo/api/generate-character-mascot.ts",
+        "apps/expo/api/generate-label-design.ts",
+        "apps/expo/api/generate-lucky-theme.ts",
+        "apps/expo/api/generate-theme.ts",
+        "apps/expo/api/generate-typography-poster.ts",
+        "apps/expo/api/onboarding-config.ts",
+        "apps/expo/api/remove-background.ts",
+        "apps/expo/app.json",
+        "apps/expo/app/(tabs)/_layout.tsx",
+        "apps/expo/app/(tabs)/boards.tsx",
+        "apps/expo/app/(tabs)/designs.tsx",
+        "apps/expo/app/(tabs)/index.tsx",
+        "apps/expo/app/(tabs)/settings.tsx",
+        "apps/expo/app/+html.tsx",
+        "apps/expo/app/+not-found.tsx",
+        "apps/expo/app/_layout.tsx",
+        "apps/expo/app/archive.tsx",
+        "apps/expo/app/auth/_layout.tsx",
+        "apps/expo/app/auth/callback.tsx",
+        "apps/expo/app/auth/index.tsx",
+        "apps/expo/app/board/[hashtag].tsx",
+        "apps/expo/app/board/design/create.tsx",
+        "apps/expo/app/design/create.tsx",
+        "apps/expo/app/note/[id].tsx",
+        "apps/expo/app/trash.tsx",
+        "apps/expo/assets/fonts/SpaceMono-Regular.ttf",
+        "apps/expo/assets/images/ToonNotes_logo.png",
+        "apps/expo/assets/images/adaptive-icon.png",
+        "apps/expo/assets/images/favicon.png",
+        "apps/expo/assets/images/icon.png",
+        "apps/expo/assets/images/splash-icon.png",
+        "apps/expo/assets/patterns/diagonal-stripes.png",
+        "apps/expo/assets/patterns/dots-large.png",
+        "apps/expo/assets/patterns/dots-small.png",
+        "apps/expo/assets/patterns/grid.png",
+        "apps/expo/assets/patterns/halftone.png",
+        "apps/expo/assets/patterns/lines-diag.png",
+        "apps/expo/assets/patterns/lines-h.png",
+        "apps/expo/assets/patterns/noise.png",
+        "apps/expo/assets/patterns/paper-rough.png",
+        "apps/expo/assets/patterns/paper-subtle.png",
+        "apps/expo/assets/patterns/screentone-light.png",
+        "apps/expo/assets/patterns/watercolor.png",
+        "apps/expo/assets/textures/corkboard.png",
+        "apps/expo/babel.config.js",
+        "apps/expo/components/AccentLayer.tsx",
+        "apps/expo/components/BackgroundLayer.tsx",
+        "apps/expo/components/BackgroundPicker.tsx",
+        "apps/expo/components/ErrorBoundary.tsx",
+        "apps/expo/components/ExternalLink.tsx",
+        "apps/expo/components/StyledText.tsx",
+        "apps/expo/components/ThemePicker.tsx",
+        "apps/expo/components/Themed.tsx",
+        "apps/expo/components/TypographicPosterSection.tsx",
+        "apps/expo/components/__tests__/StyledText-test.js",
+        "apps/expo/components/boards/BoardAccentLayer.tsx",
+        "apps/expo/components/boards/BoardCard.tsx",
+        "apps/expo/components/boards/BoardCardPreview.tsx",
+        "apps/expo/components/boards/NotePreview.tsx",
+        "apps/expo/components/boards/StickyNote.tsx",
+        "apps/expo/components/boards/StickyNotesRow.tsx",
+        "apps/expo/components/designs/DesignCard.tsx",
+        "apps/expo/components/designs/QualityPreview.tsx",
+        "apps/expo/components/editor/BulletEditor.tsx",
+        "apps/expo/components/editor/CheckboxEditor.tsx",
+        "apps/expo/components/editor/CheckboxOverlay.tsx",
+        "apps/expo/components/editor/ChecklistEditor.tsx",
+        "apps/expo/components/editor/EditorContent.tsx",
+        "apps/expo/components/editor/EditorToolbar.tsx",
+        "apps/expo/components/editor/HashtagAutocomplete.tsx",
+        "apps/expo/components/editor/index.ts",
+        "apps/expo/components/labels/AnalysisProgressModal.tsx",
+        "apps/expo/components/labels/LabelSuggestionSheet.tsx",
+        "apps/expo/components/labels/LabelSuggestionToast.tsx",
+        "apps/expo/components/labels/index.ts",
+        "apps/expo/components/notes/LabelDesignPicker.tsx",
+        "apps/expo/components/notes/NoteCard.tsx",
+        "apps/expo/components/onboarding/CoachMarkTooltip.tsx",
+        "apps/expo/components/onboarding/CoachMarksProvider.tsx",
+        "apps/expo/components/onboarding/WelcomeCarousel.tsx",
+        "apps/expo/components/onboarding/index.ts",
+        "apps/expo/components/settings/LogoPreview.tsx",
+        "apps/expo/components/shop/CoinShop.tsx",
+        "apps/expo/components/shop/ProSubscriptionCard.tsx",
+        "apps/expo/components/shop/UpgradeModal.tsx",
+        "apps/expo/components/useClientOnlyValue.ts",
+        "apps/expo/components/useClientOnlyValue.web.ts",
+        "apps/expo/components/useColorScheme.ts",
+        "apps/expo/components/useColorScheme.web.ts",
+        "apps/expo/constants/boardPresets.ts",
+        "apps/expo/constants/fonts.ts",
+        "apps/expo/constants/labelPresets.ts",
+        "apps/expo/constants/onboardingConfig.ts",
+        "apps/expo/constants/patterns.ts",
+        "apps/expo/constants/products.ts",
+        "apps/expo/constants/themes.ts",
+        "apps/expo/docs/ANALYTICS-IMPLEMENTATION.md",
+        "apps/expo/docs/AUTH-CONFIGURATION.md",
+        "apps/expo/docs/CLOUD-BACKUP-STRATEGY.md",
+        "apps/expo/docs/MANUAL-TEST-SCENARIOS.md",
+        "apps/expo/docs/MONETIZATION-STRATEGY.md",
+        "apps/expo/docs/MULTI-PLATFORM-ARCHITECTURE.md",
+        "apps/expo/docs/ONBOARDING-USER-PROFILING.md",
+        "apps/expo/docs/PRODUCTION-READINESS-REPORT.md",
+        "apps/expo/docs/UX-DOCUMENTATION.md",
+        "apps/expo/docs/privacy-policy.md",
+        "apps/expo/docs/quality-assessment-dec2024.md",
+        "apps/expo/docs/terms-of-service.md",
+        "apps/expo/eas.json",
+        "apps/expo/global.css",
+        "apps/expo/google-services.json",
+        "apps/expo/hooks/editor/index.ts",
+        "apps/expo/hooks/editor/useAutoSave.ts",
+        "apps/expo/hooks/editor/useCheckboxPositions.ts",
+        "apps/expo/hooks/editor/useEditorContent.ts",
+        "apps/expo/hooks/editor/useHashtagDetection.ts",
+        "apps/expo/hooks/useCoachMark.ts",
+        "apps/expo/jest.config.js",
+        "apps/expo/jest.setup.js",
+        "apps/expo/local-api-server.mjs",
+        "apps/expo/metro.config.js",
+        "apps/expo/nativewind-env.d.ts",
+        "apps/expo/package-lock.json",
+        "apps/expo/package.json",
+        "apps/expo/promo-screenshots/01-initial.png",
+        "apps/expo/promo-screenshots/02-current.png",
+        "apps/expo/promo-screenshots/03-settings.png",
+        "apps/expo/promo-screenshots/04-after-click.png",
+        "apps/expo/promo-screenshots/05-settings.png",
+        "apps/expo/scripts/generate-apple-secret.js",
+        "apps/expo/scripts/generate-corkboard.js",
+        "apps/expo/scripts/generate-patterns.js",
+        "apps/expo/services/authService.ts",
+        "apps/expo/services/designEngine.ts",
+        "apps/expo/services/firebaseAnalytics.ts",
+        "apps/expo/services/geminiService.ts",
+        "apps/expo/services/imageStorageService.ts",
+        "apps/expo/services/index.ts",
+        "apps/expo/services/labelingEngine.ts",
+        "apps/expo/services/migrationService.ts",
+        "apps/expo/services/onboardingService.ts",
+        "apps/expo/services/purchaseService.ts",
+        "apps/expo/services/qualityService.ts",
+        "apps/expo/services/sentry.ts",
+        "apps/expo/services/shareService.ts",
+        "apps/expo/services/subscriptionService.ts",
+        "apps/expo/services/supabase.ts",
+        "apps/expo/services/syncService.ts",
+        "apps/expo/src/components/Icon.tsx",
+        "apps/expo/src/components/buttons/Button.tsx",
+        "apps/expo/src/components/buttons/IconButton.tsx",
+        "apps/expo/src/components/buttons/index.ts",
+        "apps/expo/src/components/index.ts",
+        "apps/expo/src/components/inputs/TextInput.tsx",
+        "apps/expo/src/components/inputs/index.ts",
+        "apps/expo/src/components/sheets/BottomSheet.tsx",
+        "apps/expo/src/components/sheets/index.ts",
+        "apps/expo/src/components/tags/TagPill.tsx",
+        "apps/expo/src/components/tags/index.ts",
+        "apps/expo/src/theme/index.ts",
+        "apps/expo/src/theme/tokens/colors.ts",
+        "apps/expo/src/theme/tokens/effects.ts",
+        "apps/expo/src/theme/tokens/index.ts",
+        "apps/expo/src/theme/tokens/spacing.ts",
+        "apps/expo/src/theme/tokens/typography.ts",
+        "apps/expo/src/theme/useTheme.ts",
+        "apps/expo/stores/authStore.ts",
+        "apps/expo/stores/boardDesignStore.ts",
+        "apps/expo/stores/boardStore.ts",
+        "apps/expo/stores/debouncedStorage.ts",
+        "apps/expo/stores/designStore.ts",
+        "apps/expo/stores/index.ts",
+        "apps/expo/stores/labelStore.ts",
+        "apps/expo/stores/labelSuggestionStore.ts",
+        "apps/expo/stores/noteStore.ts",
+        "apps/expo/stores/userStore.ts",
+        "apps/expo/supabase/.temp/cli-latest",
+        "apps/expo/supabase/.temp/gotrue-version",
+        "apps/expo/supabase/.temp/pooler-url",
+        "apps/expo/supabase/.temp/postgres-version",
+        "apps/expo/supabase/.temp/project-ref",
+        "apps/expo/supabase/.temp/rest-version",
+        "apps/expo/supabase/.temp/storage-migration",
+        "apps/expo/supabase/.temp/storage-version",
+        "apps/expo/supabase/migrations/20260103_create_shared_notes.sql",
+        "apps/expo/supabase/migrations/20260104_create_admin_users.sql",
+        "apps/expo/supabase/migrations/20260106_add_subscription_fields.sql",
+        "apps/expo/supabase/migrations/20260106_create_account_deletion_requests.sql",
+        "apps/expo/supabase/migrations/20260109_add_quality_tracking.sql",
+        "apps/expo/supabase/migrations/20260110_create_storage_buckets.sql",
+        "apps/expo/supabase/schema.sql",
+        "apps/expo/supabase/seed/promo-data.sql",
+        "apps/expo/tailwind.config.js",
+        "apps/expo/toonnotes-design-preview.html",
+        "apps/expo/toonnotes-handoff.md",
+        "apps/expo/tsconfig.json",
+        "apps/expo/types/index.ts",
+        "apps/expo/types/react-native-onboarding-swiper.d.ts",
+        "apps/expo/utils/analytics.ts",
+        "apps/expo/utils/devLog.ts",
+        "apps/expo/utils/labelNormalization.ts",
+        "apps/expo/utils/shadows.ts",
+        "apps/expo/utils/uuid.ts",
+        "apps/expo/utils/validation.ts",
+        "apps/expo/utils/validation/apiResponse.ts",
+        "apps/expo/utils/validation/labelingResponse.ts",
+        "apps/expo/vercel.json",
+        "apps/web/.env.example",
+        "apps/web/.gitignore",
+        "apps/web/.playwright-mcp/homepage-font-check.png",
+        "apps/web/.playwright-mcp/homepage-mobile-clean.png",
+        "apps/web/.playwright-mcp/homepage-mobile-final.png",
+        "apps/web/.playwright-mcp/homepage-mobile-no-hamburger.png",
+        "apps/web/.playwright-mcp/homepage-mobile.png",
+        "apps/web/.playwright-mcp/lighthouse-after-fix.png",
+        "apps/web/.playwright-mcp/lighthouse-audit-desktop.png",
+        "apps/web/.playwright-mcp/lighthouse-audit-mobile.png",
+        "apps/web/.playwright-mcp/mobile-homepage.png",
+        "apps/web/.playwright-mcp/pain-points-font-check.png",
+        "apps/web/.playwright-mcp/staging-performance-test.png",
+        "apps/web/CLAUDE.md",
+        "apps/web/HOMEPAGE_REDESIGN_PLAN.md",
+        "apps/web/app/(marketing)/delete-account/actions.ts",
+        "apps/web/app/(marketing)/delete-account/page.tsx",
+        "apps/web/app/(marketing)/development_diary/[date]/page.tsx",
+        "apps/web/app/(marketing)/development_diary/page.tsx",
+        "apps/web/app/(marketing)/early-access/page.tsx",
+        "apps/web/app/(marketing)/layout.tsx",
+        "apps/web/app/(marketing)/page.tsx",
+        "apps/web/app/(marketing)/privacy/page.tsx",
+        "apps/web/app/(marketing)/terms/page.tsx",
+        "apps/web/app/api/beta-testers/route.ts",
+        "apps/web/app/api/diary/delete/route.ts",
+        "apps/web/app/api/diary/entry/route.ts",
+        "apps/web/app/api/diary/publish/route.ts",
+        "apps/web/app/api/diary/save/route.ts",
+        "apps/web/app/api/og/route.tsx",
+        "apps/web/app/api/track/route.ts",
+        "apps/web/app/api/waitlist/route.ts",
+        "apps/web/app/globals.css",
+        "apps/web/app/layout.tsx",
+        "apps/web/app/marketing/(auth)/auth/callback/route.ts",
+        "apps/web/app/marketing/(auth)/login/page.tsx",
+        "apps/web/app/marketing/(dashboard)/beta-testers/page.tsx",
+        "apps/web/app/marketing/(dashboard)/campaigns/[slug]/page.tsx",
+        "apps/web/app/marketing/(dashboard)/campaigns/page.tsx",
+        "apps/web/app/marketing/(dashboard)/copy/[...path]/page.tsx",
+        "apps/web/app/marketing/(dashboard)/copy/page.tsx",
+        "apps/web/app/marketing/(dashboard)/diary/drafts/[date]/page.tsx",
+        "apps/web/app/marketing/(dashboard)/diary/page.tsx",
+        "apps/web/app/marketing/(dashboard)/docs/[...path]/page.tsx",
+        "apps/web/app/marketing/(dashboard)/docs/page.tsx",
+        "apps/web/app/marketing/(dashboard)/features/[slug]/page.tsx",
+        "apps/web/app/marketing/(dashboard)/features/page.tsx",
+        "apps/web/app/marketing/(dashboard)/layout.tsx",
+        "apps/web/app/marketing/(dashboard)/messaging/page.tsx",
+        "apps/web/app/marketing/(dashboard)/page.tsx",
+        "apps/web/app/marketing/(dashboard)/products/[version]/page.tsx",
+        "apps/web/app/marketing/(dashboard)/products/page.tsx",
+        "apps/web/app/marketing/(dashboard)/strategy/page.tsx",
+        "apps/web/app/not-found.tsx",
+        "apps/web/app/note/[shareToken]/loading.tsx",
+        "apps/web/app/note/[shareToken]/not-found.tsx",
+        "apps/web/app/note/[shareToken]/page.tsx",
+        "apps/web/components/app/AppHeader.tsx",
+        "apps/web/components/app/AppLayout.tsx",
+        "apps/web/components/app/AppSidebar.tsx",
+        "apps/web/components/app/SignOutButton.tsx",
+        "apps/web/components/app/index.ts",
+        "apps/web/components/early-access/DesignShowcase.tsx",
+        "apps/web/components/early-access/Hero.tsx",
+        "apps/web/components/early-access/HowItWorks.tsx",
+        "apps/web/components/early-access/PainCards.tsx",
+        "apps/web/components/early-access/Promise.tsx",
+        "apps/web/components/early-access/SignupForm.tsx",
+        "apps/web/components/early-access/index.ts",
+        "apps/web/components/marketing/AdminHeader.tsx",
+        "apps/web/components/marketing/AdminNav.tsx",
+        "apps/web/components/marketing/DashboardLayout.tsx",
+        "apps/web/components/marketing/Features.tsx",
+        "apps/web/components/marketing/FileViewer.tsx",
+        "apps/web/components/marketing/FinalCTA.tsx",
+        "apps/web/components/marketing/Hero.tsx",
+        "apps/web/components/marketing/PainPoints.tsx",
+        "apps/web/components/marketing/StrategyTabs.tsx",
+        "apps/web/components/marketing/TwoPillars.tsx",
+        "apps/web/components/marketing/index.ts",
+        "apps/web/components/notes/NoteCard.tsx",
+        "apps/web/components/notes/NoteDetailView.tsx",
+        "apps/web/components/notes/SharedNoteCard.tsx",
+        "apps/web/eslint.config.mjs",
+        "apps/web/lib/design-engine/composeStyle.ts",
+        "apps/web/lib/design-engine/types.ts",
+        "apps/web/lib/marketing/diary.ts",
+        "apps/web/lib/marketing/files.ts",
+        "apps/web/lib/marketing/types.ts",
+        "apps/web/lib/sessionTracking.ts",
+        "apps/web/lib/supabase/client.ts",
+        "apps/web/lib/supabase/server.ts",
+        "apps/web/middleware.ts",
+        "apps/web/next.config.ts",
+        "apps/web/package-lock.json",
+        "apps/web/package.json",
+        "apps/web/postcss.config.mjs",
+        "apps/web/tsconfig.json",
+        "apps/webapp/.env.example",
+        "apps/webapp/.gitignore",
+        "apps/webapp/app/auth/callback/route.ts",
+        "apps/webapp/app/auth/login/page.tsx",
+        "apps/webapp/app/auth/logout/route.ts",
+        "apps/webapp/app/globals.css",
+        "apps/webapp/app/layout.tsx",
+        "apps/webapp/app/notes/[id]/not-found.tsx",
+        "apps/webapp/app/notes/[id]/page.tsx",
+        "apps/webapp/app/page.tsx",
+        "apps/webapp/app/settings/page.tsx",
+        "apps/webapp/lib/supabase/client.ts",
+        "apps/webapp/lib/supabase/server.ts",
+        "apps/webapp/middleware.ts",
+        "apps/webapp/next.config.ts",
+        "apps/webapp/package.json",
+        "apps/webapp/postcss.config.mjs",
+        "apps/webapp/tsconfig.json",
+        "marketing/development_diary/README.md",
+        "marketing/development_diary/_index.yaml",
+        "marketing/development_diary/drafts/2026-01-09.md",
+        "marketing/development_diary/templates/daily-entry.md",
+        "package.json",
+        "packages/constants/node_modules/.bin/tsc",
+        "packages/constants/node_modules/.bin/tsserver",
+        "packages/constants/node_modules/@toonnotes/types",
+        "packages/constants/node_modules/typescript",
+        "packages/constants/package.json",
+        "packages/constants/src/boardPresets.ts",
+        "packages/constants/src/fonts.ts",
+        "packages/constants/src/index.ts",
+        "packages/constants/src/labelPresets.ts",
+        "packages/constants/src/patterns.ts",
+        "packages/constants/src/products.ts",
+        "packages/constants/src/themes.ts",
+        "packages/constants/tsconfig.json",
+        "packages/design-engine/node_modules/.bin/tsc",
+        "packages/design-engine/node_modules/.bin/tsserver",
+        "packages/design-engine/node_modules/@toonnotes/constants",
+        "packages/design-engine/node_modules/@toonnotes/types",
+        "packages/design-engine/node_modules/typescript",
+        "packages/design-engine/package.json",
+        "packages/design-engine/src/index.ts",
+        "packages/design-engine/tsconfig.json",
+        "packages/supabase/node_modules/.bin/tsc",
+        "packages/supabase/node_modules/.bin/tsserver",
+        "packages/supabase/node_modules/@supabase/supabase-js",
+        "packages/supabase/node_modules/typescript",
+        "packages/supabase/package.json",
+        "packages/supabase/src/config.ts",
+        "packages/supabase/src/index.ts",
+        "packages/supabase/src/tables.ts",
+        "packages/supabase/tsconfig.json",
+        "packages/types/node_modules/.bin/tsc",
+        "packages/types/node_modules/.bin/tsserver",
+        "packages/types/node_modules/typescript",
+        "packages/types/package.json",
+        "packages/types/src/index.ts",
+        "packages/types/tsconfig.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "turbo.json"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "85f5dd2c",
+      "type": "feat",
+      "scope": null,
+      "message": "Add cross-platform web app foundation and monorepo migration plan",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-09 11:58:47 -0800",
+      "files_changed": 19,
+      "insertions": 2165,
+      "deletions": 21,
+      "files": [
+        "ToonNotes_Expo/services/imageStorageService.ts",
+        "ToonNotes_Expo/services/syncService.ts",
+        "ToonNotes_Expo/supabase/migrations/20260110_create_storage_buckets.sql",
+        "ToonNotes_Web/app/app/auth/callback/page.tsx",
+        "ToonNotes_Web/app/app/auth/login/page.tsx",
+        "ToonNotes_Web/app/app/layout.tsx",
+        "ToonNotes_Web/app/app/notes/[id]/not-found.tsx",
+        "ToonNotes_Web/app/app/notes/[id]/page.tsx",
+        "ToonNotes_Web/app/app/page.tsx",
+        "ToonNotes_Web/app/app/settings/page.tsx",
+        "ToonNotes_Web/components/app/AppHeader.tsx",
+        "ToonNotes_Web/components/app/AppLayout.tsx",
+        "ToonNotes_Web/components/app/AppSidebar.tsx",
+        "ToonNotes_Web/components/app/SignOutButton.tsx",
+        "ToonNotes_Web/components/app/index.ts",
+        "ToonNotes_Web/components/notes/NoteCard.tsx",
+        "ToonNotes_Web/components/notes/NoteDetailView.tsx",
+        "ToonNotes_Web/middleware.ts",
+        "docs/MONOREPO_MIGRATION.md"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "d7c04a5c",
+      "type": "fix",
+      "scope": null,
+      "message": "Prevent double-trigger of label analysis on note close",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-09 11:03:07 -0800",
+      "files_changed": 3,
+      "insertions": 236,
+      "deletions": 29,
+      "files": [
+        "ToonNotes_Expo/app/note/[id].tsx",
+        "ToonNotes_Expo/components/labels/AnalysisProgressModal.tsx",
+        "ToonNotes_Expo/components/labels/index.ts"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "50109bc9",
+      "type": "feat",
+      "scope": null,
+      "message": "Add AI image generation quality assessment pipeline",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-09 08:09:51 -0800",
+      "files_changed": 12,
+      "insertions": 1166,
+      "deletions": 27,
+      "files": [
+        "ToonNotes_Expo/api/generate-character-mascot.ts",
+        "ToonNotes_Expo/api/remove-background.ts",
+        "ToonNotes_Expo/app/design/create.tsx",
+        "ToonNotes_Expo/components/designs/QualityPreview.tsx",
+        "ToonNotes_Expo/package-lock.json",
+        "ToonNotes_Expo/package.json",
+        "ToonNotes_Expo/services/geminiService.ts",
+        "ToonNotes_Expo/services/index.ts",
+        "ToonNotes_Expo/services/qualityService.ts",
+        "ToonNotes_Expo/supabase/migrations/20260109_add_quality_tracking.sql",
+        "ToonNotes_Expo/types/index.ts",
+        "ToonNotes_Expo/utils/validation/apiResponse.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "7125351b",
+      "type": "feat",
+      "scope": null,
+      "message": "Add early access promo page for waitlist and hypothesis validation",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-08 21:42:38 -0800",
+      "files_changed": 13,
+      "insertions": 1151,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Web/app/(marketing)/early-access/page.tsx",
+        "ToonNotes_Web/app/api/track/route.ts",
+        "ToonNotes_Web/app/api/waitlist/route.ts",
+        "ToonNotes_Web/components/early-access/DesignShowcase.tsx",
+        "ToonNotes_Web/components/early-access/Hero.tsx",
+        "ToonNotes_Web/components/early-access/HowItWorks.tsx",
+        "ToonNotes_Web/components/early-access/PainCards.tsx",
+        "ToonNotes_Web/components/early-access/Promise.tsx",
+        "ToonNotes_Web/components/early-access/SignupForm.tsx",
+        "ToonNotes_Web/components/early-access/index.ts",
+        "ToonNotes_Web/lib/sessionTracking.ts",
+        "ToonNotes_Web/package-lock.json",
+        "ToonNotes_Web/package.json"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "e2a8d8c2",
+      "type": "fix",
+      "scope": null,
+      "message": "Use production API for label analysis in dev mode",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-08 12:12:20 -0800",
+      "files_changed": 1,
+      "insertions": 2,
+      "deletions": 20,
+      "files": [
+        "ToonNotes_Expo/services/labelingEngine.ts"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "fcb9c35a",
+      "type": "feat",
+      "scope": null,
+      "message": "Add beta testers admin page for managing Pro status",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-08 10:34:09 -0800",
+      "files_changed": 3,
+      "insertions": 302,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Web/app/api/beta-testers/route.ts",
+        "ToonNotes_Web/app/marketing/(dashboard)/beta-testers/page.tsx",
+        "ToonNotes_Web/components/marketing/AdminNav.tsx"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "6bc6d903",
+      "type": "feat",
+      "scope": null,
+      "message": "Add beta tester override for cloud sync",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-08 10:09:40 -0800",
+      "files_changed": 1,
+      "insertions": 64,
+      "deletions": 17,
+      "files": [
+        "ToonNotes_Expo/stores/authStore.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "1365a36a",
+      "type": "docs",
+      "scope": null,
+      "message": "Add competitor analysis to onboarding profiling plan",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-07 16:08:55 -0800",
+      "files_changed": 1,
+      "insertions": 439,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/docs/ONBOARDING-USER-PROFILING.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "2d77ed19",
+      "type": "fix",
+      "scope": null,
+      "message": "Handle AuthSessionMissingError gracefully on sign-out",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-07 16:00:19 -0800",
+      "files_changed": 2,
+      "insertions": 22,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/services/authService.ts",
+        "ToonNotes_Expo/stores/authStore.ts"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "4fce4019",
+      "type": "chore",
+      "scope": null,
+      "message": "Bump iOS build number to 11 for TestFlight",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-07 13:07:47 -0800",
+      "files_changed": 1,
+      "insertions": 1,
+      "deletions": 1,
+      "files": [
+        "ToonNotes_Expo/app.json"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "73be664b",
+      "type": "feat",
+      "scope": null,
+      "message": "Add full cloud sync for designs, boards, and labels",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-07 13:01:18 -0800",
+      "files_changed": 10,
+      "insertions": 1249,
+      "deletions": 101,
+      "files": [
+        "ToonNotes_Expo/CLAUDE.md",
+        "ToonNotes_Expo/app/design/create.tsx",
+        "ToonNotes_Expo/services/migrationService.ts",
+        "ToonNotes_Expo/services/syncService.ts",
+        "ToonNotes_Expo/stores/authStore.ts",
+        "ToonNotes_Expo/stores/boardStore.ts",
+        "ToonNotes_Expo/stores/designStore.ts",
+        "ToonNotes_Expo/stores/index.ts",
+        "ToonNotes_Expo/stores/labelStore.ts",
+        "ToonNotes_Expo/stores/noteStore.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "b8bb6b59",
+      "type": "other",
+      "scope": null,
+      "message": "production readiness check",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-07 11:54:45 -0800",
+      "files_changed": 1,
+      "insertions": 699,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/docs/MANUAL-TEST-SCENARIOS.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "4188aee1",
+      "type": "docs",
+      "scope": null,
+      "message": "Add production readiness report and fix test mocks",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-07 11:53:19 -0800",
+      "files_changed": 3,
+      "insertions": 319,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/__tests__/services/syncService.test.ts",
+        "ToonNotes_Expo/docs/PRODUCTION-READINESS-REPORT.md",
+        "ToonNotes_Expo/jest.setup.js"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "6b7952d0",
+      "type": "docs",
+      "scope": null,
+      "message": "Update CLAUDE.md to match actual implementation",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 23:18:17 -0800",
+      "files_changed": 1,
+      "insertions": 206,
+      "deletions": 51,
+      "files": [
+        "ToonNotes_Expo/CLAUDE.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "495dd29e",
+      "type": "fix",
+      "scope": null,
+      "message": "Consolidate 4 sticker API endpoints into 1 (Vercel function limit)",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 11:15:38 -0800",
+      "files_changed": 6,
+      "insertions": 124,
+      "deletions": 540,
+      "files": [
+        "ToonNotes_Expo/api/generate-image-sticker.ts",
+        "ToonNotes_Expo/api/generate-sticker.ts",
+        "ToonNotes_Expo/api/generate-themed-sticker.ts",
+        "ToonNotes_Expo/api/remove-background.ts",
+        "ToonNotes_Expo/services/geminiService.ts",
+        "firebase-debug.log"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "297eee30",
+      "type": "other",
+      "scope": null,
+      "message": "trigger deploy",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 11:02:32 -0800",
+      "files_changed": 0,
+      "insertions": 0,
+      "deletions": 0,
+      "files": [],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "d9f860ca",
+      "type": "other",
+      "scope": null,
+      "message": "trigger deploy",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 11:00:58 -0800",
+      "files_changed": 0,
+      "insertions": 0,
+      "deletions": 0,
+      "files": [],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "0e4f25b7",
+      "type": "other",
+      "scope": null,
+      "message": "trigger deploy",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 10:56:41 -0800",
+      "files_changed": 0,
+      "insertions": 0,
+      "deletions": 0,
+      "files": [],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "12a14e99",
+      "type": "other",
+      "scope": null,
+      "message": "marketing update & delete account & privacy policy update",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 10:46:06 -0800",
+      "files_changed": 84,
+      "insertions": 19825,
+      "deletions": 10,
+      "files": [
+        ".DS_Store",
+        ".claude/settings.json",
+        ".claude/skills/aso-optimizer/SKILL.md",
+        ".claude/skills/batch-comps/SKILL.md",
+        ".claude/skills/batch-format-fit/SKILL.md",
+        ".claude/skills/batch-intelligence/SKILL.md",
+        ".claude/skills/content-research-writer/skills.md",
+        ".claude/skills/cost-report/SKILL.md",
+        ".claude/skills/deploy-functions/SKILL.md",
+        ".claude/skills/deploy-staging/SKILL.md",
+        ".claude/skills/health-check/SKILL.md",
+        ".claude/skills/lead-research-assistant/skills.md",
+        ".claude/skills/marketing-assets/SKILL.md",
+        ".claude/skills/marketing-campaign/SKILL.md",
+        ".claude/skills/marketing-copy/SKILL.md",
+        ".claude/skills/marketing-report/SKILL.md",
+        ".claude/skills/pr-production/SKILL.md",
+        ".claude/skills/regenerate-embeddings/SKILL.md",
+        ".claude/skills/safe-migrate/SKILL.md",
+        ".claude/skills/skill-creator/LICENSE.txt",
+        ".claude/skills/skill-creator/SKILL.md",
+        ".claude/skills/skill-creator/scripts/init_skill.py",
+        ".claude/skills/skill-creator/scripts/package_skill.py",
+        ".claude/skills/skill-creator/scripts/quick_validate.py",
+        ".claude/skills/social-scheduler/SKILL.md",
+        ".claude/skills/stripe-integration/skills.md",
+        ".claude/skills/sync-versions/SKILL.md",
+        ".claude/skills/test-e2e/SKILL.md",
+        ".claude/skills/test-e2e/templates/auth.template.ts",
+        ".claude/skills/title-intelligence/SKILL.md",
+        ".claude/skills/title-pipeline/SKILL.md",
+        ".playwright-mcp/magic-link-sent.png",
+        ".playwright-mcp/marketing-login-error.png",
+        ".playwright-mcp/marketing-login.png",
+        ".playwright-mcp/waiting-for-magic-link.png",
+        "CLAUDE.md",
+        "ToonNotes_Expo/app/(tabs)/settings.tsx",
+        "ToonNotes_Expo/supabase/migrations/20260106_create_account_deletion_requests.sql",
+        "ToonNotes_Native/.DS_Store",
+        "ToonNotes_Native/ToonNotes/ToonNotes.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "ToonNotes_Native/ToonNotes/ToonNotes.xcodeproj/project.xcworkspace/xcuserdata/sungholee.xcuserdatad/UserInterfaceState.xcuserstate",
+        "ToonNotes_Web/app/(marketing)/delete-account/actions.ts",
+        "ToonNotes_Web/app/(marketing)/delete-account/page.tsx",
+        "ToonNotes_Web/app/(marketing)/privacy/page.tsx",
+        "firebase-debug.log",
+        "marketing/README.md",
+        "marketing/analytics/.gitkeep",
+        "marketing/assets/brand/.gitkeep",
+        "marketing/assets/screenshots/.gitkeep",
+        "marketing/assets/social/.gitkeep",
+        "marketing/audiences/aesthetic-creators.yaml",
+        "marketing/audiences/prolific-procrastinator.yaml",
+        "marketing/audiences/webtoon-fans.yaml",
+        "marketing/campaigns/active/.gitkeep",
+        "marketing/campaigns/active/pro-launch/campaign.yaml",
+        "marketing/campaigns/active/pro-launch/copy.md",
+        "marketing/campaigns/archive/.gitkeep",
+        "marketing/campaigns/templates/feature-launch.yaml",
+        "marketing/campaigns/templates/seasonal.yaml",
+        "marketing/copy/app-store/.gitkeep",
+        "marketing/copy/app-store/android.md",
+        "marketing/copy/app-store/ios.md",
+        "marketing/copy/email/.gitkeep",
+        "marketing/copy/email/feature-announcement.md",
+        "marketing/copy/email/welcome-sequence.md",
+        "marketing/copy/landing/hero.md",
+        "marketing/copy/social/.gitkeep",
+        "marketing/copy/social/instagram-templates.md",
+        "marketing/copy/social/reddit-templates.md",
+        "marketing/copy/social/tiktok-templates.md",
+        "marketing/copy/social/twitter-templates.md",
+        "marketing/messaging.md",
+        "marketing/product/features/_index.yaml",
+        "marketing/product/features/ai-design.yaml",
+        "marketing/product/features/pro-subscription.yaml",
+        "marketing/product/features/sharing.yaml",
+        "marketing/product/manifest.yaml",
+        "marketing/product/platforms/android.yaml",
+        "marketing/product/platforms/ios.yaml",
+        "marketing/product/platforms/web.yaml",
+        "marketing/product/releases/v1.0.0/release-notes.md",
+        "marketing/product/releases/v1.1.0/release-notes.md",
+        "marketing/product/releases/v1.1.1/release-notes.md",
+        "marketing/strategy.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "d900a1bb",
+      "type": "docs",
+      "scope": null,
+      "message": "Update privacy policy for accuracy",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-06 10:31:23 -0800",
+      "files_changed": 1,
+      "insertions": 46,
+      "deletions": 9,
+      "files": [
+        "ToonNotes_Expo/PRIVACY_POLICY.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "939169e1",
+      "type": "other",
+      "scope": null,
+      "message": "messaging update",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-05 21:24:37 -0800",
+      "files_changed": 23,
+      "insertions": 229,
+      "deletions": 145,
+      "files": [
+        "ToonNotes_Web/.playwright-mcp/homepage-font-check.png",
+        "ToonNotes_Web/.playwright-mcp/homepage-mobile-clean.png",
+        "ToonNotes_Web/.playwright-mcp/homepage-mobile-final.png",
+        "ToonNotes_Web/.playwright-mcp/homepage-mobile-no-hamburger.png",
+        "ToonNotes_Web/.playwright-mcp/homepage-mobile.png",
+        "ToonNotes_Web/.playwright-mcp/lighthouse-after-fix.png",
+        "ToonNotes_Web/.playwright-mcp/lighthouse-audit-desktop.png",
+        "ToonNotes_Web/.playwright-mcp/lighthouse-audit-mobile.png",
+        "ToonNotes_Web/.playwright-mcp/mobile-homepage.png",
+        "ToonNotes_Web/.playwright-mcp/pain-points-font-check.png",
+        "ToonNotes_Web/app/(marketing)/layout.tsx",
+        "ToonNotes_Web/app/globals.css",
+        "ToonNotes_Web/app/layout.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/layout.tsx",
+        "ToonNotes_Web/components/marketing/AdminHeader.tsx",
+        "ToonNotes_Web/components/marketing/AdminNav.tsx",
+        "ToonNotes_Web/components/marketing/DashboardLayout.tsx",
+        "ToonNotes_Web/components/marketing/Features.tsx",
+        "ToonNotes_Web/components/marketing/FileViewer.tsx",
+        "ToonNotes_Web/components/marketing/FinalCTA.tsx",
+        "ToonNotes_Web/components/marketing/Hero.tsx",
+        "ToonNotes_Web/components/marketing/PainPoints.tsx",
+        "ToonNotes_Web/components/marketing/TwoPillars.tsx"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "bdea0900",
+      "type": "other",
+      "scope": null,
+      "message": "for ver 1.2.1",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-05 20:52:09 -0800",
+      "files_changed": 35,
+      "insertions": 2193,
+      "deletions": 40,
+      "files": [
+        "ToonNotes_Expo/.playwright-mcp/auth-test-1.png",
+        "ToonNotes_Expo/.playwright-mcp/homepage-redesign-desktop.png",
+        "ToonNotes_Expo/.playwright-mcp/homepage-redesign-full.png",
+        "ToonNotes_Expo/app.json",
+        "ToonNotes_Expo/app/(tabs)/settings.tsx",
+        "ToonNotes_Expo/app/_layout.tsx",
+        "ToonNotes_Expo/components/shop/CoinShop.tsx",
+        "ToonNotes_Expo/components/shop/ProSubscriptionCard.tsx",
+        "ToonNotes_Expo/constants/products.ts",
+        "ToonNotes_Expo/docs/CLOUD-BACKUP-STRATEGY.md",
+        "ToonNotes_Expo/docs/privacy-policy.md",
+        "ToonNotes_Expo/docs/terms-of-service.md",
+        "ToonNotes_Expo/package.json",
+        "ToonNotes_Expo/promo-screenshots/01-initial.png",
+        "ToonNotes_Expo/promo-screenshots/02-current.png",
+        "ToonNotes_Expo/promo-screenshots/03-settings.png",
+        "ToonNotes_Expo/promo-screenshots/04-after-click.png",
+        "ToonNotes_Expo/promo-screenshots/05-settings.png",
+        "ToonNotes_Expo/services/purchaseService.ts",
+        "ToonNotes_Expo/services/subscriptionService.ts",
+        "ToonNotes_Expo/services/syncService.ts",
+        "ToonNotes_Expo/stores/authStore.ts",
+        "ToonNotes_Expo/stores/noteStore.ts",
+        "ToonNotes_Expo/stores/userStore.ts",
+        "ToonNotes_Expo/supabase/.temp/cli-latest",
+        "ToonNotes_Expo/supabase/.temp/gotrue-version",
+        "ToonNotes_Expo/supabase/.temp/pooler-url",
+        "ToonNotes_Expo/supabase/.temp/postgres-version",
+        "ToonNotes_Expo/supabase/.temp/project-ref",
+        "ToonNotes_Expo/supabase/.temp/rest-version",
+        "ToonNotes_Expo/supabase/.temp/storage-migration",
+        "ToonNotes_Expo/supabase/.temp/storage-version",
+        "ToonNotes_Expo/supabase/migrations/20260106_add_subscription_fields.sql",
+        "ToonNotes_Expo/supabase/seed/promo-data.sql",
+        "ToonNotes_Expo/types/index.ts"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "06bb1a65",
+      "type": "docs",
+      "scope": null,
+      "message": "Add multi-platform architecture plan",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-05 19:18:53 -0800",
+      "files_changed": 1,
+      "insertions": 409,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/docs/MULTI-PLATFORM-ARCHITECTURE.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "7dd96174",
+      "type": "docs",
+      "scope": null,
+      "message": "Remove usage limits and mega pack from monetization strategy",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-05 19:11:12 -0800",
+      "files_changed": 1,
+      "insertions": 176,
+      "deletions": 211,
+      "files": [
+        "ToonNotes_Expo/docs/MONETIZATION-STRATEGY.md"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "d7234deb",
+      "type": "fix",
+      "scope": "web",
+      "message": "Handle all Date fields from YAML parsing in products page",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-04 23:19:26 -0800",
+      "files_changed": 1,
+      "insertions": 11,
+      "deletions": 3,
+      "files": [
+        "ToonNotes_Web/app/marketing/(dashboard)/products/page.tsx"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "5aa959f9",
+      "type": "fix",
+      "scope": "web",
+      "message": "Handle Date object from YAML parsing in products page",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-04 23:13:49 -0800",
+      "files_changed": 1,
+      "insertions": 4,
+      "deletions": 2,
+      "files": [
+        "ToonNotes_Web/app/marketing/(dashboard)/products/page.tsx"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "a2d0373a",
+      "type": "feat",
+      "scope": "web",
+      "message": "Add ToonNotes_Web with static generation for marketing pages",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-04 22:46:03 -0800",
+      "files_changed": 56,
+      "insertions": 13590,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Web/.env.example",
+        "ToonNotes_Web/.gitignore",
+        "ToonNotes_Web/.playwright-mcp/staging-performance-test.png",
+        "ToonNotes_Web/CLAUDE.md",
+        "ToonNotes_Web/HOMEPAGE_REDESIGN_PLAN.md",
+        "ToonNotes_Web/app/(marketing)/layout.tsx",
+        "ToonNotes_Web/app/(marketing)/page.tsx",
+        "ToonNotes_Web/app/(marketing)/privacy/page.tsx",
+        "ToonNotes_Web/app/(marketing)/terms/page.tsx",
+        "ToonNotes_Web/app/api/og/route.tsx",
+        "ToonNotes_Web/app/globals.css",
+        "ToonNotes_Web/app/layout.tsx",
+        "ToonNotes_Web/app/marketing/(auth)/auth/callback/route.ts",
+        "ToonNotes_Web/app/marketing/(auth)/login/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/campaigns/[slug]/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/campaigns/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/copy/[...path]/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/copy/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/docs/[...path]/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/docs/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/features/[slug]/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/features/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/layout.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/messaging/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/products/[version]/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/products/page.tsx",
+        "ToonNotes_Web/app/marketing/(dashboard)/strategy/page.tsx",
+        "ToonNotes_Web/app/not-found.tsx",
+        "ToonNotes_Web/app/note/[shareToken]/loading.tsx",
+        "ToonNotes_Web/app/note/[shareToken]/not-found.tsx",
+        "ToonNotes_Web/app/note/[shareToken]/page.tsx",
+        "ToonNotes_Web/components/marketing/AdminHeader.tsx",
+        "ToonNotes_Web/components/marketing/AdminNav.tsx",
+        "ToonNotes_Web/components/marketing/Features.tsx",
+        "ToonNotes_Web/components/marketing/FileViewer.tsx",
+        "ToonNotes_Web/components/marketing/FinalCTA.tsx",
+        "ToonNotes_Web/components/marketing/Hero.tsx",
+        "ToonNotes_Web/components/marketing/PainPoints.tsx",
+        "ToonNotes_Web/components/marketing/StrategyTabs.tsx",
+        "ToonNotes_Web/components/marketing/TwoPillars.tsx",
+        "ToonNotes_Web/components/marketing/index.ts",
+        "ToonNotes_Web/components/notes/SharedNoteCard.tsx",
+        "ToonNotes_Web/eslint.config.mjs",
+        "ToonNotes_Web/lib/design-engine/composeStyle.ts",
+        "ToonNotes_Web/lib/design-engine/types.ts",
+        "ToonNotes_Web/lib/marketing/files.ts",
+        "ToonNotes_Web/lib/marketing/types.ts",
+        "ToonNotes_Web/lib/supabase/client.ts",
+        "ToonNotes_Web/lib/supabase/server.ts",
+        "ToonNotes_Web/middleware.ts",
+        "ToonNotes_Web/next.config.ts",
+        "ToonNotes_Web/package-lock.json",
+        "ToonNotes_Web/package.json",
+        "ToonNotes_Web/postcss.config.mjs",
+        "ToonNotes_Web/tsconfig.json"
+      ],
+      "category": "feature",
+      "marketing_potential": "high"
+    },
+    {
+      "hash": "9d2c4159",
+      "type": "chore",
+      "scope": null,
+      "message": "Configure EAS submit and bump iOS build number",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-04 03:10:46 -0800",
+      "files_changed": 2,
+      "insertions": 8,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/app.json",
+        "ToonNotes_Expo/eas.json"
+      ],
+      "category": "technical",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "65419bac",
+      "type": "feat",
+      "scope": null,
+      "message": "Add admin users migration for Supabase",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-04 00:43:16 -0800",
+      "files_changed": 1,
+      "insertions": 76,
+      "deletions": 0,
+      "files": [
+        "ToonNotes_Expo/supabase/migrations/20260104_create_admin_users.sql"
+      ],
+      "category": "feature",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "7b4fc871",
+      "type": "feat",
+      "scope": null,
+      "message": "Add Firebase analytics, share service, and cloud backup strategy",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-04 00:42:50 -0800",
+      "files_changed": 22,
+      "insertions": 3480,
+      "deletions": 571,
+      "files": [
+        "ToonNotes_Expo/GoogleService-Info.plist",
+        "ToonNotes_Expo/__tests__/stores/userStore.test.ts",
+        "ToonNotes_Expo/app.json",
+        "ToonNotes_Expo/app/(tabs)/settings.tsx",
+        "ToonNotes_Expo/app/_layout.tsx",
+        "ToonNotes_Expo/components/ErrorBoundary.tsx",
+        "ToonNotes_Expo/components/shop/CoinShop.tsx",
+        "ToonNotes_Expo/docs/ANALYTICS-IMPLEMENTATION.md",
+        "ToonNotes_Expo/docs/CLOUD-BACKUP-STRATEGY.md",
+        "ToonNotes_Expo/docs/MONETIZATION-STRATEGY.md",
+        "ToonNotes_Expo/google-services.json",
+        "ToonNotes_Expo/package-lock.json",
+        "ToonNotes_Expo/package.json",
+        "ToonNotes_Expo/services/firebaseAnalytics.ts",
+        "ToonNotes_Expo/services/geminiService.ts",
+        "ToonNotes_Expo/services/purchaseService.ts",
+        "ToonNotes_Expo/services/secureStorage.ts",
+        "ToonNotes_Expo/services/shareService.ts",
+        "ToonNotes_Expo/stores/authStore.ts",
+        "ToonNotes_Expo/stores/userStore.ts",
+        "ToonNotes_Expo/supabase/migrations/20260103_create_shared_notes.sql",
+        "ToonNotes_Expo/types/index.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "medium"
+    },
+    {
+      "hash": "39a5605c",
+      "type": "fix",
+      "scope": null,
+      "message": "Trigger auto-labeling on swipe-down modal dismissal",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-03 14:57:34 -0800",
+      "files_changed": 1,
+      "insertions": 131,
+      "deletions": 11,
+      "files": [
+        "ToonNotes_Expo/app/note/[id].tsx"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    },
+    {
+      "hash": "f69f65af",
+      "type": "feat",
+      "scope": null,
+      "message": "Implement freemium monetization with 3 free designs",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-02 17:36:44 -0800",
+      "files_changed": 9,
+      "insertions": 867,
+      "deletions": 113,
+      "files": [
+        "ToonNotes_Expo/__tests__/integration/designCreationFlow.test.ts",
+        "ToonNotes_Expo/__tests__/stores/userStore.test.ts",
+        "ToonNotes_Expo/app/(tabs)/settings.tsx",
+        "ToonNotes_Expo/app/design/create.tsx",
+        "ToonNotes_Expo/components/shop/UpgradeModal.tsx",
+        "ToonNotes_Expo/services/migrationService.ts",
+        "ToonNotes_Expo/stores/userStore.ts",
+        "ToonNotes_Expo/types/index.ts",
+        "ToonNotes_Expo/utils/analytics.ts"
+      ],
+      "category": "feature",
+      "marketing_potential": "medium"
+    },
+    {
+      "hash": "75a88b51",
+      "type": "fix",
+      "scope": null,
+      "message": "Resolve iOS build errors with React Native Firebase",
+      "author": "Sungho Lee",
+      "timestamp": "2026-01-02 17:30:36 -0800",
+      "files_changed": 1,
+      "insertions": 14,
+      "deletions": 2,
+      "files": [
+        "ToonNotes_Expo/app.json"
+      ],
+      "category": "bugfix",
+      "marketing_potential": "low"
+    }
+  ],
+  "changelog_entries": {
+    "features": [
+      {
+        "scope": "webapp",
+        "description": "Add bidirectional real-time sync with Supabase",
+        "commits": [
+          "40dd0881"
+        ]
+      },
+      {
+        "scope": "webapp",
+        "description": "Add board styling with preset picker",
+        "commits": [
+          "de96684b"
+        ]
+      },
+      {
+        "scope": "webapp",
+        "description": "Add label presets with auto-apply design",
+        "commits": [
+          "bde4956e"
+        ]
+      },
+      {
+        "scope": "webapp",
+        "description": "Add command palette with search",
+        "commits": [
+          "080755f6"
+        ]
+      },
+      {
+        "scope": "webapp",
+        "description": "Add keyboard shortcuts system",
+        "commits": [
+          "65356739"
+        ]
+      },
+      {
+        "scope": "webapp",
+        "description": "Add comprehensive test suite and fix sync issues",
+        "commits": [
+          "4d3fdd77"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add cross-platform web app foundation and monorepo migration plan",
+        "commits": [
+          "85f5dd2c"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add AI image generation quality assessment pipeline",
+        "commits": [
+          "50109bc9"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add early access promo page for waitlist and hypothesis validation",
+        "commits": [
+          "7125351b"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add beta testers admin page for managing Pro status",
+        "commits": [
+          "fcb9c35a"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add beta tester override for cloud sync",
+        "commits": [
+          "6bc6d903"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add full cloud sync for designs, boards, and labels",
+        "commits": [
+          "73be664b"
+        ]
+      },
+      {
+        "scope": "web",
+        "description": "Add ToonNotes_Web with static generation for marketing pages",
+        "commits": [
+          "a2d0373a"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add admin users migration for Supabase",
+        "commits": [
+          "65419bac"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add Firebase analytics, share service, and cloud backup strategy",
+        "commits": [
+          "7b4fc871"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Implement freemium monetization with 3 free designs",
+        "commits": [
+          "f69f65af"
+        ]
+      }
+    ],
+    "improvements": [],
+    "bugfixes": [
+      {
+        "scope": "webapp",
+        "description": "Fix hydration timing - data now loads on login",
+        "commits": [
+          "b6346ddc"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Update to pnpm 10.x for Vercel compatibility",
+        "commits": [
+          "e1e395c8"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Prevent double-trigger of label analysis on note close",
+        "commits": [
+          "d7c04a5c"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Use production API for label analysis in dev mode",
+        "commits": [
+          "e2a8d8c2"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Handle AuthSessionMissingError gracefully on sign-out",
+        "commits": [
+          "2d77ed19"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Consolidate 4 sticker API endpoints into 1 (Vercel function limit)",
+        "commits": [
+          "495dd29e"
+        ]
+      },
+      {
+        "scope": "web",
+        "description": "Handle all Date fields from YAML parsing in products page",
+        "commits": [
+          "d7234deb"
+        ]
+      },
+      {
+        "scope": "web",
+        "description": "Handle Date object from YAML parsing in products page",
+        "commits": [
+          "5aa959f9"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Trigger auto-labeling on swipe-down modal dismissal",
+        "commits": [
+          "39a5605c"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Resolve iOS build errors with React Native Firebase",
+        "commits": [
+          "75a88b51"
+        ]
+      }
+    ],
+    "technical": [
+      {
+        "scope": "webapp",
+        "description": "Add PRD.md for webapp development",
+        "commits": [
+          "e2c8d82f"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Trigger Vercel redeploy with pnpm 10.x fix",
+        "commits": [
+          "e088f725"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Migrate to pnpm + Turborepo monorepo structure",
+        "commits": [
+          "2be85255"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add competitor analysis to onboarding profiling plan",
+        "commits": [
+          "1365a36a"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Bump iOS build number to 11 for TestFlight",
+        "commits": [
+          "4fce4019"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "production readiness check",
+        "commits": [
+          "b8bb6b59"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add production readiness report and fix test mocks",
+        "commits": [
+          "4188aee1"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Update CLAUDE.md to match actual implementation",
+        "commits": [
+          "6b7952d0"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "trigger deploy",
+        "commits": [
+          "297eee30"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "trigger deploy",
+        "commits": [
+          "d9f860ca"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "trigger deploy",
+        "commits": [
+          "0e4f25b7"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "marketing update & delete account & privacy policy update",
+        "commits": [
+          "12a14e99"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Update privacy policy for accuracy",
+        "commits": [
+          "d900a1bb"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "messaging update",
+        "commits": [
+          "939169e1"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "for ver 1.2.1",
+        "commits": [
+          "bdea0900"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Add multi-platform architecture plan",
+        "commits": [
+          "06bb1a65"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Remove usage limits and mega pack from monetization strategy",
+        "commits": [
+          "7dd96174"
+        ]
+      },
+      {
+        "scope": null,
+        "description": "Configure EAS submit and bump iOS build number",
+        "commits": [
+          "9d2c4159"
+        ]
+      }
+    ]
+  }
+}

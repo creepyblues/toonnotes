@@ -103,7 +103,7 @@ Download ToonNotes. Let AI handle the organization.
 CONNECT WITH US
 
 Questions or feedback? We'd love to hear from you.
-Email: support@toonnotes.app
+Email: support@toonnotes.com
 ```
 *Characters: ~2,200/4,000*
 

@@ -520,6 +520,96 @@ describe('NoteStore', () => {
     });
   });
 
+  describe('Editor Mode Operations', () => {
+    it('should add a new note with default editorMode (plain)', () => {
+      const store = useNoteStore.getState();
+
+      const newNote = store.addNote({
+        title: 'Test Note',
+        content: 'Test content',
+        labels: [],
+        color: NoteColor.White,
+        isPinned: false,
+        isArchived: false,
+        isDeleted: false,
+      });
+
+      // Default editorMode should be undefined or 'plain'
+      expect(newNote.editorMode === undefined || newNote.editorMode === 'plain').toBe(true);
+    });
+
+    it('should add a new note with specified editorMode', () => {
+      const store = useNoteStore.getState();
+
+      const checklistNote = store.addNote({
+        title: 'Checklist Note',
+        content: '',
+        labels: [],
+        color: NoteColor.White,
+        isPinned: false,
+        isArchived: false,
+        isDeleted: false,
+        editorMode: 'checklist',
+      });
+
+      expect(checklistNote.editorMode).toBe('checklist');
+
+      const bulletNote = store.addNote({
+        title: 'Bullet Note',
+        content: '',
+        labels: [],
+        color: NoteColor.White,
+        isPinned: false,
+        isArchived: false,
+        isDeleted: false,
+        editorMode: 'bullet',
+      });
+
+      expect(bulletNote.editorMode).toBe('bullet');
+    });
+
+    it('should update editorMode on existing note', () => {
+      const store = useNoteStore.getState();
+
+      const note = store.addNote({
+        title: 'Test Note',
+        content: '',
+        labels: [],
+        color: NoteColor.White,
+        isPinned: false,
+        isArchived: false,
+        isDeleted: false,
+        editorMode: 'plain',
+      });
+
+      useNoteStore.getState().updateNote(note.id, { editorMode: 'checklist' });
+
+      const updatedNote = useNoteStore.getState().getNoteById(note.id);
+      expect(updatedNote?.editorMode).toBe('checklist');
+    });
+
+    it('should preserve editorMode when updating other fields', () => {
+      const store = useNoteStore.getState();
+
+      const note = store.addNote({
+        title: 'Test Note',
+        content: '',
+        labels: [],
+        color: NoteColor.White,
+        isPinned: false,
+        isArchived: false,
+        isDeleted: false,
+        editorMode: 'bullet',
+      });
+
+      useNoteStore.getState().updateNote(note.id, { title: 'Updated Title' });
+
+      const updatedNote = useNoteStore.getState().getNoteById(note.id);
+      expect(updatedNote?.editorMode).toBe('bullet');
+      expect(updatedNote?.title).toBe('Updated Title');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle operations on non-existent notes gracefully', () => {
       // These should not throw

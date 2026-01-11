@@ -1,0 +1,46 @@
+# Feature Brief Registry
+# Tracks generated feature briefs for marketing automation
+# Reference this when creating campaigns to find related briefs
+
+# Directory structure:
+# marketing/product/briefs/
+# ├── _index.yaml                  # This file
+# ├── templates/
+# │   └── feature-brief.md         # Template for generated briefs
+# └── generated/
+#     └── YYYY-MM-DD-feature-slug.md
+
+# Brief statuses:
+# - draft: Newly generated, needs review
+# - review: Under marketing review
+# - approved: Ready for campaign use
+# - archived: Used in completed campaign
+
+briefs: []
+# Example entry (populated by feature-launcher):
+# - id: feat-001
+#   name: "Real-time Sync"
+#   slug: "real-time-sync"
+#   file: "generated/2026-01-10-real-time-sync.md"
+#   status: draft
+#   generated_date: 2026-01-10
+#   pillar: ai-organization
+#   campaign: null  # or: "sync-launch"
+#   commits: ["40dd0881", "de96684b"]
+
+# Stats (updated by scripts):
+stats:
+  total: 0
+  by_status:
+    draft: 0
+    review: 0
+    approved: 0
+    archived: 0
+  by_pillar:
+    ai-organization: 0
+    ai-design: 0
+    both: 0
+    general: 0
+
+# Last updated
+last_updated: null
