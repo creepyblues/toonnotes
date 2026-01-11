@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PushPin, Archive, Trash } from '@phosphor-icons/react';
 import { Note } from '@toonnotes/types';
-import { cn, stripHtml } from '@/lib/utils';
+import { cn, formatPreview } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { LabelPill } from '@/components/labels';
 
@@ -70,7 +70,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
               isGrid ? 'text-sm line-clamp-4' : 'text-xs line-clamp-2 mt-1'
             )}
           >
-            {stripHtml(note.content) || 'No content'}
+            {formatPreview(note.content) || 'No content'}
           </p>
 
           {/* Labels */}

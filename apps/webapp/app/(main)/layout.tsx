@@ -10,6 +10,7 @@ interface DbNote {
   content: string;
   labels: string[];
   color: string;
+  editor_mode?: string;
   design_id?: string;
   active_design_label_id?: string;
   is_pinned: boolean;
@@ -54,6 +55,7 @@ function dbNoteToNote(dbNote: DbNote): Note {
     content: dbNote.content,
     labels: dbNote.labels || [],
     color: (dbNote.color as NoteColor) || NoteColor.White,
+    editorMode: dbNote.editor_mode as Note['editorMode'],
     designId: dbNote.design_id,
     activeDesignLabelId: dbNote.active_design_label_id,
     isPinned: dbNote.is_pinned,

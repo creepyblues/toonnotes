@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Hash } from '@phosphor-icons/react';
 import { Note } from '@toonnotes/types';
 import { useBoardStore } from '@/stores';
-import { cn } from '@/lib/utils';
+import { cn, formatPreview } from '@/lib/utils';
 
 interface BoardCardProps {
   hashtag: string;
@@ -24,6 +24,33 @@ export function BoardCard({ hashtag, notes }: BoardCardProps) {
       className="block group"
     >
       <article className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+        {/* Header */}
+        <div className="p-3 bg-white dark:bg-gray-900">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: preset.colors.accent }}
+            />
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {hashtag}
+            </h3>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {noteCount} note{noteCount !== 1 ? 's' : ''}
+            </p>
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full"
+              style={{
+                backgroundColor: preset.colors.badge,
+                color: preset.colors.badgeText,
+              }}
+            >
+              {preset.name}
+            </span>
+          </div>
+        </div>
+
         {/* Preview grid with preset background */}
         <div
           className="aspect-[4/3] relative overflow-hidden"
@@ -57,8 +84,8 @@ export function BoardCard({ hashtag, notes }: BoardCardProps) {
                     >
                       {note.title || 'Untitled'}
                     </p>
-                    <p className="text-[8px] text-gray-600 line-clamp-2 mt-1">
-                      {note.content?.replace(/<[^>]*>/g, '') || ''}
+                    <p className="text-[8px] text-gray-600 line-clamp-2 mt-1 whitespace-pre-line">
+                      {formatPreview(note.content) || ''}
                     </p>
                   </div>
                 </div>
@@ -77,33 +104,6 @@ export function BoardCard({ hashtag, notes }: BoardCardProps) {
               <Hash size={48} style={{ color: preset.colors.accent }} className="opacity-50" />
             </div>
           )}
-        </div>
-
-        {/* Info */}
-        <div className="p-3 bg-white dark:bg-gray-900">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{ backgroundColor: preset.colors.accent }}
-            />
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-              {hashtag}
-            </h3>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {noteCount} note{noteCount !== 1 ? 's' : ''}
-            </p>
-            <span
-              className="text-[10px] px-2 py-0.5 rounded-full"
-              style={{
-                backgroundColor: preset.colors.badge,
-                color: preset.colors.badgeText,
-              }}
-            >
-              {preset.name}
-            </span>
-          </div>
         </div>
       </article>
     </Link>

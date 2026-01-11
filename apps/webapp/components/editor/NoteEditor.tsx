@@ -28,7 +28,7 @@ import {
 import { LabelPill, LabelPicker } from '@/components/labels';
 import { Note, NoteColor, EditorMode } from '@toonnotes/types';
 import { useNoteStore } from '@/stores';
-import { cn, textToHtml } from '@/lib/utils';
+import { cn, textToHtml, htmlToPlainText } from '@/lib/utils';
 
 interface NoteEditorProps {
   noteId: string;
@@ -78,12 +78,12 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
       StarterKit.configure({
         bulletList: {
           HTMLAttributes: {
-            class: 'list-disc list-inside',
+            class: 'list-disc',
           },
         },
         orderedList: {
           HTMLAttributes: {
-            class: 'list-decimal list-inside',
+            class: 'list-decimal',
           },
         },
       }),
@@ -135,9 +135,11 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
     if (!hasChanges) return;
 
     saveTimeoutRef.current = setTimeout(() => {
+      // Convert HTML to plain text for cross-platform consistency
+      const plainTextContent = htmlToPlainText(currentContent);
       updateNote(noteId, {
         title,
-        content: currentContent,
+        content: plainTextContent,
         color,
       });
       lastSavedRef.current = { title, content: currentContent };

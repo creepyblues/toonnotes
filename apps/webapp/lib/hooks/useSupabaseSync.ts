@@ -35,6 +35,7 @@ function noteToDbNote(note: Note, userId: string) {
     content: note.content,
     labels: note.labels,
     color: note.color,
+    editor_mode: note.editorMode || 'plain',
     design_id: note.designId || null,
     active_design_label_id: note.activeDesignLabelId || null,
     is_pinned: note.isPinned,
