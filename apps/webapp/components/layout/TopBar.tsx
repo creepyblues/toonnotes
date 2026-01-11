@@ -8,10 +8,16 @@ import {
   List,
   SquaresFour,
   Command,
+  CloudArrowUp,
+  CloudCheck,
+  CloudSlash,
+  CloudX,
+  ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { useUIStore, useNoteStore } from '@/stores';
 import { cn } from '@/lib/utils';
 import { NoteColor } from '@toonnotes/types';
+import type { SyncStatus } from '@/stores/uiStore';
 
 interface TopBarProps {
   title?: string;
@@ -34,6 +40,9 @@ export function TopBar({
   const searchQuery = useUIStore((state) => state.searchQuery);
   const setSearchQuery = useUIStore((state) => state.setSearchQuery);
   const openCommandPalette = useUIStore((state) => state.openCommandPalette);
+  const syncStatus = useUIStore((state) => state.syncStatus);
+  const isRealtimeConnected = useUIStore((state) => state.isRealtimeConnected);
+  const lastSyncedAt = useUIStore((state) => state.lastSyncedAt);
 
   const addNote = useNoteStore((state) => state.addNote);
 
@@ -110,6 +119,13 @@ export function TopBar({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
+        {/* Sync Status Indicator */}
+        <SyncStatusIndicator
+          status={syncStatus}
+          isConnected={isRealtimeConnected}
+          lastSyncedAt={lastSyncedAt}
+        />
+
         {/* View Toggle */}
         {showViewToggle && (
           <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -158,4 +174,90 @@ export function TopBar({
       </div>
     </header>
   );
+}
+
+// Sync Status Indicator Component
+interface SyncStatusIndicatorProps {
+  status: SyncStatus;
+  isConnected: boolean;
+  lastSyncedAt: number | null;
+}
+
+function SyncStatusIndicator({ status, isConnected, lastSyncedAt }: SyncStatusIndicatorProps) {
+  const getStatusConfig = () => {
+    if (!isConnected) {
+      return {
+        icon: <CloudSlash size={16} weight="fill" />,
+        color: 'text-gray-400',
+        label: 'Offline',
+      };
+    }
+
+    switch (status) {
+      case 'syncing':
+        return {
+          icon: <ArrowsClockwise size={16} className="animate-spin" />,
+          color: 'text-blue-500',
+          label: 'Syncing...',
+        };
+      case 'synced':
+        return {
+          icon: <CloudCheck size={16} weight="fill" />,
+          color: 'text-green-500',
+          label: lastSyncedAt ? `Synced ${formatTimeAgo(lastSyncedAt)}` : 'Synced',
+        };
+      case 'error':
+        return {
+          icon: <CloudX size={16} weight="fill" />,
+          color: 'text-red-500',
+          label: 'Sync error',
+        };
+      case 'offline':
+        return {
+          icon: <CloudSlash size={16} weight="fill" />,
+          color: 'text-gray-400',
+          label: 'Offline',
+        };
+      default:
+        return {
+          icon: <CloudArrowUp size={16} />,
+          color: 'text-gray-400',
+          label: 'Ready to sync',
+        };
+    }
+  };
+
+  const config = getStatusConfig();
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-1.5 px-2 py-1 rounded-md',
+        'text-xs font-medium transition-colors',
+        config.color
+      )}
+      title={config.label}
+      aria-label={config.label}
+    >
+      {config.icon}
+      <span className="hidden sm:inline">{config.label}</span>
+    </div>
+  );
+}
+
+// Format time ago helper
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }

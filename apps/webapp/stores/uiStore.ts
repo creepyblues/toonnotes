@@ -5,6 +5,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 type ViewMode = 'grid' | 'list';
 
+// Sync status types
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'offline';
+
 interface UIState {
   // Sidebar
   sidebarCollapsed: boolean;
@@ -43,6 +46,16 @@ interface UIState {
   shortcutsModalOpen: boolean;
   setShortcutsModalOpen: (open: boolean) => void;
   toggleShortcutsModal: () => void;
+
+  // Sync status
+  syncStatus: SyncStatus;
+  setSyncStatus: (status: SyncStatus) => void;
+  lastSyncedAt: number | null;
+  setLastSyncedAt: (timestamp: number | null) => void;
+  syncError: string | null;
+  setSyncError: (error: string | null) => void;
+  isRealtimeConnected: boolean;
+  setRealtimeConnected: (connected: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -86,6 +99,16 @@ export const useUIStore = create<UIState>()(
       shortcutsModalOpen: false,
       setShortcutsModalOpen: (open) => set({ shortcutsModalOpen: open }),
       toggleShortcutsModal: () => set((state) => ({ shortcutsModalOpen: !state.shortcutsModalOpen })),
+
+      // Sync status
+      syncStatus: 'idle',
+      setSyncStatus: (status) => set({ syncStatus: status }),
+      lastSyncedAt: null,
+      setLastSyncedAt: (timestamp) => set({ lastSyncedAt: timestamp }),
+      syncError: null,
+      setSyncError: (error) => set({ syncError: error }),
+      isRealtimeConnected: false,
+      setRealtimeConnected: (connected) => set({ isRealtimeConnected: connected }),
     }),
     {
       name: 'toonnotes-ui',
