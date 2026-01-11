@@ -119,7 +119,7 @@ export const getPatternsByCategory = (category: PatternCategory): Pattern[] =>
   PATTERNS.filter((p) => p.category === category);
 
 // Category display names
-export const CATEGORY_LABELS: Record<PatternCategory, string> = {
+export const PATTERN_CATEGORY_LABELS: Record<PatternCategory, string> = {
   dots: 'Dots',
   lines: 'Lines',
   paper: 'Paper',
