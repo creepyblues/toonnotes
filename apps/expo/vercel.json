@@ -1,4 +1,7 @@
 {
+  "installCommand": "npm install @vercel/node @google/generative-ai sharp --legacy-peer-deps",
+  "buildCommand": "echo 'API functions only'",
+  "outputDirectory": "public",
   "functions": {
     "api/*.ts": {
       "maxDuration": 60,
