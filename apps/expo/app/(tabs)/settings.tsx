@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert, ActivityIndicator, ScrollView, Linking } from 'react-native';
+import React from 'react';
+import { View, Text, Alert, ScrollView, Linking, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -7,7 +7,6 @@ import {
   Archive,
   Coin,
   Info,
-  CaretRight,
   Palette,
   ArrowCounterClockwise,
   SignOut,
@@ -23,12 +22,13 @@ import { useUserStore, useNoteStore, useDesignStore } from '@/stores';
 import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/src/theme';
 import { CoinShop } from '@/components/shop/CoinShop';
+import { SettingsSection, SettingsRow } from '@/components/settings';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { purchaseService } from '@/services/purchaseService';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, semantic } = useTheme();
   const {
     settings,
     toggleDarkMode,
@@ -177,338 +177,203 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      'Reset Onboarding',
+      'This will show the welcome carousel and coach marks again on next app launch.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          onPress: () => {
+            resetOnboarding();
+            Alert.alert('Done', 'Onboarding reset. Restart the app to see the welcome screen again.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleAddCoins = () => {
+    addCoins(100);
+    Alert.alert('Success', 'Added 100 coins!');
+  };
+
+  // Render user avatar for profile section
+  const renderUserAvatar = () => {
+    if (authUser?.user_metadata?.avatar_url) {
+      return (
+        <Image
+          source={{ uri: authUser.user_metadata.avatar_url }}
+          style={styles.avatar}
+          contentFit="cover"
+        />
+      );
+    }
+    return (
+      <View style={[styles.avatarPlaceholder, { backgroundColor: `${colors.accent}20` }]}>
+        <User size={24} color={colors.accent} weight="regular" />
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: colors.backgroundSecondary }}
+      style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
-      <View
-        className="px-4 py-3"
-        style={{ backgroundColor: colors.backgroundSecondary }}
-      >
-        <Text
-          style={{
-            fontSize: 34,
-            fontWeight: '700',
-            color: colors.textPrimary,
-          }}
-        >
+      <View style={[styles.header, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
           Settings
         </Text>
       </View>
 
       {/* Settings List */}
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* User Profile Section (only if auth is enabled) */}
         {isAuthEnabled && authUser && (
-          <View className="mt-6">
-            <Text
-              className="text-xs uppercase tracking-wider px-2 mb-2"
-              style={{ color: colors.textSecondary }}
-            >
-              Profile
-            </Text>
-            <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-              {/* User Info */}
-              <View className="flex-row items-center px-4 py-4" style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}>
-                {authUser.user_metadata?.avatar_url ? (
-                  <Image
-                    source={{ uri: authUser.user_metadata.avatar_url }}
-                    style={{ width: 48, height: 48, borderRadius: 24 }}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-                    <User size={24} color={colors.accent} weight="regular" />
-                  </View>
-                )}
-                <View className="ml-3 flex-1">
-                  <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
-                    {authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'ToonNotes User'}
-                  </Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                    {authUser.email}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Sign Out */}
-              <TouchableOpacity
-                onPress={handleSignOut}
-                disabled={isAuthLoading}
-                className="flex-row items-center justify-between px-4 py-3"
-                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-              >
-                <View className="flex-row items-center">
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                    <SignOut size={20} color="#FF3B30" weight="regular" />
-                  </View>
-                  <Text className="ml-3" style={{ color: '#FF3B30', fontSize: 17 }}>Sign Out</Text>
-                </View>
-                {isAuthLoading && <ActivityIndicator size="small" color="#FF3B30" />}
-              </TouchableOpacity>
-
-              {/* Delete Account */}
-              <TouchableOpacity
-                onPress={handleDeleteAccount}
-                className="flex-row items-center justify-between px-4 py-3"
-                accessibilityLabel="Delete account"
-                accessibilityRole="button"
-                accessibilityHint="Opens web page to request account deletion"
-              >
-                <View className="flex-row items-center">
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                    <UserMinus size={20} color="#FF3B30" weight="regular" />
-                  </View>
-                  <Text className="ml-3" style={{ color: '#FF3B30', fontSize: 17 }}>Delete Account</Text>
-                </View>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <SettingsSection title="Profile">
+            {/* User Info Row - custom leftContent for avatar */}
+            <SettingsRow
+              icon={<User size={20} weight="regular" />}
+              iconColor={colors.accent}
+              leftContent={renderUserAvatar()}
+              label={authUser.user_metadata?.full_name || authUser.user_metadata?.name || 'ToonNotes User'}
+              subtitle={authUser.email}
+              accessory="none"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<SignOut size={20} weight="regular" />}
+              iconColor={semantic.error}
+              label="Sign Out"
+              onPress={handleSignOut}
+              isDestructive
+              isLoading={isAuthLoading}
+              accessory="none"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<UserMinus size={20} weight="regular" />}
+              iconColor={semantic.error}
+              label="Delete Account"
+              onPress={handleDeleteAccount}
+              isDestructive
+              accessory="chevron"
+            />
+          </SettingsSection>
         )}
 
         {/* Subscription Section */}
-        <View className="mt-6">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            Subscription
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            {isPro() ? (
-              <>
-                {/* Active Pro Status */}
-                <View
-                  className="px-4 py-4"
-                  style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-                >
-                  <View className="flex-row items-center mb-2">
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        backgroundColor: `${colors.accent}20`,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Crown size={20} color={colors.accent} weight="fill" />
-                    </View>
-                    <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
-                      ToonNotes Pro
-                    </Text>
-                    <View
-                      style={{
-                        marginLeft: 8,
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderRadius: 10,
-                        backgroundColor: colors.accent,
-                      }}
-                    >
-                      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>ACTIVE</Text>
-                    </View>
-                  </View>
-                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginLeft: 44 }}>
-                    {user.subscription.willRenew
-                      ? `Renews ${formatExpirationDate(user.subscription.expiresAt)}`
-                      : `Expires ${formatExpirationDate(user.subscription.expiresAt)}`}
-                  </Text>
-                </View>
-
-                {/* Pro Benefits */}
-                <View className="px-4 py-3" style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}>
-                  <View className="flex-row items-center">
-                    <Cloud size={16} color={colors.accent} weight="fill" />
-                    <Text className="ml-2" style={{ color: colors.textSecondary, fontSize: 14 }}>
-                      Cloud sync enabled
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Manage Subscription */}
-                <TouchableOpacity
-                  onPress={handleManageSubscription}
-                  className="flex-row items-center justify-between px-4 py-3"
-                  accessibilityLabel="Manage subscription"
-                  accessibilityRole="button"
-                >
-                  <Text style={{ color: colors.textSecondary, fontSize: 17 }}>Manage Subscription</Text>
-                  <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                {/* Non-Pro: Upgrade Prompt */}
-                <TouchableOpacity
-                  onPress={handleBuyCoins}
-                  className="flex-row items-center justify-between px-4 py-4"
-                  accessibilityLabel="Upgrade to ToonNotes Pro"
-                  accessibilityRole="button"
-                  accessibilityHint="Opens the shop to subscribe to Pro"
-                >
-                  <View className="flex-row items-center flex-1">
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        backgroundColor: `${colors.accent}20`,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Crown size={20} color={colors.accent} weight="regular" />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
-                        ToonNotes Pro
-                      </Text>
-                      <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
-                        Cloud sync + 100 coins/month
-                      </Text>
-                    </View>
-                  </View>
-                  <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Coins Section */}
-        <View className="mt-6">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            Economy
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            <TouchableOpacity
+        <SettingsSection title="Subscription" marginTop={isAuthEnabled && authUser ? 24 : 0}>
+          {isPro() ? (
+            <>
+              {/* Active Pro Status */}
+              <SettingsRow
+                icon={<Crown size={20} weight="fill" />}
+                iconColor={colors.accent}
+                label="ToonNotes Pro"
+                subtitle={user.subscription.willRenew
+                  ? `Renews ${formatExpirationDate(user.subscription.expiresAt)}`
+                  : `Expires ${formatExpirationDate(user.subscription.expiresAt)}`}
+                badge={{ text: 'ACTIVE', color: colors.accent }}
+                accessory="none"
+                showSeparator
+              />
+              {/* Pro Benefits */}
+              <View style={[styles.benefitRow, { borderBottomWidth: 0.5, borderBottomColor: colors.separator }]}>
+                <Cloud size={16} color={colors.accent} weight="fill" />
+                <Text style={[styles.benefitText, { color: colors.textSecondary }]}>
+                  Cloud sync enabled
+                </Text>
+              </View>
+              {/* Manage Subscription */}
+              <SettingsRow
+                icon={<Crown size={20} weight="regular" />}
+                iconColor={colors.textSecondary}
+                iconBackgroundColor="transparent"
+                label="Manage Subscription"
+                onPress={handleManageSubscription}
+                accessory="chevron"
+              />
+            </>
+          ) : (
+            /* Non-Pro: Upgrade Prompt */
+            <SettingsRow
+              icon={<Crown size={20} weight="regular" />}
+              iconColor={colors.accent}
+              label="ToonNotes Pro"
+              subtitle="Cloud sync + 100 coins/month"
               onPress={handleBuyCoins}
-              className="flex-row items-center justify-between px-4 py-3"
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(251, 191, 36, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Coin size={20} color="#FBBF24" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Coins</Text>
-              </View>
-              <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 17 }}>{user.coinBalance}</Text>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
+              accessory="chevron"
+            />
+          )}
+        </SettingsSection>
+
+        {/* Economy Section */}
+        <SettingsSection title="Economy">
+          <SettingsRow
+            icon={<Coin size={20} weight="regular" />}
+            iconColor="#FBBF24"
+            label="Coins"
+            value={user.coinBalance}
+            onPress={handleBuyCoins}
+            accessory="chevron"
+          />
+        </SettingsSection>
 
         {/* Appearance Section */}
-        <View className="mt-6">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            Appearance
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            <View className="flex-row items-center justify-between px-4 py-3">
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Moon size={20} color={colors.accent} weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Dark Mode</Text>
-              </View>
-              <Switch
-                value={settings.darkMode}
-                onValueChange={toggleDarkMode}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-          </View>
-        </View>
+        <SettingsSection title="Appearance">
+          <SettingsRow
+            icon={<Moon size={20} weight="regular" />}
+            iconColor={colors.accent}
+            label="Dark Mode"
+            accessory="switch"
+            switchValue={settings.darkMode}
+            onSwitchChange={toggleDarkMode}
+          />
+        </SettingsSection>
 
         {/* Notes Section */}
-        <View className="mt-6">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            Notes
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            <TouchableOpacity
-              onPress={handleViewArchive}
-              className="flex-row items-center justify-between px-4 py-3"
-              style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52, 199, 89, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Archive size={20} color="#34C759" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Archive</Text>
-              </View>
-              <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 17 }}>{archivedCount}</Text>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleViewTrash}
-              className="flex-row items-center justify-between px-4 py-3"
-            >
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Trash size={20} color="#FF3B30" weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Trash</Text>
-              </View>
-              <View className="flex-row items-center">
-                <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 17 }}>{deletedCount}</Text>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <SettingsSection title="Notes">
+          <SettingsRow
+            icon={<Archive size={20} weight="regular" />}
+            iconColor="#34C759"
+            label="Archive"
+            value={archivedCount}
+            onPress={handleViewArchive}
+            accessory="chevron"
+            showSeparator
+          />
+          <SettingsRow
+            icon={<Trash size={20} weight="regular" />}
+            iconColor={semantic.error}
+            label="Trash"
+            value={deletedCount}
+            onPress={handleViewTrash}
+            accessory="chevron"
+          />
+        </SettingsSection>
 
         {/* About Section */}
-        <View className="mt-6">
-          <Text
-            className="text-xs uppercase tracking-wider px-2 mb-2"
-            style={{ color: colors.textSecondary }}
-          >
-            About
-          </Text>
-          <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-            <View className="flex-row items-center justify-between px-4 py-3">
-              <View className="flex-row items-center">
-                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${colors.textSecondary}20`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Info size={20} color={colors.textSecondary} weight="regular" />
-                </View>
-                <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Version</Text>
-              </View>
-              <Text style={{ color: colors.textSecondary, fontSize: 17 }}>1.0.0</Text>
-            </View>
-          </View>
-        </View>
+        <SettingsSection title="About">
+          <SettingsRow
+            icon={<Info size={20} weight="regular" />}
+            iconColor={colors.textSecondary}
+            label="Version"
+            value="1.0.0"
+            accessory="none"
+          />
+        </SettingsSection>
 
         {/* Free design indicator */}
         {getFreeDesignsRemaining() > 0 && (
-          <View
-            className="mt-6 p-4 rounded-2xl"
-            style={{ backgroundColor: `${colors.accent}15` }}
-          >
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>
+          <View style={[styles.freeDesignsCard, { backgroundColor: `${colors.accent}15` }]}>
+            <Text style={[styles.freeDesignsTitle, { color: colors.accent }]}>
               {getFreeDesignsRemaining()} of 3 Free Designs Remaining
             </Text>
-            <Text style={{ color: colors.accentLight, fontSize: 14, marginTop: 4 }}>
+            <Text style={[styles.freeDesignsSubtitle, { color: colors.accentLight }]}>
               Create custom designs for free!
             </Text>
           </View>
@@ -516,94 +381,45 @@ export default function SettingsScreen() {
 
         {/* Debug Section - Admin only */}
         {authUser?.email === 'creepyblues@gmail.com' && (
-          <View className="mt-6 mb-8">
-            <Text
-              className="text-xs uppercase tracking-wider px-2 mb-2"
-              style={{ color: colors.textSecondary }}
-            >
-              Debug
-            </Text>
-            <View style={{ backgroundColor: colors.surfaceCard, borderRadius: 12 }}>
-              <TouchableOpacity
-                onPress={() => {
-                  addCoins(100);
-                  Alert.alert('Success', 'Added 100 coins!');
-                }}
-                className="flex-row items-center justify-between px-4 py-3"
-                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-              >
-                <View className="flex-row items-center">
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(52, 199, 89, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Coin size={20} color="#34C759" weight="regular" />
-                  </View>
-                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Add 100 Coins</Text>
-                </View>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleClearUnpinnedNotes}
-                className="flex-row items-center justify-between px-4 py-3"
-                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-              >
-                <View className="flex-row items-center">
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 59, 48, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Trash size={20} color="#FF3B30" weight="regular" />
-                  </View>
-                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear Unpinned Notes</Text>
-                </View>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleClearAllDesigns}
-                className="flex-row items-center justify-between px-4 py-3"
-                style={{ borderBottomWidth: 0.5, borderBottomColor: colors.separator }}
-              >
-                <View className="flex-row items-center">
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255, 149, 0, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Palette size={20} color="#FF9500" weight="regular" />
-                  </View>
-                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Clear All Designs</Text>
-                </View>
-                <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    'Reset Onboarding',
-                    'This will show the welcome carousel and coach marks again on next app launch.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Reset',
-                        onPress: () => {
-                          resetOnboarding();
-                          Alert.alert('Done', 'Onboarding reset. Restart the app to see the welcome screen again.');
-                        },
-                      },
-                    ]
-                  );
-                }}
-                className="flex-row items-center justify-between px-4 py-3"
-              >
-                <View className="flex-row items-center">
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(88, 86, 214, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                    <ArrowCounterClockwise size={20} color="#5856D6" weight="regular" />
-                  </View>
-                  <Text className="ml-3" style={{ color: colors.textPrimary, fontSize: 17 }}>Reset Onboarding</Text>
-                </View>
-                <View className="flex-row items-center">
-                  <Text className="mr-2" style={{ color: colors.textSecondary, fontSize: 13 }}>
-                    {onboarding.hasCompletedWelcome ? 'Completed' : 'Not started'}
-                  </Text>
-                  <CaretRight size={16} color={colors.textTertiary} weight="regular" />
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <SettingsSection title="Debug">
+            <SettingsRow
+              icon={<Coin size={20} weight="regular" />}
+              iconColor="#34C759"
+              label="Add 100 Coins"
+              onPress={handleAddCoins}
+              accessory="chevron"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<Trash size={20} weight="regular" />}
+              iconColor={semantic.error}
+              label="Clear Unpinned Notes"
+              onPress={handleClearUnpinnedNotes}
+              accessory="chevron"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<Palette size={20} weight="regular" />}
+              iconColor="#FF9500"
+              label="Clear All Designs"
+              onPress={handleClearAllDesigns}
+              accessory="chevron"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<ArrowCounterClockwise size={20} weight="regular" />}
+              iconColor="#5856D6"
+              label="Reset Onboarding"
+              value={onboarding.hasCompletedWelcome ? 'Completed' : 'Not started'}
+              valueColor={colors.textSecondary}
+              onPress={handleResetOnboarding}
+              accessory="chevron"
+            />
+          </SettingsSection>
         )}
+
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* Coin Shop */}
@@ -614,3 +430,55 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: '700',
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  benefitText: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  freeDesignsCard: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 16,
+  },
+  freeDesignsTitle: {
+    fontWeight: '600',
+  },
+  freeDesignsSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  bottomSpacer: {
+    height: 32,
+  },
+});
