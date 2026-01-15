@@ -7,6 +7,8 @@
  */
 
 import { z } from 'zod';
+// Re-export shared color validation from validation.ts
+import { isValidHexColor as isValidHexColorBase } from '../validation';
 
 // ============================================
 // Theme Generation Response Schemas
@@ -212,10 +214,9 @@ export function parseBoardDesignResponse(data: unknown): ValidatedBoardDesignRes
 
 /**
  * Validate hex color format
+ * Re-exported from utils/validation.ts for API response usage
  */
-export function isValidHexColor(color: string): boolean {
-  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
-}
+export const isValidHexColor = isValidHexColorBase;
 
 /**
  * Sanitize a color string, returning a default if invalid

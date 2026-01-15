@@ -1,21 +1,30 @@
 /**
  * CheckboxEditor - Mode-based checkbox list editor
  *
- * Renders each line as a tappable checkbox with text input.
- * Used when editor is in "checkbox" mode.
+ * Key patterns (matching ChecklistEditor):
+ * 1. Stable UUIDs as keys (not array indices)
+ * 2. Map<string, TextInput> for refs (not array)
+ * 3. requestAnimationFrame for focus (not setTimeout)
+ * 4. Items as array of objects (not string content)
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useCallback } from 'react';
 import {
   View,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  NativeSyntheticEvent,
-  TextInputSubmitEditingEventData,
+  Platform,
 } from 'react-native';
 import { Check } from 'phosphor-react-native';
 import type { ComposedStyle } from '@/types';
+import { generateUUID } from '@/utils/uuid';
+
+export interface CheckboxItem {
+  id: string;
+  text: string;
+  checked: boolean;
+}
 
 interface CheckboxEditorProps {
   content: string;
@@ -24,122 +33,196 @@ interface CheckboxEditorProps {
   isDark: boolean;
 }
 
+// Parse line to extract checkbox state and text
+const parseCheckboxLine = (line: string): { checked: boolean; text: string } => {
+  const checkedMatch = line.match(/^-?\s*\[[xX]\]\s*/);
+  const uncheckedMatch = line.match(/^-?\s*\[\s*\]\s*/);
+
+  if (checkedMatch) {
+    return { checked: true, text: line.replace(/^-?\s*\[[xX]\]\s*/, '') };
+  }
+  if (uncheckedMatch) {
+    return { checked: false, text: line.replace(/^-?\s*\[\s*\]\s*/, '') };
+  }
+  // Line without checkbox format - treat as unchecked with the whole line as text
+  return { checked: false, text: line };
+};
+
+// Convert markdown content to checkbox items
+export function parseCheckboxFromContent(content: string): CheckboxItem[] {
+  if (!content.trim()) {
+    return [{ id: generateUUID(), text: '', checked: false }];
+  }
+
+  const lines = content.split('\n');
+  return lines.map(line => {
+    const { checked, text } = parseCheckboxLine(line);
+    return {
+      id: generateUUID(),
+      text,
+      checked,
+    };
+  });
+}
+
+// Convert checkbox items back to markdown
+export function checkboxToContent(items: CheckboxItem[]): string {
+  return items
+    .map(item => `- [${item.checked ? 'x' : ' '}] ${item.text}`)
+    .join('\n');
+}
+
 export function CheckboxEditor({
   content,
   onContentChange,
   style,
   isDark,
 }: CheckboxEditorProps) {
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  // Track items with stable IDs internally
+  const itemsRef = useRef<CheckboxItem[]>([]);
+
+  // Initialize items from content if needed
   const lines = content.split('\n');
 
-  // Parse line to extract checkbox state and text
-  const parseLine = (line: string) => {
-    const checkedMatch = line.match(/^-?\s*\[[xX]\]\s*/);
-    const uncheckedMatch = line.match(/^-?\s*\[\s*\]\s*/);
+  // Sync items with content - maintain IDs for existing lines
+  if (itemsRef.current.length !== lines.length) {
+    // Content structure changed, rebuild with new IDs
+    itemsRef.current = lines.map((line, index) => {
+      const { checked, text } = parseCheckboxLine(line);
+      return {
+        id: itemsRef.current[index]?.id || generateUUID(),
+        text,
+        checked,
+      };
+    });
+  } else {
+    // Update text/checked for existing items
+    itemsRef.current = itemsRef.current.map((item, index) => {
+      const { checked, text } = parseCheckboxLine(lines[index]);
+      return { ...item, text, checked };
+    });
+  }
 
-    if (checkedMatch) {
-      return { isChecked: true, text: line.replace(/^-?\s*\[[xX]\]\s*/, '') };
+  const items = itemsRef.current;
+
+  // Map of refs keyed by stable item ID
+  const inputRefs = useRef<Map<string, TextInput>>(new Map());
+
+  // Focus an item by ID after React finishes rendering
+  const focusItem = useCallback((itemId: string) => {
+    requestAnimationFrame(() => {
+      const input = inputRefs.current.get(itemId);
+      input?.focus();
+    });
+  }, []);
+
+  // Toggle checkbox
+  const handleToggle = useCallback((itemId: string) => {
+    const newItems = items.map(item =>
+      item.id === itemId ? { ...item, checked: !item.checked } : item
+    );
+    itemsRef.current = newItems;
+    onContentChange(checkboxToContent(newItems));
+  }, [items, onContentChange]);
+
+  // Update text for an item
+  const handleTextChange = useCallback((itemId: string, text: string) => {
+    const newItems = items.map(item =>
+      item.id === itemId ? { ...item, text } : item
+    );
+    itemsRef.current = newItems;
+    onContentChange(checkboxToContent(newItems));
+  }, [items, onContentChange]);
+
+  // Handle Enter key - add new item after current
+  const handleSubmit = useCallback((itemId: string) => {
+    const index = items.findIndex(item => item.id === itemId);
+    if (index === -1) return;
+
+    const newId = generateUUID();
+    const newItems = [...items];
+    newItems.splice(index + 1, 0, { id: newId, text: '', checked: false });
+    itemsRef.current = newItems;
+    onContentChange(checkboxToContent(newItems));
+
+    // Focus the new item after render
+    focusItem(newId);
+  }, [items, onContentChange, focusItem]);
+
+  // Handle backspace on empty item - remove it and focus previous
+  const handleKeyPress = useCallback((itemId: string, key: string, text: string) => {
+    if (key === 'Backspace' && text === '' && items.length > 1) {
+      const index = items.findIndex(item => item.id === itemId);
+      if (index <= 0) return; // Don't remove first item
+
+      const prevItemId = items[index - 1].id;
+      const newItems = items.filter(item => item.id !== itemId);
+      itemsRef.current = newItems;
+      onContentChange(checkboxToContent(newItems));
+
+      // Focus previous item
+      focusItem(prevItemId);
     }
-    if (uncheckedMatch) {
-      return { isChecked: false, text: line.replace(/^-?\s*\[\s*\]\s*/, '') };
+  }, [items, onContentChange, focusItem]);
+
+  // Set ref for an item
+  const setItemRef = useCallback((itemId: string, ref: TextInput | null) => {
+    if (ref) {
+      inputRefs.current.set(itemId, ref);
+    } else {
+      inputRefs.current.delete(itemId);
     }
-    // Line without checkbox format - treat as unchecked with the whole line as text
-    return { isChecked: false, text: line };
-  };
-
-  // Toggle checkbox state for a line
-  const toggleLine = (index: number) => {
-    const newLines = [...lines];
-    const { isChecked, text } = parseLine(newLines[index]);
-    newLines[index] = `- [${isChecked ? ' ' : 'x'}] ${text}`;
-    onContentChange(newLines.join('\n'));
-  };
-
-  // Update text for a specific line
-  const updateLine = (index: number, newText: string) => {
-    const newLines = [...lines];
-    const { isChecked } = parseLine(newLines[index]);
-    newLines[index] = `- [${isChecked ? 'x' : ' '}] ${newText}`;
-    onContentChange(newLines.join('\n'));
-  };
-
-  // Handle Enter key - add new line
-  const handleSubmit = (index: number) => {
-    const newLines = [...lines];
-    newLines.splice(index + 1, 0, '- [ ] ');
-    onContentChange(newLines.join('\n'));
-
-    // Focus the new line after render
-    setTimeout(() => {
-      inputRefs.current[index + 1]?.focus();
-    }, 50);
-  };
-
-  // Handle backspace on empty line - remove it
-  const handleKeyPress = (index: number, key: string, text: string) => {
-    if (key === 'Backspace' && text === '' && lines.length > 1) {
-      const newLines = [...lines];
-      newLines.splice(index, 1);
-      onContentChange(newLines.join('\n'));
-
-      // Focus previous line
-      setTimeout(() => {
-        const prevIndex = Math.max(0, index - 1);
-        inputRefs.current[prevIndex]?.focus();
-      }, 50);
-    }
-  };
+  }, []);
 
   return (
     <View style={styles.container}>
-      {lines.map((line, index) => {
-        const { isChecked, text } = parseLine(line);
-
-        return (
-          <View key={index} style={styles.lineContainer}>
-            {/* Checkbox */}
-            <TouchableOpacity
-              onPress={() => toggleLine(index)}
-              style={styles.checkboxTouchable}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: isChecked }}
-              accessibilityLabel={isChecked ? 'Checked' : 'Unchecked'}
-            >
-              <View
-                style={[
-                  styles.checkbox,
-                  isChecked && styles.checkboxChecked,
-                  isChecked && { backgroundColor: style.accentColor || '#10B981' },
-                  !isChecked && { borderColor: isDark ? '#666' : '#CCC' },
-                ]}
-              >
-                {isChecked && <Check size={12} color="#FFF" weight="bold" />}
-              </View>
-            </TouchableOpacity>
-
-            {/* Text Input */}
-            <TextInput
-              ref={(ref) => { inputRefs.current[index] = ref; }}
+      {items.map((item) => (
+        <View key={item.id} style={styles.lineContainer}>
+          {/* Checkbox */}
+          <TouchableOpacity
+            onPress={() => handleToggle(item.id)}
+            style={styles.checkboxTouchable}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: item.checked }}
+            accessibilityLabel={item.checked ? 'Checked' : 'Unchecked'}
+          >
+            <View
               style={[
-                styles.textInput,
-                {
-                  color: isChecked ? (isDark ? '#666' : '#999') : style.bodyColor,
-                  textDecorationLine: isChecked ? 'line-through' : 'none',
-                },
+                styles.checkbox,
+                item.checked && styles.checkboxChecked,
+                item.checked && { backgroundColor: style.accentColor || '#10B981' },
+                !item.checked && { borderColor: isDark ? '#666' : '#CCC' },
               ]}
-              value={text}
-              onChangeText={(newText) => updateLine(index, newText)}
-              onSubmitEditing={() => handleSubmit(index)}
-              onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key, text)}
-              placeholder={index === 0 ? 'Add item...' : ''}
-              placeholderTextColor={isDark ? '#666' : '#999'}
-              returnKeyType="next"
-              blurOnSubmit={false}
-            />
-          </View>
-        );
-      })}
+            >
+              {item.checked && <Check size={12} color="#FFF" weight="bold" />}
+            </View>
+          </TouchableOpacity>
+
+          {/* Text Input */}
+          <TextInput
+            multiline={true}
+            submitBehavior="submit"
+            ref={(ref) => setItemRef(item.id, ref)}
+            style={[
+              styles.textInput,
+              {
+                color: item.checked ? (isDark ? '#666' : '#999') : style.bodyColor,
+                textDecorationLine: item.checked ? 'line-through' : 'none',
+              },
+            ]}
+            value={item.text}
+            onChangeText={(text) => handleTextChange(item.id, text)}
+            onSubmitEditing={() => handleSubmit(item.id)}
+            onKeyPress={({ nativeEvent }) =>
+              handleKeyPress(item.id, nativeEvent.key, item.text)
+            }
+            placeholder={items[0]?.id === item.id ? 'Add item...' : ''}
+            placeholderTextColor={isDark ? '#666' : '#999'}
+            returnKeyType="next"
+            blurOnSubmit={false}
+          />
+        </View>
+      ))}
     </View>
   );
 }
@@ -173,6 +256,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: 8,
+    ...Platform.select({
+      ios: {},
+      android: {
+        paddingVertical: 4,
+      },
+    }),
   },
 });
 

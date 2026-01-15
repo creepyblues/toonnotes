@@ -1,8 +1,9 @@
-// Simple UUID v4 generator for React Native
+import * as Crypto from 'expo-crypto';
+
+/**
+ * Cryptographically secure UUID v4 generator
+ * Uses expo-crypto which leverages native platform crypto APIs
+ */
 export function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  return Crypto.randomUUID();
 }

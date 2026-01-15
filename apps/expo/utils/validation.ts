@@ -100,12 +100,15 @@ export function validateLabelName(name: string): {
     };
   }
 
-  // Only allow alphanumeric, spaces, hyphens, and underscores
-  const validPattern = /^[\w\s\-]+$/u;
+  // Allow Unicode letters, numbers, spaces, hyphens, underscores, and emoji
+  // Using Unicode property escapes for broad language support
+  const validPattern = /^[\p{L}\p{N}\p{M}\p{Emoji}\s\-_]+$/u;
   if (!validPattern.test(sanitized)) {
+    // Remove only control characters and other dangerous characters
+    // Keep all printable Unicode characters
     return {
       isValid: false,
-      sanitized: sanitized.replace(/[^\w\s\-]/gu, ''),
+      sanitized: sanitized.replace(/[\p{C}]/gu, ''),
       error: 'Label name contains invalid characters',
     };
   }

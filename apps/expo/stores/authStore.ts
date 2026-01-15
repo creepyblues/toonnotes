@@ -58,6 +58,9 @@ interface AuthState {
   setSession: (session: Session | null) => void;
 }
 
+// Grace period for protecting local changes from cloud sync overwrite (in ms)
+const CLOUD_SYNC_GRACE_PERIOD = 2000;
+
 // Helper to set up all real-time subscriptions
 const setupRealtimeSubscriptions = (userId: string): RealtimeChannels => {
   // Notes subscription
@@ -67,8 +70,21 @@ const setupRealtimeSubscriptions = (userId: string): RealtimeChannels => {
       const noteStore = useNoteStore.getState();
       const existing = noteStore.notes.find((n) => n.id === note.id);
       if (existing) {
+        // Check if this note was recently modified locally
+        const recentlyModified = noteStore.recentlyModifiedIds?.get(note.id);
+        if (recentlyModified && Date.now() - recentlyModified < CLOUD_SYNC_GRACE_PERIOD) {
+          // Skip cloud update - local change takes priority during grace period
+          console.log('[Sync] Protecting recent local change, ignoring cloud update for:', note.id);
+          return;
+        }
+
         if (note.updatedAt > existing.updatedAt) {
-          noteStore.updateNote(note.id, note);
+          // Use setState directly to avoid triggering the grace period tracking
+          useNoteStore.setState((state) => ({
+            notes: state.notes.map((n) =>
+              n.id === note.id ? { ...n, ...note } : n
+            ),
+          }));
         }
       } else {
         useNoteStore.setState((state) => ({
@@ -88,6 +104,8 @@ const setupRealtimeSubscriptions = (userId: string): RealtimeChannels => {
       const designStore = useDesignStore.getState();
       const existing = designStore.designs.find((d) => d.id === design.id);
       if (existing) {
+        // Compare using createdAt since designs don't have updatedAt
+        // (designs are immutable - create new versions instead of updating)
         if (design.createdAt > existing.createdAt) {
           designStore.updateDesign(design.id, design);
         }
@@ -185,6 +203,8 @@ const performFullSync = async (userId: string): Promise<void> => {
 const cleanupRealtimeSubscriptions = async (channels: RealtimeChannels): Promise<void> => {
   const cleanupPromises: Promise<void>[] = [];
 
+  // Use the generic unsubscribeFromNotes for all channel types
+  // (it just calls supabase.removeChannel internally)
   if (channels.notes) {
     cleanupPromises.push(unsubscribeFromNotes(channels.notes));
   }

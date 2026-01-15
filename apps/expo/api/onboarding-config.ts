@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { applySecurity } from './_utils/security';
 
 /**
  * Onboarding Config Edge Function
@@ -179,19 +180,10 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Only allow GET
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  // Apply security middleware (CORS, rate limiting, method validation)
+  // Skip rate limiting for config endpoint (frequently called, read-only)
+  if (!applySecurity(req, res, { allowedMethods: ['GET'], skipRateLimit: true })) {
+    return;
   }
 
   // Return config with cache headers

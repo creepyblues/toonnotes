@@ -13,6 +13,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { applySecurity } from './_utils/security';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -75,17 +76,9 @@ interface AnalysisResult {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  // Apply security middleware (CORS, rate limiting, method validation)
+  if (!applySecurity(req, res, { allowedMethods: ['POST'] })) {
+    return;
   }
 
   if (!GEMINI_API_KEY) {
