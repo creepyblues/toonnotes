@@ -17,6 +17,7 @@ import {
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
+import Constants from 'expo-constants';
 
 import { useUserStore, useNoteStore, useDesignStore } from '@/stores';
 import { useAuthStore } from '@/stores/authStore';
@@ -50,6 +51,11 @@ export default function SettingsScreen() {
 
   const archivedCount = getArchivedNotes().length;
   const deletedCount = getDeletedNotes().length;
+
+  // Version display with build number
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+  const buildNumber = Constants.expoConfig?.ios?.buildNumber ?? '';
+  const versionDisplay = buildNumber ? `${appVersion} (${buildNumber})` : appVersion;
 
   const handleViewArchive = () => {
     router.push('/archive');
@@ -362,7 +368,7 @@ export default function SettingsScreen() {
             icon={<Info size={20} weight="regular" />}
             iconColor={colors.textSecondary}
             label="Version"
-            value="1.0.0"
+            value={versionDisplay}
             accessory="none"
           />
         </SettingsSection>
