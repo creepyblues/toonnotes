@@ -17,6 +17,7 @@ import {
   Animated,
   Share,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -103,6 +104,8 @@ import {
   toggleCheckboxAtLine,
   insertCheckboxAtCursor,
   insertBulletAtCursor,
+  stripCheckboxPrefixes,
+  stripBulletPrefixes,
 } from '@/hooks/editor';
 import {
   CheckboxEditor,
@@ -198,12 +201,30 @@ export default function NoteEditorScreen() {
   const [color, setColor] = useState<NoteColor>(note?.color || NoteColor.White);
   const [designId, setDesignId] = useState<string | undefined>(note?.designId);
 
+  // Track if we've initialized from note content (moved up for sync effects)
+  const hasInitializedRef = useRef(false);
+
   // Sync designId from note when it changes (e.g., after navigation, store hydration, or auto-apply)
   useEffect(() => {
     if (note?.designId !== designId) {
       setDesignId(note?.designId);
     }
   }, [note?.designId]);
+
+  // Sync title from note when it changes (e.g., after store hydration)
+  useEffect(() => {
+    if (note?.title !== undefined && note?.title !== title && !hasInitializedRef.current) {
+      setTitle(note.title);
+    }
+  }, [note?.title]);
+
+  // Sync content from note when it changes (e.g., after store hydration)
+  useEffect(() => {
+    if (note?.content !== undefined && note?.content !== content && !hasInitializedRef.current) {
+      setContent(note.content);
+    }
+  }, [note?.content]);
+
   const [showMenu, setShowMenu] = useState(false);
   const [showDesignPicker, setShowDesignPicker] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -237,20 +258,36 @@ export default function NoteEditorScreen() {
   // Keyboard height tracking for button animation
   const keyboardHeight = useRef(new Animated.Value(0)).current;
 
-  // Auto-detect editor mode from existing content on mount
+  // Auto-detect editor mode from existing content (runs on mount and after store hydration)
   useEffect(() => {
-    if (note?.content) {
-      const lines = note.content.split('\n');
-      const hasCheckboxes = lines.some(l => l.match(/^-?\s*\[[ xX]\]/));
-      const hasBullets = lines.some(l => l.match(/^[•\-\*]\s/));
-      if (hasCheckboxes) {
-        setEditorMode('checklist');
-        setChecklistItems(parseChecklistFromContent(note.content));
-      } else if (hasBullets) {
-        setEditorMode('bullet');
+    // Only run once per note load
+    if (hasInitializedRef.current || !note?.content) return;
+
+    const lines = note.content.split('\n');
+    const hasCheckboxes = lines.some(l => l.match(/^-?\s*\[[ xX]\]/));
+    const hasBullets = lines.some(l => l.match(/^[•\-\*]\s/));
+
+    if (hasCheckboxes) {
+      setEditorMode('checklist');
+      setChecklistItems(parseChecklistFromContent(note.content));
+      // Ensure content state is synced with note content
+      if (content !== note.content) {
+        setContent(note.content);
       }
+      hasInitializedRef.current = true;
+    } else if (hasBullets) {
+      setEditorMode('bullet');
+      // Ensure content state is synced with note content
+      if (content !== note.content) {
+        setContent(note.content);
+      }
+      hasInitializedRef.current = true;
+    } else if (note.content && content !== note.content) {
+      // Sync content state if it differs (handles store hydration)
+      setContent(note.content);
+      hasInitializedRef.current = true;
     }
-  }, []); // Only run on mount
+  }, [note?.content]); // Re-run when note.content changes (e.g., after hydration)
 
   // Animate button row above keyboard
   useEffect(() => {
@@ -284,9 +321,18 @@ export default function NoteEditorScreen() {
 
   // Sync checklist items to content when items change
   const handleChecklistChange = useCallback((newItems: ChecklistItem[]) => {
+    const newContent = checklistToContent(newItems);
     setChecklistItems(newItems);
-    setContent(checklistToContent(newItems));
-  }, []);
+    setContent(newContent);
+
+    // Save immediately using local variable to bypass async state issues
+    // setContent() schedules a re-render but doesn't update state synchronously
+    // If user navigates away before re-render, beforeRemove would have stale data
+    // By saving with the local newContent variable, we ensure the store updates NOW
+    if (note?.id) {
+      updateNote(note.id, { content: newContent });
+    }
+  }, [note?.id, updateNote]);
 
   // Single TextInput cursor management (replaces per-line refs)
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
@@ -331,6 +377,11 @@ export default function NoteEditorScreen() {
   // Track previous values to detect actual changes
   const prevValuesRef = useRef({ title, content, color, designId });
   const isInitialMount = useRef(true);
+
+  // Track latest values for beforeRemove (avoids stale closure bug)
+  // Updated synchronously on every render so beforeRemove always has current values
+  const latestValuesRef = useRef({ title, content, color, designId });
+  latestValuesRef.current = { title, content, color, designId };
 
   // Auto-save on changes (only when content actually changes)
   useEffect(() => {
@@ -755,18 +806,21 @@ export default function NoteEditorScreen() {
       // Dismiss keyboard first
       Keyboard.dismiss();
 
+      // Use ref values to avoid stale closure (setContent is async, ref is sync)
+      const latest = latestValuesRef.current;
+
       // Save current state (including designId to prevent design loss)
-      updateNote(note.id, { title, content, color, designId });
+      updateNote(note.id, latest);
 
       // Delete empty notes
-      if (!title.trim() && !content.trim()) {
+      if (!latest.title.trim() && !latest.content.trim()) {
         deleteNote(note.id);
         navigation.dispatch(e.data.action);
         return;
       }
 
       // Trigger label analysis if note has content
-      if (title.trim() || content.trim()) {
+      if (latest.title.trim() || latest.content.trim()) {
         const hasSuggestions = await analyzeForLabels();
         if (hasSuggestions) {
           // Store the navigation action for later dispatch after toast
@@ -803,14 +857,26 @@ export default function NoteEditorScreen() {
   const handleAddCheckbox = () => {
     // Toggle checklist mode
     if (editorMode === 'checklist') {
+      // EXITING checklist mode - strip checkbox prefixes to return to plain text
+      const serializedContent = checklistToContent(checklistItems);
+      const strippedContent = stripCheckboxPrefixes(serializedContent);
+      setContent(strippedContent);
       setEditorMode('normal');
     } else {
+      // ENTERING checklist mode - strip bullet prefixes first
+      const cleanContent = stripBulletPrefixes(content);
       setEditorMode('checklist');
       // Initialize checklist items from content or start fresh
-      if (content.trim()) {
-        setChecklistItems(parseChecklistFromContent(content));
+      if (cleanContent.trim()) {
+        const parsedItems = parseChecklistFromContent(cleanContent);
+        setChecklistItems(parsedItems);
+        // Immediately update content to checklist format for consistent persistence
+        const formattedContent = checklistToContent(parsedItems);
+        setContent(formattedContent);
       } else {
-        setChecklistItems([{ id: generateUUID(), text: '', checked: false }]);
+        const newItems = [{ id: generateUUID(), text: '', checked: false }];
+        setChecklistItems(newItems);
+        setContent(checklistToContent(newItems));
       }
     }
     setShowFormatMenu(false);
@@ -819,11 +885,26 @@ export default function NoteEditorScreen() {
   const handleAddBullet = () => {
     // Toggle bullet mode
     if (editorMode === 'bullet') {
+      // EXITING bullet mode - strip bullet prefixes to return to plain text
+      const strippedContent = stripBulletPrefixes(content);
+      setContent(strippedContent);
       setEditorMode('normal');
     } else {
+      // ENTERING bullet mode - strip checkbox prefixes first
+      const cleanContent = stripCheckboxPrefixes(content);
       setEditorMode('bullet');
-      // If content is empty, initialize with a bullet
-      if (!content.trim()) {
+      // Format existing content with bullets
+      if (cleanContent.trim()) {
+        const lines = cleanContent.split('\n');
+        const formattedLines = lines.map(line => {
+          // Add bullet if line doesn't already have one
+          if (!line.match(/^[•\-\*]\s/)) {
+            return line.trim() ? `• ${line}` : line;
+          }
+          return line;
+        });
+        setContent(formattedLines.join('\n'));
+      } else {
         setContent('• ');
       }
     }
@@ -871,14 +952,13 @@ export default function NoteEditorScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: style.backgroundColor }}
+      style={{ flex: 1, backgroundColor: style.backgroundColor }}
       edges={['top']}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
         style={{
+          flex: 1,
           borderRadius: 16,
           marginHorizontal: 0,
           // iOS-style shadow
@@ -932,21 +1012,21 @@ export default function NoteEditorScreen() {
         ) : null}
 
         {/* Header */}
-        <View className="flex-row items-center justify-between px-4 pt-3 pb-2">
+        <View style={styles.header}>
           <TouchableOpacity
             onPress={handleBack}
-            className="p-2"
+            style={styles.headerButton}
             accessibilityLabel="Go back"
             accessibilityRole="button"
           >
             <CaretLeft size={24} color={style.titleColor} weight="regular" />
           </TouchableOpacity>
 
-          <View className="flex-row items-center">
+          <View style={styles.headerActions}>
             {/* Pin button */}
             <TouchableOpacity
               onPress={handlePin}
-              className="p-2"
+              style={styles.headerButton}
               accessibilityLabel={note.isPinned ? "Unpin note" : "Pin note"}
               accessibilityRole="button"
             >
@@ -960,7 +1040,7 @@ export default function NoteEditorScreen() {
             {/* Design picker button */}
             <TouchableOpacity
               onPress={() => setShowDesignPicker(true)}
-              className="p-2"
+              style={styles.headerButton}
               accessibilityLabel={activeDesign ? "Change design" : "Add design"}
               accessibilityHint="Opens design picker to style your note"
               accessibilityRole="button"
@@ -971,7 +1051,7 @@ export default function NoteEditorScreen() {
             {/* More menu */}
             <TouchableOpacity
               onPress={() => setShowMenu(!showMenu)}
-              className="p-2"
+              style={styles.headerButton}
               accessibilityLabel="More options"
               accessibilityRole="button"
             >
@@ -1061,7 +1141,7 @@ export default function NoteEditorScreen() {
 
         {/* Editor */}
         <ScrollView
-          className="flex-1 px-5"
+          style={{ flex: 1, paddingHorizontal: 20 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Title */}
@@ -1650,9 +1730,9 @@ export default function NoteEditorScreen() {
         animationType="slide"
         onRequestClose={() => setShowDesignPicker(false)}
       >
-        <View className="flex-1" style={{ backgroundColor: isDark ? 'rgba(15, 13, 21, 0.9)' : 'rgba(0,0,0,0.5)' }}>
+        <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(15, 13, 21, 0.9)' : 'rgba(0,0,0,0.5)' }}>
           <TouchableOpacity
-            className="flex-1"
+            style={{ flex: 1 }}
             onPress={() => setShowDesignPicker(false)}
           />
           <View
@@ -1896,3 +1976,21 @@ export default function NoteEditorScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
+    padding: 8,
+  },
+});

@@ -5,6 +5,9 @@ export {
   toggleCheckboxAtLine,
   insertCheckboxAtCursor,
   insertBulletAtCursor,
+  stripCheckboxPrefixes,
+  stripBulletPrefixes,
+  stripAllFormatting,
 } from './useEditorContent';
 export type { ParsedLine, LineType, ContentChangeResult } from './useEditorContent';
 

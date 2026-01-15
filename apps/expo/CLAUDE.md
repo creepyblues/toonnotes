@@ -6,7 +6,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ToonNotes is a mobile note-taking app for webtoon/anime fans built with Expo (React Native). The app features AI-powered custom note designs, cloud sync, OAuth authentication, and premium subscription tiers.
 
-**Project Root**: `/Users/sungholee/code/toonnotes/ToonNotes_Expo`
+**Project Root**: `/Users/sungholee/code/toonnotes/apps/expo`
 
 ## Documentation
 
@@ -201,7 +201,34 @@ All AI features are powered by Vercel edge functions that call Google Gemini API
 | `/api/onboarding-config` | Remote onboarding config | (none) |
 | `/api/remove-background` | Background removal (unified) | imageData, type |
 
-**Note**: The app calls these via `services/geminiService.ts`. The base URL is `https://toonnotes-api.vercel.app`.
+**Note**: The app calls these via `services/geminiService.ts` and `services/labelingEngine.ts`. The base URL is `https://toonnotes-api.vercel.app`.
+
+### API Deployment
+
+The API functions are deployed to a **separate Vercel project** called `toonnotes-api`. To deploy API changes:
+
+```bash
+# From apps/expo directory
+cd /Users/sungholee/code/toonnotes/apps/expo
+
+# Link to the correct Vercel project (only needed once)
+vercel link --project toonnotes-api --yes
+
+# Deploy to production
+vercel --prod
+```
+
+**Important**: The `apps/expo` directory contains both the Expo app AND the Vercel API functions. The API functions must be deployed to the `toonnotes-api` project, not the `expo` project.
+
+| Vercel Project | Domain | Purpose |
+|----------------|--------|---------|
+| `toonnotes-api` | toonnotes-api.vercel.app | Edge functions (API) |
+| `expo` | expo-phi-ruddy.vercel.app | Not used for API |
+
+If you see 404 errors for API endpoints, verify the directory is linked to `toonnotes-api`:
+```bash
+cat .vercel/project.json  # Should show toonnotes-api project
+```
 
 ## Architecture Patterns
 
@@ -384,6 +411,59 @@ const focusItem = (itemId: string) => {
 - Calling focus() immediately after setState (render not complete)
 
 See `components/editor/ChecklistEditor.tsx` for full implementation.
+
+### Styling Guidelines (IMPORTANT)
+
+**Do NOT mix NativeWind `className` with `style` props for layout properties** - this causes iOS vs Android rendering inconsistencies due to NativeWind's style merging behavior.
+
+#### Correct Patterns
+
+```typescript
+// Option 1: StyleSheet only (PREFERRED for screen layouts/headers)
+<SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+<View style={[styles.header, { backgroundColor: colors.background }]}>
+
+// Option 2: Tailwind only (for static styling)
+<View className="px-4 py-3 bg-white rounded-xl">
+
+// Option 3: Style for dynamic theme values only
+<View className="px-4 py-3" style={{ backgroundColor: colors.background }}>
+// Only acceptable when className has NO layout props (flex, padding, margin)
+```
+
+#### Incorrect Pattern (Causes iOS Issues)
+
+```typescript
+// WRONG: Mixing layout properties
+<SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+<View className="px-4 py-3" style={{ backgroundColor: colors.background }}>
+```
+
+#### Screen Header Pattern
+
+All tab screens and modal screens MUST use StyleSheet for headers:
+
+```typescript
+<SafeAreaView
+  style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}
+  edges={['top']}
+>
+  <View style={[styles.header, { backgroundColor: colors.backgroundSecondary }]}>
+    <Text style={[styles.title, { color: colors.textPrimary }]}>Title</Text>
+  </View>
+</SafeAreaView>
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: '700',
+  },
+});
+```
 
 ## Data Models
 

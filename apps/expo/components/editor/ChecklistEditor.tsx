@@ -42,7 +42,12 @@ export function parseChecklistFromContent(content: string): ChecklistItem[] {
   const lines = content.split('\n');
   return lines.map(line => {
     const isChecked = /\[x\]/i.test(line);
-    const text = line.replace(/^-?\s*\[[ xX]\]\s*/, '');
+    // Strip checkbox prefix first
+    let text = line.replace(/^-?\s*\[[ xX]\]\s*/, '');
+    // If no checkbox was stripped, strip bullet prefix
+    if (text === line) {
+      text = line.replace(/^[•\-\*]\s+/, '');
+    }
     return {
       id: generateUUID(),
       text,

@@ -74,6 +74,47 @@ export function parseContent(content: string): ParsedLine[] {
 }
 
 /**
+ * Strip all checkbox prefixes from content
+ * "- [ ] text" → "text"
+ * "- [x] text" → "text"
+ */
+export function stripCheckboxPrefixes(content: string): string {
+  return content
+    .split('\n')
+    .map(line => line.replace(/^-?\s*\[[ xX]\]\s*/, ''))
+    .join('\n');
+}
+
+/**
+ * Strip all bullet prefixes from content
+ * "• text" → "text"
+ * "- text" → "text" (when used as bullet, not checkbox)
+ * "* text" → "text"
+ */
+export function stripBulletPrefixes(content: string): string {
+  return content
+    .split('\n')
+    .map(line => line.replace(/^[•\-\*]\s+/, ''))
+    .join('\n');
+}
+
+/**
+ * Strip ALL formatting prefixes (both checkbox and bullet)
+ */
+export function stripAllFormatting(content: string): string {
+  return content
+    .split('\n')
+    .map(line => {
+      // First try checkbox (more specific pattern)
+      const stripped = line.replace(/^-?\s*\[[ xX]\]\s*/, '');
+      if (stripped !== line) return stripped;
+      // Then try bullet
+      return line.replace(/^[•\-\*]\s+/, '');
+    })
+    .join('\n');
+}
+
+/**
  * Get the line at a given character position
  */
 function getLineAtPosition(content: string, position: number): { line: string; lineStart: number; lineIndex: number } {
