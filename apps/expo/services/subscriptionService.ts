@@ -20,6 +20,7 @@ import { devLog, devWarn } from '@/utils/devLog';
 class SubscriptionService {
   private listenerAttached = false;
   private initialized = false;
+  private isGrantingCoins = false; // Mutex to prevent concurrent coin grants
 
   /**
    * Initialize subscription service on app launch.
@@ -80,43 +81,74 @@ class SubscriptionService {
    * Detect subscription renewal and grant 100 monthly coins.
    * Uses latestPurchaseDate from RevenueCat vs lastCoinGrantDate in store.
    *
+   * This method is idempotent: calling it multiple times with the same
+   * RevenueCat state will only grant coins once.
+   *
    * @returns true if coins were granted (renewal detected)
    */
   async checkAndGrantRenewalCoins(): Promise<boolean> {
-    const { user, grantMonthlyCoins, setSubscription } = useUserStore.getState();
-
-    // Only check for Pro users
-    if (!user.subscription.isPro) {
+    // Mutex: prevent concurrent calls from granting coins twice
+    if (this.isGrantingCoins) {
+      devLog('[Subscription] Coin grant already in progress, skipping');
       return false;
     }
 
-    const proStatus = await purchaseService.checkProStatus();
+    try {
+      this.isGrantingCoins = true;
 
-    if (!proStatus.isPro || !proStatus.latestPurchaseDate) {
-      return false;
-    }
+      const { user, grantMonthlyCoins } = useUserStore.getState();
 
-    const latestPurchaseTime = proStatus.latestPurchaseDate.getTime();
-    const lastGrantTime = user.subscription.lastCoinGrantDate || 0;
+      // Only check for Pro users (check flag first for quick exit)
+      if (!user.subscription.isPro) {
+        return false;
+      }
 
-    // If latest purchase is newer than last grant, this is a new billing period
-    if (latestPurchaseTime > lastGrantTime) {
-      devLog('[Subscription] Renewal detected, granting monthly coins', {
-        latestPurchase: proStatus.latestPurchaseDate,
-        lastGrant: user.subscription.lastCoinGrantDate
-          ? new Date(user.subscription.lastCoinGrantDate)
-          : 'never',
+      const proStatus = await purchaseService.checkProStatus();
+
+      if (!proStatus.isPro || !proStatus.latestPurchaseDate) {
+        devLog('[Subscription] RevenueCat says not Pro or no purchase date');
+        return false;
+      }
+
+      const latestPurchaseTime = proStatus.latestPurchaseDate.getTime();
+
+      // Re-read state after async operation to get the most current value
+      // This prevents race conditions where another call updated lastCoinGrantDate
+      const currentState = useUserStore.getState();
+      const lastGrantTime = currentState.user.subscription.lastCoinGrantDate || 0;
+
+      // If latest purchase is newer than last grant, this is a new billing period
+      if (latestPurchaseTime > lastGrantTime) {
+        devLog('[Subscription] Renewal detected, granting monthly coins', {
+          latestPurchase: proStatus.latestPurchaseDate,
+          lastGrant: lastGrantTime ? new Date(lastGrantTime) : 'never',
+          coins: PRO_MONTHLY_COINS,
+        });
+
+        // Grant the monthly coins - use latestPurchaseTime as the grant date
+        // to prevent re-granting when CustomerInfo listener fires multiple times
+        const success = grantMonthlyCoins(latestPurchaseTime);
+
+        if (success) {
+          devLog('[Subscription] Coins granted successfully');
+        } else {
+          devWarn('[Subscription] grantMonthlyCoins returned false');
+        }
+
+        return success;
+      }
+
+      devLog('[Subscription] No renewal detected', {
+        latestPurchase: latestPurchaseTime,
+        lastGrant: lastGrantTime,
       });
-
-      // Grant the monthly coins - use latestPurchaseTime as the grant date
-      // to prevent re-granting when CustomerInfo listener fires multiple times
-      grantMonthlyCoins(latestPurchaseTime);
-
-      return true;
+      return false;
+    } catch (error) {
+      console.error('[Subscription] Error in checkAndGrantRenewalCoins:', error);
+      return false;
+    } finally {
+      this.isGrantingCoins = false;
     }
-
-    devLog('[Subscription] No renewal detected');
-    return false;
   }
 
   /**
@@ -208,23 +240,24 @@ class SubscriptionService {
   /**
    * Handle new subscription purchase.
    * Call this immediately after a successful subscription purchase.
+   *
+   * Uses checkAndGrantRenewalCoins() for idempotent coin granting.
+   * Safe to call multiple times - coins will only be granted once per billing period.
    */
   async handleNewSubscription(): Promise<void> {
     devLog('[Subscription] Handling new subscription purchase');
 
-    // Sync the latest status
+    // Sync the latest status from RevenueCat
     await this.syncSubscriptionStatus();
 
-    // Get the latest purchase date to use as grant date
-    const proStatus = await purchaseService.checkProStatus();
-    const { grantMonthlyCoins } = useUserStore.getState();
-
-    // Use the purchase date from RevenueCat to prevent re-granting
-    const grantDate = proStatus.latestPurchaseDate?.getTime() ?? Date.now();
-    grantMonthlyCoins(grantDate);
+    // Use the idempotent coin grant method
+    // This ensures coins are only granted once even if:
+    // 1. This method is called multiple times
+    // 2. The CustomerInfo listener fires concurrently
+    const coinsGranted = await this.checkAndGrantRenewalCoins();
 
     devLog('[Subscription] New subscription setup complete', {
-      grantDate: new Date(grantDate),
+      coinsGranted,
     });
   }
 

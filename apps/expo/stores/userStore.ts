@@ -264,10 +264,11 @@ export const useUserStore = create<UserState>()(
       },
 
       grantMonthlyCoins: (grantDate?: number) => {
-        const { user, addCoins, setSubscription } = get();
+        const { user, addCoins, setSubscription, isPro } = get();
 
-        // Only grant if user is Pro
-        if (!user.subscription.isPro) return false;
+        // Only grant if user has an active (non-expired) Pro subscription
+        // Using isPro() which checks both the flag AND expiration date
+        if (!isPro()) return false;
 
         // Grant the monthly coins
         addCoins(PRO_MONTHLY_COINS);
