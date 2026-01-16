@@ -108,8 +108,9 @@ class SubscriptionService {
           : 'never',
       });
 
-      // Grant the monthly coins
-      grantMonthlyCoins();
+      // Grant the monthly coins - use latestPurchaseTime as the grant date
+      // to prevent re-granting when CustomerInfo listener fires multiple times
+      grantMonthlyCoins(latestPurchaseTime);
 
       return true;
     }
@@ -214,11 +215,17 @@ class SubscriptionService {
     // Sync the latest status
     await this.syncSubscriptionStatus();
 
-    // Grant initial monthly coins
+    // Get the latest purchase date to use as grant date
+    const proStatus = await purchaseService.checkProStatus();
     const { grantMonthlyCoins } = useUserStore.getState();
-    grantMonthlyCoins();
 
-    devLog('[Subscription] New subscription setup complete');
+    // Use the purchase date from RevenueCat to prevent re-granting
+    const grantDate = proStatus.latestPurchaseDate?.getTime() ?? Date.now();
+    grantMonthlyCoins(grantDate);
+
+    devLog('[Subscription] New subscription setup complete', {
+      grantDate: new Date(grantDate),
+    });
   }
 
   /**

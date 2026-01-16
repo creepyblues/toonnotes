@@ -68,7 +68,7 @@ interface UserState {
   // Subscription actions
   setSubscription: (subscription: Partial<Subscription>) => void;
   isPro: () => boolean;
-  grantMonthlyCoins: () => boolean; // Returns true if coins were granted
+  grantMonthlyCoins: (grantDate?: number) => boolean; // Returns true if coins were granted
   clearSubscription: () => void;
 }
 
@@ -263,7 +263,7 @@ export const useUserStore = create<UserState>()(
         return user.subscription.isPro;
       },
 
-      grantMonthlyCoins: () => {
+      grantMonthlyCoins: (grantDate?: number) => {
         const { user, addCoins, setSubscription } = get();
 
         // Only grant if user is Pro
@@ -272,9 +272,10 @@ export const useUserStore = create<UserState>()(
         // Grant the monthly coins
         addCoins(PRO_MONTHLY_COINS);
 
-        // Update last grant date
+        // Update last grant date - use provided grantDate (from RevenueCat purchase time)
+        // to prevent re-granting on subsequent checks when timestamps differ
         setSubscription({
-          lastCoinGrantDate: Date.now(),
+          lastCoinGrantDate: grantDate ?? Date.now(),
         });
 
         return true;
