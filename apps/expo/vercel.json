@@ -8,6 +8,12 @@
       "memory": 1024
     }
   },
+  "crons": [
+    {
+      "path": "/api/health-check",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
