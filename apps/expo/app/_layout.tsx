@@ -91,6 +91,15 @@ import { initSentry } from '@/services/sentry';
 import { initFirebase, trackScreen } from '@/services/firebaseAnalytics';
 import { usePathname } from 'expo-router';
 import { migrateNotesWithLabelsToDesigns } from '@/services/migrationService';
+import { LogBox } from 'react-native';
+
+// Ignore RevenueCat errors (no products configured on simulator)
+// This suppresses the error overlay when products aren't set up in App Store Connect
+LogBox.ignoreLogs([
+  '[RevenueCat]',
+  'Error fetching offerings',
+  'RevenueCat.OfferingsManager.Error',
+]);
 
 // Initialize Sentry for error monitoring (kept as fallback)
 initSentry();

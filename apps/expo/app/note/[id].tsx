@@ -1067,17 +1067,17 @@ export default function NoteEditorScreen() {
               position: 'absolute',
               top: 56,
               right: 16,
-              backgroundColor: isDark ? '#1C1826' : '#FFFFFF',
-              borderRadius: 16,
-              shadowColor: '#8B5CF6',
+              backgroundColor: colors.surfaceCard,
+              borderRadius: 12,
+              shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
+              shadowOpacity: 0.12,
               shadowRadius: 12,
               elevation: 8,
               zIndex: 10,
               overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: isDark ? '#252136' : '#EDE9FE',
+              borderWidth: 0.5,
+              borderColor: colors.separator,
             }}
           >
             <TouchableOpacity
@@ -1088,8 +1088,9 @@ export default function NoteEditorScreen() {
                 alignItems: 'center',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
-                borderBottomWidth: 1,
-                borderBottomColor: isDark ? '#252136' : '#EDE9FE',
+                minHeight: 44,
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.separator,
                 opacity: isSharing ? 0.5 : 1,
               }}
               accessibilityLabel="Share note"
@@ -1097,11 +1098,11 @@ export default function NoteEditorScreen() {
               accessibilityRole="button"
             >
               {isSharing ? (
-                <ActivityIndicator size={18} color="#3B82F6" />
+                <ActivityIndicator size={18} color={colors.accent} />
               ) : (
-                <ShareNetwork size={18} color="#3B82F6" weight="regular" />
+                <ShareNetwork size={18} color={colors.accent} weight="regular" />
               )}
-              <Text style={{ marginLeft: 12, color: '#3B82F6' }}>
+              <Text style={{ marginLeft: 12, fontSize: 17, color: colors.accent }}>
                 {isSharing ? 'Creating link...' : 'Share'}
               </Text>
             </TouchableOpacity>
@@ -1112,14 +1113,15 @@ export default function NoteEditorScreen() {
                 alignItems: 'center',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
-                borderBottomWidth: 1,
-                borderBottomColor: isDark ? '#252136' : '#EDE9FE',
+                minHeight: 44,
+                borderBottomWidth: 0.5,
+                borderBottomColor: colors.separator,
               }}
               accessibilityLabel="Archive note"
               accessibilityRole="button"
             >
-              <Archive size={18} color="#10B981" weight="regular" />
-              <Text style={{ marginLeft: 12, color: isDark ? '#F5F3FF' : '#1A1625' }}>Archive</Text>
+              <Archive size={18} color={colors.accent} weight="regular" />
+              <Text style={{ marginLeft: 12, fontSize: 17, color: colors.textPrimary }}>Archive</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleDelete}
@@ -1128,36 +1130,37 @@ export default function NoteEditorScreen() {
                 alignItems: 'center',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
+                minHeight: 44,
               }}
               accessibilityLabel="Delete note"
               accessibilityHint="Moves note to trash"
               accessibilityRole="button"
             >
-              <Trash size={18} color="#EF4444" weight="regular" />
-              <Text style={{ marginLeft: 12, color: '#EF4444' }}>Delete</Text>
+              <Trash size={18} color={colors.highlight} weight="regular" />
+              <Text style={{ marginLeft: 12, fontSize: 17, color: colors.highlight }}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Editor */}
         <ScrollView
-          style={{ flex: 1, paddingHorizontal: 20 }}
+          style={{ flex: 1, paddingHorizontal: 16 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Title */}
           <TextInput
-            className="text-2xl font-bold py-3"
             style={[
+              styles.titleInput,
               {
                 color: style.titleColor,
                 fontFamily: getTitleFont(),
               },
               // Additional style adjustments per font category
-              style.fontStyle === 'mono' && { fontSize: 20 },
+              style.fontStyle === 'mono' && { fontSize: 22 },
               style.fontStyle === 'display' && { letterSpacing: -0.5 },
             ]}
             placeholder="Title"
-            placeholderTextColor={activeDesign ? `${style.titleColor}80` : '#9CA3AF'}
+            placeholderTextColor={activeDesign ? `${style.titleColor}80` : colors.textTertiary}
             value={title}
             onChangeText={setTitle}
             multiline
@@ -1173,15 +1176,15 @@ export default function NoteEditorScreen() {
                 {
                   color: style.bodyColor,
                   fontFamily: getBodyFont(),
-                  fontSize: 16,
+                  fontSize: 17, // iOS HIG body text standard
                   padding: 0,
                   margin: 0,
                   minHeight: 300,
                   textAlignVertical: 'top',
                 },
-                style.fontStyle === 'mono' && { fontSize: 14 },
+                style.fontStyle === 'mono' && { fontSize: 15 },
               ]}
-              placeholder="Start typing... Use # to add labels"
+              placeholder="Your thoughts"
               placeholderTextColor={activeDesign ? `${style.bodyColor}80` : '#9CA3AF'}
               value={content}
               onChangeText={handleContentChange}
@@ -1191,7 +1194,7 @@ export default function NoteEditorScreen() {
               scrollEnabled={false}
               textAlignVertical="top"
               accessibilityLabel="Note content"
-              accessibilityHint="Enter your note content. Use # to add labels."
+              accessibilityHint="Enter your note content"
             />
           )}
 
@@ -1274,7 +1277,7 @@ export default function NoteEditorScreen() {
                 paddingHorizontal: 12,
                 paddingVertical: 10,
                 borderRadius: 10,
-                backgroundColor: isDark ? colors.backgroundTertiary : '#EFEFF0',
+                backgroundColor: colors.backgroundTertiary,
               }}
             >
               <Hash size={16} color={colors.textSecondary} weight="regular" />
@@ -1359,8 +1362,10 @@ export default function NoteEditorScreen() {
                         </Text>
                         <TouchableOpacity
                           onPress={() => removeLabelFromNote(note.id, label)}
-                          style={{ marginLeft: 6, padding: 2 }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{ marginLeft: 6, padding: 4 }}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          accessibilityLabel={`Remove ${label} label`}
+                          accessibilityRole="button"
                         >
                           <X size={14} color={colors.textSecondary} weight="bold" />
                         </TouchableOpacity>
@@ -1375,6 +1380,8 @@ export default function NoteEditorScreen() {
             {hashtagQuery.length > 0 && (
               <TouchableOpacity
                 onPress={() => handleCreateAndInsertHashtag(hashtagQuery)}
+                accessibilityLabel={`Create new label ${hashtagQuery}`}
+                accessibilityRole="button"
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -1384,7 +1391,8 @@ export default function NoteEditorScreen() {
                   marginTop: 8,
                   marginBottom: 4,
                   borderRadius: 10,
-                  backgroundColor: isDark ? colors.backgroundTertiary : '#EFEFF0',
+                  minHeight: 44,
+                  backgroundColor: colors.backgroundTertiary,
                 }}
               >
                 <Plus size={16} color={colors.accent} weight="bold" />
@@ -1539,6 +1547,9 @@ export default function NoteEditorScreen() {
                 <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
                 <TouchableOpacity
                   onPress={() => handleRemoveImage(index)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityLabel={`Remove image ${index + 1}`}
+                  accessibilityRole="button"
                   style={{
                     position: 'absolute',
                     top: -6,
@@ -1546,7 +1557,7 @@ export default function NoteEditorScreen() {
                     width: 20,
                     height: 20,
                     borderRadius: 10,
-                    backgroundColor: isDark ? '#444' : '#666',
+                    backgroundColor: colors.textSecondary,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -1598,14 +1609,14 @@ export default function NoteEditorScreen() {
               ) : (
                 <View
                   style={{
-                    backgroundColor: isDark ? colors.backgroundTertiary : '#EFEFF0',
+                    backgroundColor: colors.backgroundTertiary,
                     paddingHorizontal: 10,
                     paddingVertical: 5,
                     borderRadius: 8,
                   }}
                 >
                   <Text style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     color: colors.textSecondary,
                     fontWeight: '500',
                   }}>
@@ -1620,79 +1631,100 @@ export default function NoteEditorScreen() {
           <View style={{ position: 'relative', zIndex: 100 }}>
             <TouchableOpacity
               onPress={() => setShowFormatMenu(!showFormatMenu)}
+              accessibilityLabel="Format options"
+              accessibilityRole="button"
+              accessibilityHint="Opens menu for checklist, bullet list, or image"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={{
-                width: 32,
-                height: 32,
+                width: 28,
+                height: 28,
                 borderRadius: 6,
-                borderWidth: 1.5,
-                borderColor: isDark ? '#555' : '#CCC',
+                borderWidth: 1,
+                borderColor: colors.border,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: isDark ? '#2A2A2A' : '#FFF',
+                backgroundColor: colors.surfaceCard,
                 marginLeft: 12,
               }}
             >
-              <Plus size={18} color={isDark ? '#AAA' : '#666'} />
+              <Plus size={16} color={colors.textSecondary} />
             </TouchableOpacity>
 
             {/* Format menu popup */}
             {showFormatMenu && (
               <View style={{
                 position: 'absolute',
-                bottom: 40,
+                bottom: 48,
                 right: 0,
-                backgroundColor: isDark ? '#333' : '#FFF',
+                backgroundColor: colors.surfaceCard,
                 borderRadius: 12,
-                paddingVertical: 8,
+                paddingVertical: 4,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.12,
+                shadowRadius: 12,
                 elevation: 10,
                 zIndex: 999,
-                minWidth: 140,
+                minWidth: 160,
+                borderWidth: 0.5,
+                borderColor: colors.separator,
               }}>
                 <TouchableOpacity
                   onPress={handleAddCheckbox}
+                  accessibilityLabel={editorMode === 'checklist' ? 'Exit checklist mode' : 'Enable checklist mode'}
+                  accessibilityRole="button"
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingHorizontal: 16,
                     paddingVertical: 12,
-                    backgroundColor: editorMode === 'checklist' ? (isDark ? '#444' : '#E8E8E8') : 'transparent',
+                    minHeight: 44,
+                    backgroundColor: editorMode === 'checklist' ? colors.backgroundSecondary : 'transparent',
                   }}
                 >
-                  <CheckSquare size={20} color={editorMode === 'checklist' ? '#10B981' : (isDark ? '#AAA' : '#666')} weight={editorMode === 'checklist' ? 'fill' : 'regular'} />
-                  <Text style={{ marginLeft: 12, fontSize: 14, color: editorMode === 'checklist' ? '#10B981' : (isDark ? '#EEE' : '#333') }}>
-                    Checklist {editorMode === 'checklist' ? '✓' : ''}
+                  <CheckSquare size={20} color={editorMode === 'checklist' ? colors.accent : colors.textSecondary} weight={editorMode === 'checklist' ? 'fill' : 'regular'} />
+                  <Text style={{ marginLeft: 12, fontSize: 17, color: editorMode === 'checklist' ? colors.accent : colors.textPrimary }}>
+                    Checklist
                   </Text>
+                  {editorMode === 'checklist' && (
+                    <Check size={16} color={colors.accent} weight="bold" style={{ marginLeft: 'auto' }} />
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleAddBullet}
+                  accessibilityLabel={editorMode === 'bullet' ? 'Exit bullet mode' : 'Enable bullet mode'}
+                  accessibilityRole="button"
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingHorizontal: 16,
                     paddingVertical: 12,
-                    backgroundColor: editorMode === 'bullet' ? (isDark ? '#444' : '#E8E8E8') : 'transparent',
+                    minHeight: 44,
+                    backgroundColor: editorMode === 'bullet' ? colors.backgroundSecondary : 'transparent',
                   }}
                 >
-                  <ListBullets size={20} color={editorMode === 'bullet' ? '#10B981' : (isDark ? '#AAA' : '#666')} weight={editorMode === 'bullet' ? 'fill' : 'regular'} />
-                  <Text style={{ marginLeft: 12, fontSize: 14, color: editorMode === 'bullet' ? '#10B981' : (isDark ? '#EEE' : '#333') }}>
-                    Bullet {editorMode === 'bullet' ? '✓' : ''}
+                  <ListBullets size={20} color={editorMode === 'bullet' ? colors.accent : colors.textSecondary} weight={editorMode === 'bullet' ? 'fill' : 'regular'} />
+                  <Text style={{ marginLeft: 12, fontSize: 17, color: editorMode === 'bullet' ? colors.accent : colors.textPrimary }}>
+                    Bullet List
                   </Text>
+                  {editorMode === 'bullet' && (
+                    <Check size={16} color={colors.accent} weight="bold" style={{ marginLeft: 'auto' }} />
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleAddImage}
+                  accessibilityLabel="Add image"
+                  accessibilityRole="button"
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingHorizontal: 16,
                     paddingVertical: 12,
+                    minHeight: 44,
                   }}
                 >
-                  <ImageSquare size={20} color={isDark ? '#AAA' : '#666'} />
-                  <Text style={{ marginLeft: 12, fontSize: 14, color: isDark ? '#EEE' : '#333' }}>
+                  <ImageSquare size={20} color={colors.textSecondary} />
+                  <Text style={{ marginLeft: 12, fontSize: 17, color: colors.textPrimary }}>
                     Image
                   </Text>
                 </TouchableOpacity>
@@ -1709,14 +1741,14 @@ export default function NoteEditorScreen() {
         style={{
           paddingHorizontal: 16,
           paddingVertical: 8,
-          backgroundColor: isDark ? 'rgba(37, 33, 54, 0.8)' : 'rgba(237, 233, 254, 0.8)',
+          backgroundColor: colors.backgroundSecondary,
         }}
       >
         <Text
           style={{
-            fontSize: 12,
+            fontSize: 13, // iOS footnote size
             textAlign: 'center',
-            color: isDark ? '#A8A8B8' : '#6B6B7B',
+            color: colors.textSecondary,
           }}
         >
           Edited {new Date(note.updatedAt).toLocaleString()}
@@ -1730,38 +1762,54 @@ export default function NoteEditorScreen() {
         animationType="slide"
         onRequestClose={() => setShowDesignPicker(false)}
       >
-        <View style={{ flex: 1, backgroundColor: isDark ? 'rgba(15, 13, 21, 0.9)' : 'rgba(0,0,0,0.5)' }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <TouchableOpacity
             style={{ flex: 1 }}
             onPress={() => setShowDesignPicker(false)}
+            accessibilityLabel="Close design picker"
+            accessibilityRole="button"
           />
           <View
-            className="rounded-t-3xl"
             style={{
-              backgroundColor: isDark ? '#1C1826' : '#FFFFFF',
+              backgroundColor: colors.surfaceCard,
               maxHeight: '80%',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
             }}
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between p-4 pb-2">
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: 8,
+            }}>
               <Text
-                className="text-lg font-semibold"
-                style={{ color: isDark ? '#F5F3FF' : '#1A1625' }}
+                style={{
+                  fontSize: 17,
+                  fontWeight: '600',
+                  color: colors.textPrimary,
+                }}
               >
                 Apply Design
               </Text>
               <TouchableOpacity
                 onPress={() => setShowDesignPicker(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Close"
+                accessibilityRole="button"
                 style={{
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: isDark ? '#252136' : '#F5F3FF',
+                  backgroundColor: colors.backgroundSecondary,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <X size={18} color={isDark ? '#A8A8B8' : '#6B6B7B'} weight="regular" />
+                <X size={18} color={colors.textSecondary} weight="regular" />
               </TouchableOpacity>
             </View>
 
@@ -1824,15 +1872,15 @@ export default function NoteEditorScreen() {
                     width: 6,
                     height: 6,
                     borderRadius: 3,
-                    backgroundColor: '#10B981',
+                    backgroundColor: colors.accent,
                     marginRight: 8,
                   }}
                 />
                 <Text
                   style={{
-                    fontSize: 13,
-                    fontWeight: '600',
-                    color: isDark ? '#A8A8B8' : '#6B6B7B',
+                    fontSize: 12,
+                    fontWeight: '500',
+                    color: colors.textSecondary,
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                   }}
@@ -1843,8 +1891,8 @@ export default function NoteEditorScreen() {
                   <Text
                     style={{
                       marginLeft: 8,
-                      fontSize: 11,
-                      color: isDark ? '#6B6B7B' : '#9CA3AF',
+                      fontSize: 12,
+                      color: colors.textTertiary,
                       fontStyle: 'italic',
                     }}
                   >
@@ -1911,15 +1959,15 @@ export default function NoteEditorScreen() {
                   width: 6,
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: '#8B5CF6',
+                  backgroundColor: colors.highlight,
                   marginRight: 8,
                 }}
               />
               <Text
                 style={{
-                  fontSize: 13,
-                  fontWeight: '600',
-                  color: isDark ? '#A8A8B8' : '#6B6B7B',
+                  fontSize: 12,
+                  fontWeight: '500',
+                  color: colors.textSecondary,
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
                 }}
@@ -1930,13 +1978,13 @@ export default function NoteEditorScreen() {
 
             {designs.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-                <Sparkle size={36} color={isDark ? '#A78BFA' : '#8B5CF6'} weight="duotone" />
+                <Sparkle size={36} color={colors.accent} weight="duotone" />
                 <Text
                   style={{
                     textAlign: 'center',
                     marginTop: 12,
-                    color: isDark ? '#A8A8B8' : '#6B6B7B',
-                    fontSize: 13,
+                    color: colors.textSecondary,
+                    fontSize: 14,
                   }}
                 >
                   No custom designs yet
@@ -1950,7 +1998,7 @@ export default function NoteEditorScreen() {
                 contentContainerStyle={{ paddingBottom: 20 }}
                 scrollEnabled={false}
                 renderItem={({ item }) => (
-                  <View className="flex-1 m-1">
+                  <View style={{ flex: 1, margin: 4 }}>
                     <DesignCard
                       design={item}
                       onPress={() => handleApplyDesign(item)}
@@ -1982,7 +2030,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 12,
     paddingBottom: 8,
   },
@@ -1991,6 +2039,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerButton: {
-    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleInput: {
+    fontSize: 28, // iOS title1 size
+    fontWeight: '700',
+    paddingVertical: 12,
   },
 });

@@ -1,0 +1,63 @@
+# ToonNotes Note Editor Flow
+# Tests editor functionality including text input and toolbar
+# Expected duration: ~30-40s
+
+appId: com.toonnotes.app
+
+---
+- launchApp
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible: "ToonNotes"
+    timeout: 15000
+
+# Create new note
+- tapOn:
+    id: "Create new note"
+
+# Wait for editor
+- extendedWaitUntil:
+    visible:
+      anyOf:
+        - "Title"
+        - "Note title"
+    timeout: 5000
+
+# Test title input
+- tapOn:
+    text: "Title"
+    optional: true
+
+- inputText: "Editor Test Note"
+
+# Test content input with multiple lines
+- tapOn:
+    text: "Content"
+    optional: true
+
+- inputText: "Line 1 - Testing basic text input"
+
+# Verify title is preserved
+- assertVisible: "Editor Test Note"
+
+# Wait for content to be visible
+- extendedWaitUntil:
+    visible: "Line 1"
+    timeout: 3000
+
+# Test that content is editable (tap and add more)
+- tapOn:
+    text: "Line 1"
+    optional: true
+
+# Navigate back
+- back
+
+# Verify we're back on home screen
+- extendedWaitUntil:
+    visible: "ToonNotes"
+    timeout: 5000
+
+# Verify the note was saved
+- assertVisible: "Editor Test Note"

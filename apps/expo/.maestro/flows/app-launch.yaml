@@ -1,0 +1,19 @@
+# ToonNotes App Launch Verification
+# Verifies the app launches successfully and displays the home screen
+# Expected duration: ~10-15s
+#
+# VERIFIED: January 2026 - Maestro 2.1.0, iPhone 17 Pro (iOS 26.2)
+
+appId: com.toonnotes.app
+
+---
+- launchApp
+
+# Wait for app to fully load - "Recent" section indicates home screen loaded
+# Note: "ToonNotes" doesn't work because logo renders letters separately
+- extendedWaitUntil:
+    visible: "Recent"
+    timeout: 15000
+
+# Verify we're on the home screen with notes
+- assertVisible: "Recent"

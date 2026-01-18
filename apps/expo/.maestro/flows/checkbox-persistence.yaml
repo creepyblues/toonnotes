@@ -1,0 +1,84 @@
+# Test: Checkbox Toggle Persistence
+# Verifies that checkbox state persists when navigating away and back
+appId: com.toonnotes.app
+
+---
+# Launch the app fresh
+- launchApp:
+    clearState: false
+
+# Wait for app to fully load (past splash screen)
+# The splash screen shows "Downloading" - wait for it to disappear
+- extendedWaitUntil:
+    notVisible: "Downloading"
+    timeout: 30000
+
+# Additional wait for JS bundle to load and UI to render
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 10000
+
+# Take screenshot to see current state
+- takeScreenshot: 01-app-loaded
+
+# Tap on Notes tab (bottom left of tab bar - approximately 12% from left, 97% from top)
+- tapOn:
+    point: "12%,97%"
+
+# Wait for notes to load
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Take screenshot of notes list
+- takeScreenshot: 02-notes-list
+
+# Tap on the first note card (center of screen area where notes appear)
+# Notes appear in grid around 25-75% width, 25-45% height
+- tapOn:
+    point: "35%,35%"
+
+# Wait for editor to load
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 5000
+
+# Take screenshot of note editor
+- takeScreenshot: 03-note-opened
+
+# If this note has checkboxes, they'll be on the left side around 8% width
+# Tap on first checkbox area (left side, about 35% down from title area)
+- tapOn:
+    point: "8%,45%"
+
+# Wait a moment
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 500
+
+# Screenshot after toggle attempt
+- takeScreenshot: 04-after-toggle
+
+# Go back to notes list (tap back button at top-left)
+- tapOn:
+    point: "8%,8%"
+
+# Wait for list to appear
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Screenshot of list after going back
+- takeScreenshot: 05-back-to-list
+
+# Reopen the same note
+- tapOn:
+    point: "35%,35%"
+
+# Wait for editor
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 5000
+
+# Final screenshot - checkbox state should persist
+- takeScreenshot: 06-reopened-note

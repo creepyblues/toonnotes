@@ -49,7 +49,7 @@ export const EditorContent = memo(function EditorContent({
   onHashtagDetected,
   getTitleFont,
   getBodyFont,
-  placeholder = "Start typing... Use # to add labels",
+  placeholder = "Your thoughts",
 }: EditorContentProps) {
   const contentInputRef = useRef<TextInput>(null);
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();

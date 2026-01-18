@@ -52,6 +52,10 @@ interface NoteState {
   notes: Note[];
   labels: Label[];
 
+  // Track notes with recent local changes (protect from cloud sync overwrite)
+  // Map of noteId -> timestamp when the local change was made
+  recentlyModifiedIds: Map<string, number>;
+
   // Note actions
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Note;
   updateNote: (id: string, updates: Partial<Note>) => void;
@@ -89,6 +93,7 @@ export const useNoteStore = create<NoteState>()(
     (set, get) => ({
       notes: [],
       labels: [],
+      recentlyModifiedIds: new Map<string, number>(),
 
       // Note actions
       addNote: (noteData) => {
@@ -150,13 +155,35 @@ export const useNoteStore = create<NoteState>()(
           sanitizedUpdates.content = sanitized;
         }
 
-        set((state) => ({
-          notes: state.notes.map((note) =>
-            note.id === id
-              ? { ...note, ...sanitizedUpdates, updatedAt: Date.now() }
-              : note
-          ),
-        }));
+        // Mark this note as recently modified locally (protect from cloud sync overwrite)
+        const modificationTimestamp = Date.now();
+        set((state) => {
+          // Defensive: ensure recentlyModifiedIds is a valid Map (might be corrupted from old storage)
+          const existingMap = state.recentlyModifiedIds instanceof Map ? state.recentlyModifiedIds : new Map();
+          const newMap = new Map(existingMap);
+          newMap.set(id, modificationTimestamp);
+          return {
+            notes: state.notes.map((note) =>
+              note.id === id
+                ? { ...note, ...sanitizedUpdates, updatedAt: modificationTimestamp }
+                : note
+            ),
+            recentlyModifiedIds: newMap,
+          };
+        });
+
+        // Clear the protection after 2 seconds (enough time for cloud roundtrip)
+        setTimeout(() => {
+          set((state) => {
+            const existingMap = state.recentlyModifiedIds instanceof Map ? state.recentlyModifiedIds : new Map();
+            const newMap = new Map(existingMap);
+            // Only clear if this is still our timestamp (not a newer modification)
+            if (newMap.get(id) === modificationTimestamp) {
+              newMap.delete(id);
+            }
+            return { recentlyModifiedIds: newMap };
+          });
+        }, 2000);
 
         // Sync to cloud
         const updatedNote = get().notes.find((n) => n.id === id);
@@ -587,6 +614,11 @@ export const useNoteStore = create<NoteState>()(
     {
       name: 'toonnotes-notes',
       storage: createJSONStorage(() => debouncedStorage),
+      partialize: (state) => ({
+        notes: state.notes,
+        // Don't persist recentlyModifiedIds - it's a Map that doesn't serialize
+        // and it's only needed for temporary local modification tracking
+      }),
     }
   )
 );

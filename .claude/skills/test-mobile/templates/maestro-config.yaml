@@ -1,0 +1,50 @@
+# Maestro Configuration for ToonNotes
+# Copy this file to apps/expo/.maestro/config.yaml
+#
+# Usage:
+#   cd apps/expo
+#   maestro test .maestro/flows/
+
+# App configuration
+appId: com.toonnotes.app
+
+# Flow execution settings
+flows:
+  - flows/app-launch.yaml
+  - flows/create-note.yaml
+  - flows/note-editor.yaml
+  - flows/search-notes.yaml
+  - flows/boards-navigation.yaml
+  - flows/settings.yaml
+
+# Execution options
+executionOrder: sequential
+continueOnFailure: true
+
+# Timeout settings (milliseconds)
+launchTimeout: 30000
+waitTimeout: 5000
+
+# Environment variables (can be overridden via CLI)
+env:
+  APP_ID: com.toonnotes.app
+  TEST_USER_EMAIL: ""
+  TEST_USER_PASSWORD: ""
+
+# Output settings
+output:
+  format: console  # or 'junit' for CI
+  screenshots: on-failure
+
+# Device selection (optional, auto-selects if not specified)
+# device:
+#   platform: iOS
+#   name: iPhone 15 Pro
+
+# Android-specific settings
+# android:
+#   emulator: Pixel_7
+
+# iOS-specific settings
+# ios:
+#   simulator: iPhone 15 Pro

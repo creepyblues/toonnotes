@@ -5,19 +5,29 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Trash, ArrowCounterClockwise, X } from 'phosphor-react-native';
 
-import { useNoteStore } from '@/stores';
-import { Note, NoteColor } from '@/types';
+import { useNoteStore, useDesignStore } from '@/stores';
+import { NoteCard } from '@/components/notes/NoteCard';
+import { Note } from '@/types';
 import { useTheme } from '@/src/theme';
+
+// Grid constants for consistent 2-column layout
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const GRID_PADDING = 16;
+const GRID_GAP = 12;
+const ITEM_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
 export default function TrashScreen() {
   const router = useRouter();
   const { getDeletedNotes, restoreNote, permanentlyDeleteNote } = useNoteStore();
-  const { colors, isDark } = useTheme();
+  const { getDesignById } = useDesignStore();
+  const { colors, isDark, semantic } = useTheme();
 
   const deletedNotes = getDeletedNotes();
 
@@ -60,96 +70,60 @@ export default function TrashScreen() {
   };
 
   const renderEmpty = () => (
-    <View className="flex-1 items-center justify-center py-20">
-      <View
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: 'rgba(255, 59, 48, 0.1)',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 16,
-        }}
-      >
+    <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIcon, { backgroundColor: `${semantic.error}15` }]}>
         <Trash size={40} color={colors.textSecondary} weight="regular" />
       </View>
-      <Text
-        className="text-xl font-semibold mb-2"
-        style={{ color: colors.textPrimary }}
-      >
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
         Trash is empty
       </Text>
-      <Text
-        className="text-center px-8"
-        style={{ color: colors.textSecondary }}
-      >
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Deleted notes will appear here for 30 days
       </Text>
     </View>
   );
 
   const renderItem = ({ item }: { item: Note }) => {
-    // For white notes in dark mode, use a dark background
-    const backgroundColor = isDark && item.color === NoteColor.White
-      ? colors.surfaceCard
-      : item.color;
-    const titleColor = isDark && item.color === NoteColor.White ? colors.textPrimary : '#1F2937';
-    const contentColor = isDark && item.color === NoteColor.White ? colors.textSecondary : '#4B5563';
-
-    const previewText = item.content.slice(0, 80);
     const deletedDate = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : '';
 
     return (
-      <View
-        className="rounded-xl p-3 mb-2"
-        style={{ backgroundColor }}
-      >
-        {/* Title */}
-        {item.title ? (
-          <Text
-            className="font-semibold mb-1"
-            style={{ color: titleColor }}
-            numberOfLines={1}
-          >
-            {item.title}
-          </Text>
-        ) : null}
-
-        {/* Content preview */}
-        <Text
-          className="text-sm mb-2"
-          style={{ color: contentColor }}
-          numberOfLines={2}
-        >
-          {previewText || 'Empty note'}
-        </Text>
+      <View style={{ width: ITEM_WIDTH, marginBottom: 12 }}>
+        {/* Note Card */}
+        <NoteCard
+          note={item}
+          design={item.designId ? getDesignById(item.designId) : null}
+          onPress={() => {}}
+          isDark={isDark}
+          context="grid"
+        />
 
         {/* Deleted date */}
-        <Text className="text-xs mb-3" style={{ color: '#9CA3AF' }}>
+        <Text style={[styles.deletedDate, { color: colors.textTertiary }]}>
           Deleted {deletedDate}
         </Text>
 
         {/* Action buttons */}
-        <View className="flex-row gap-2">
+        <View style={styles.actionButtonsRow}>
           <TouchableOpacity
             onPress={() => handleRestore(item.id)}
-            className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
-            style={{ backgroundColor: isDark ? colors.backgroundTertiary : 'rgba(0,0,0,0.05)' }}
+            style={[styles.actionButton, { backgroundColor: isDark ? colors.backgroundTertiary : 'rgba(0,0,0,0.05)' }]}
+            accessibilityLabel="Restore note"
+            accessibilityRole="button"
           >
-            <ArrowCounterClockwise size={16} color="#10B981" />
-            <Text className="ml-2" style={{ color: '#10B981', fontWeight: '500' }}>
+            <ArrowCounterClockwise size={16} color={semantic.success} />
+            <Text style={[styles.actionButtonText, { color: semantic.success }]}>
               Restore
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => handlePermanentDelete(item.id)}
-            className="flex-1 flex-row items-center justify-center py-2 rounded-lg"
-            style={{ backgroundColor: isDark ? colors.backgroundTertiary : 'rgba(0,0,0,0.05)' }}
+            style={[styles.actionButton, { backgroundColor: isDark ? colors.backgroundTertiary : 'rgba(0,0,0,0.05)' }]}
+            accessibilityLabel="Delete note permanently"
+            accessibilityRole="button"
           >
-            <X size={16} color="#EF4444" />
-            <Text className="ml-2" style={{ color: '#EF4444', fontWeight: '500' }}>
+            <X size={16} color={semantic.error} />
+            <Text style={[styles.actionButtonText, { color: semantic.error }]}>
               Delete
             </Text>
           </TouchableOpacity>
@@ -160,26 +134,24 @@ export default function TrashScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: colors.backgroundSecondary }}
+      style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
       <View
-        className="flex-row items-center justify-between px-2 py-2 border-b"
-        style={{
-          backgroundColor: colors.backgroundSecondary,
-          borderBottomColor: colors.separator,
-        }}
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.backgroundSecondary,
+            borderBottomColor: colors.separator,
+          },
+        ]}
       >
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="p-2">
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ArrowLeft size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text
-            className="text-lg font-semibold ml-2"
-            style={{ color: colors.textPrimary }}
-          >
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
             Trash
           </Text>
         </View>
@@ -187,26 +159,109 @@ export default function TrashScreen() {
         {deletedNotes.length > 0 && (
           <TouchableOpacity
             onPress={handleEmptyTrash}
-            className="px-3 py-2 mr-2"
+            style={styles.emptyTrashButton}
+            accessibilityLabel="Empty trash"
+            accessibilityRole="button"
           >
-            <Text style={{ color: '#EF4444', fontWeight: '500' }}>
+            <Text style={[styles.emptyTrashText, { color: semantic.error }]}>
               Empty Trash
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Note List */}
+      {/* Note Grid */}
       {deletedNotes.length === 0 ? (
         renderEmpty()
       ) : (
         <FlatList
           data={deletedNotes}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 12 }}
+          numColumns={2}
+          contentContainerStyle={{ padding: GRID_PADDING }}
+          columnWrapperStyle={{ gap: GRID_GAP }}
           renderItem={renderItem}
         />
       )}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  emptyTrashButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  emptyTrashText: {
+    fontWeight: '500',
+  },
+  // Item styles
+  deletedDate: {
+    fontSize: 11,
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  // Empty state styles
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+});

@@ -18,6 +18,7 @@ import {
   Image as RNImage,
   ScrollView,
   Modal,
+  StyleSheet,
 } from 'react-native';
 import { generateUUID } from '@/utils/uuid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -329,155 +330,108 @@ export default function CreateDesignScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: colors.backgroundSecondary }}
+      style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}
       edges={['top', 'bottom']}
     >
       {/* Header */}
       <View
-        className="flex-row items-center px-2 py-2 border-b"
-        style={{ borderBottomColor: colors.separator }}
+        style={[styles.header, { borderBottomColor: colors.separator }]}
       >
-        <TouchableOpacity onPress={handleBack} className="p-2" disabled={isGenerating}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton} disabled={isGenerating}>
           <ArrowLeft size={24} color={isGenerating ? colors.textTertiary : colors.textPrimary} />
         </TouchableOpacity>
-        <Text
-          className="text-lg font-semibold ml-2"
-          style={{ color: colors.textPrimary }}
-        >
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           {step === 'select' ? 'Add Custom Element' : 'Choose What to Apply'}
         </Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
         {step === 'select' ? (
           // Step 1: Select Image
-          <View className="flex-1 px-4 pt-8">
+          <View style={styles.stepContainer}>
             {/* Instructions */}
-            <View className="items-center mb-8">
+            <View style={styles.instructionsContainer}>
               <Sparkle size={48} color={colors.accent} weight="duotone" />
-              <Text
-                className="text-xl font-bold mt-4 text-center"
-                style={{ color: colors.textPrimary }}
-              >
+              <Text style={[styles.instructionsTitle, { color: colors.textPrimary }]}>
                 Add Your Image
               </Text>
-              <Text
-                className="text-center mt-2 px-8"
-                style={{ color: colors.textSecondary }}
-              >
+              <Text style={[styles.instructionsText, { color: colors.textSecondary }]}>
                 Select an image to create a character sticker or use as background
               </Text>
             </View>
 
             {/* Image Selection */}
             {isGenerating ? (
-              <View
-                className="h-64 rounded-2xl items-center justify-center overflow-hidden"
-                style={{ backgroundColor: colors.surfaceCard }}
-              >
+              <View style={[styles.imageArea, { backgroundColor: colors.surfaceCard }]}>
                 {selectedImage && (
                   <RNImage
                     source={{ uri: selectedImage }}
-                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.3 }}
+                    style={styles.imageOverlay}
                     resizeMode="cover"
                   />
                 )}
                 <ActivityIndicator size="large" color={colors.accent} />
-                <Text
-                  className="mt-4 font-medium"
-                  style={{ color: colors.textSecondary }}
-                >
+                <Text style={[styles.generatingText, { color: colors.textSecondary }]}>
                   Creating sticker...
                 </Text>
-                <Text
-                  className="text-sm mt-1"
-                  style={{ color: colors.textTertiary }}
-                >
+                <Text style={[styles.generatingSubtext, { color: colors.textTertiary }]}>
                   Removing background from image
                 </Text>
               </View>
             ) : (
               <TouchableOpacity
                 onPress={handleSelectImage}
-                className="h-64 rounded-2xl items-center justify-center border-2 border-dashed"
-                style={{
-                  backgroundColor: isDark ? `${colors.accent}15` : '#F5F3FF',
-                  borderColor: colors.accent,
-                }}
+                style={[
+                  styles.imageAreaDashed,
+                  {
+                    backgroundColor: isDark ? `${colors.accent}15` : '#F5F3FF',
+                    borderColor: colors.accent,
+                    borderStyle: 'dashed',
+                  },
+                ]}
               >
                 <Image size={56} color={colors.accent} weight="duotone" />
-                <Text
-                  className="mt-4 font-semibold text-lg"
-                  style={{ color: colors.accent }}
-                >
+                <Text style={[styles.selectImageText, { color: colors.accent }]}>
                   Tap to Select Image
                 </Text>
               </TouchableOpacity>
             )}
 
             {/* Free designs remaining / Cost Indicator */}
-            <View className="items-center mt-8">
+            <View style={styles.costContainer}>
               {freeRemaining > 0 ? (
                 <>
-                  <View
-                    className="flex-row items-center px-5 py-3 rounded-full"
-                    style={{ backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }}
-                  >
+                  <View style={[styles.costBadge, { backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }]}>
                     <Sparkle size={20} color={colors.accent} />
-                    <Text
-                      className="font-semibold ml-2 text-base"
-                      style={{ color: colors.accent }}
-                    >
+                    <Text style={[styles.costBadgeText, { color: colors.accent }]}>
                       Free!
                     </Text>
                   </View>
-                  <Text
-                    className="text-sm mt-3"
-                    style={{ color: colors.textSecondary }}
-                  >
+                  <Text style={[styles.costSubtext, { color: colors.textSecondary }]}>
                     {freeRemaining} of {FREE_DESIGN_QUOTA} free designs remaining
                   </Text>
                 </>
               ) : canAfford ? (
                 <>
-                  <View
-                    className="flex-row items-center px-5 py-3 rounded-full"
-                    style={{ backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }}
-                  >
+                  <View style={[styles.costBadge, { backgroundColor: isDark ? `${colors.accent}20` : '#F5F3FF' }]}>
                     <Coin size={20} color={colors.accent} weight="duotone" />
-                    <Text
-                      className="font-semibold ml-2 text-base"
-                      style={{ color: colors.accent }}
-                    >
+                    <Text style={[styles.costBadgeText, { color: colors.accent }]}>
                       1 coin
                     </Text>
                   </View>
-                  <Text
-                    className="text-sm mt-3"
-                    style={{ color: colors.textSecondary }}
-                  >
+                  <Text style={[styles.costSubtext, { color: colors.textSecondary }]}>
                     You have {user.coinBalance} coins
                   </Text>
                 </>
               ) : (
                 <>
-                  <View
-                    className="flex-row items-center px-5 py-3 rounded-full"
-                    style={{ backgroundColor: '#FEF2F2' }}
-                  >
+                  <View style={[styles.costBadge, { backgroundColor: '#FEF2F2' }]}>
                     <Coin size={20} color="#EF4444" weight="duotone" />
-                    <Text
-                      className="font-semibold ml-2 text-base"
-                      style={{ color: '#EF4444' }}
-                    >
+                    <Text style={[styles.costBadgeText, { color: '#EF4444' }]}>
                       No coins
                     </Text>
                   </View>
-                  <Text
-                    className="text-sm mt-3"
-                    style={{ color: '#EF4444' }}
-                  >
+                  <Text style={[styles.costSubtext, { color: '#EF4444' }]}>
                     Free designs used. Get coins to continue.
                   </Text>
                 </>
@@ -486,25 +440,19 @@ export default function CreateDesignScreen() {
           </View>
         ) : (
           // Step 2: Choose Options
-          <View className="flex-1 px-4 pt-6">
+          <View style={styles.stepContainerOptions}>
             {/* Preview Row */}
-            <View className="flex-row mb-6">
+            <View style={styles.previewRow}>
               {/* Original Image */}
-              <View className="flex-1 mr-2">
-                <Text
-                  className="text-xs mb-2 text-center"
-                  style={{ color: colors.textSecondary }}
-                >
+              <View style={styles.previewColumn}>
+                <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
                   Original
                 </Text>
-                <View
-                  className="aspect-square rounded-xl overflow-hidden"
-                  style={{ backgroundColor: colors.surfaceCard }}
-                >
+                <View style={[styles.previewBox, { backgroundColor: colors.surfaceCard }]}>
                   {selectedImage && (
                     <RNImage
                       source={{ uri: selectedImage }}
-                      style={{ width: '100%', height: '100%' }}
+                      style={styles.previewImage}
                       resizeMode="cover"
                     />
                   )}
@@ -512,28 +460,19 @@ export default function CreateDesignScreen() {
               </View>
 
               {/* Sticker Preview */}
-              <View className="flex-1 ml-2">
-                <Text
-                  className="text-xs mb-2 text-center"
-                  style={{ color: colors.textSecondary }}
-                >
+              <View style={styles.previewColumnRight}>
+                <Text style={[styles.previewLabel, { color: colors.textSecondary }]}>
                   Sticker
                 </Text>
-                <View
-                  className="aspect-square rounded-xl overflow-hidden items-center justify-center"
-                  style={{ backgroundColor: colors.surfaceCard }}
-                >
+                <View style={[styles.previewBoxCentered, { backgroundColor: colors.surfaceCard }]}>
                   {generatedStickerUri ? (
                     <RNImage
                       source={{ uri: generatedStickerUri }}
-                      style={{ width: '100%', height: '100%' }}
+                      style={styles.previewImage}
                       resizeMode="contain"
                     />
                   ) : (
-                    <Text
-                      className="text-xs text-center px-2"
-                      style={{ color: colors.textTertiary }}
-                    >
+                    <Text style={[styles.previewPlaceholderText, { color: colors.textTertiary }]}>
                       Sticker unavailable
                     </Text>
                   )}
@@ -542,10 +481,7 @@ export default function CreateDesignScreen() {
             </View>
 
             {/* Options */}
-            <Text
-              className="text-sm font-semibold mb-3"
-              style={{ color: colors.textSecondary }}
-            >
+            <Text style={[styles.optionsSectionTitle, { color: colors.textSecondary }]}>
               What would you like to apply?
             </Text>
 
@@ -553,36 +489,34 @@ export default function CreateDesignScreen() {
             <TouchableOpacity
               onPress={() => setSelectedOption('sticker')}
               disabled={!generatedStickerUri}
-              className="flex-row items-center p-4 rounded-xl mb-3 border-2"
-              style={{
-                borderColor: selectedOption === 'sticker' ? colors.accent : colors.border,
-                backgroundColor: selectedOption === 'sticker'
-                  ? (isDark ? `${colors.accent}15` : '#F5F3FF')
-                  : colors.surfaceCard,
-                opacity: !generatedStickerUri ? 0.5 : 1,
-              }}
+              style={[
+                styles.optionCard,
+                {
+                  borderColor: selectedOption === 'sticker' ? colors.accent : colors.border,
+                  backgroundColor: selectedOption === 'sticker'
+                    ? (isDark ? `${colors.accent}15` : '#F5F3FF')
+                    : colors.surfaceCard,
+                  opacity: !generatedStickerUri ? 0.5 : 1,
+                },
+              ]}
             >
               <View
-                className="w-10 h-10 rounded-full items-center justify-center"
-                style={{
-                  backgroundColor: selectedOption === 'sticker'
-                    ? colors.accent
-                    : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
-                }}
+                style={[
+                  styles.optionIcon,
+                  {
+                    backgroundColor: selectedOption === 'sticker'
+                      ? colors.accent
+                      : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
+                  },
+                ]}
               >
                 <User size={20} color={selectedOption === 'sticker' ? '#FFFFFF' : colors.textSecondary} />
               </View>
-              <View className="flex-1 ml-3">
-                <Text
-                  className="font-semibold"
-                  style={{ color: selectedOption === 'sticker' ? colors.accent : colors.textPrimary }}
-                >
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionTitle, { color: selectedOption === 'sticker' ? colors.accent : colors.textPrimary }]}>
                   Character Sticker Only
                 </Text>
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary }}
-                >
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
                   Add sticker to your note, keep current background
                 </Text>
               </View>
@@ -594,35 +528,33 @@ export default function CreateDesignScreen() {
             {/* Option: Background Only */}
             <TouchableOpacity
               onPress={() => setSelectedOption('background')}
-              className="flex-row items-center p-4 rounded-xl mb-3 border-2"
-              style={{
-                borderColor: selectedOption === 'background' ? colors.accent : colors.border,
-                backgroundColor: selectedOption === 'background'
-                  ? (isDark ? `${colors.accent}15` : '#F5F3FF')
-                  : colors.surfaceCard,
-              }}
+              style={[
+                styles.optionCard,
+                {
+                  borderColor: selectedOption === 'background' ? colors.accent : colors.border,
+                  backgroundColor: selectedOption === 'background'
+                    ? (isDark ? `${colors.accent}15` : '#F5F3FF')
+                    : colors.surfaceCard,
+                },
+              ]}
             >
               <View
-                className="w-10 h-10 rounded-full items-center justify-center"
-                style={{
-                  backgroundColor: selectedOption === 'background'
-                    ? colors.accent
-                    : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
-                }}
+                style={[
+                  styles.optionIcon,
+                  {
+                    backgroundColor: selectedOption === 'background'
+                      ? colors.accent
+                      : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
+                  },
+                ]}
               >
                 <ImageSquare size={20} color={selectedOption === 'background' ? '#FFFFFF' : colors.textSecondary} />
               </View>
-              <View className="flex-1 ml-3">
-                <Text
-                  className="font-semibold"
-                  style={{ color: selectedOption === 'background' ? colors.accent : colors.textPrimary }}
-                >
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionTitle, { color: selectedOption === 'background' ? colors.accent : colors.textPrimary }]}>
                   Background Image Only
                 </Text>
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary }}
-                >
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
                   Use image as background, keep current sticker
                 </Text>
               </View>
@@ -635,36 +567,34 @@ export default function CreateDesignScreen() {
             <TouchableOpacity
               onPress={() => setSelectedOption('both')}
               disabled={!generatedStickerUri}
-              className="flex-row items-center p-4 rounded-xl mb-3 border-2"
-              style={{
-                borderColor: selectedOption === 'both' ? colors.accent : colors.border,
-                backgroundColor: selectedOption === 'both'
-                  ? (isDark ? `${colors.accent}15` : '#F5F3FF')
-                  : colors.surfaceCard,
-                opacity: !generatedStickerUri ? 0.5 : 1,
-              }}
+              style={[
+                styles.optionCard,
+                {
+                  borderColor: selectedOption === 'both' ? colors.accent : colors.border,
+                  backgroundColor: selectedOption === 'both'
+                    ? (isDark ? `${colors.accent}15` : '#F5F3FF')
+                    : colors.surfaceCard,
+                  opacity: !generatedStickerUri ? 0.5 : 1,
+                },
+              ]}
             >
               <View
-                className="w-10 h-10 rounded-full items-center justify-center"
-                style={{
-                  backgroundColor: selectedOption === 'both'
-                    ? colors.accent
-                    : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
-                }}
+                style={[
+                  styles.optionIcon,
+                  {
+                    backgroundColor: selectedOption === 'both'
+                      ? colors.accent
+                      : (isDark ? colors.backgroundTertiary : '#F3F4F6'),
+                  },
+                ]}
               >
                 <Sparkle size={20} color={selectedOption === 'both' ? '#FFFFFF' : colors.textSecondary} />
               </View>
-              <View className="flex-1 ml-3">
-                <Text
-                  className="font-semibold"
-                  style={{ color: selectedOption === 'both' ? colors.accent : colors.textPrimary }}
-                >
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionTitle, { color: selectedOption === 'both' ? colors.accent : colors.textPrimary }]}>
                   Both Sticker & Background
                 </Text>
-                <Text
-                  className="text-sm"
-                  style={{ color: colors.textSecondary }}
-                >
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
                   Apply sticker and use image as background
                 </Text>
               </View>
@@ -674,14 +604,8 @@ export default function CreateDesignScreen() {
             </TouchableOpacity>
 
             {/* Info about preserving design */}
-            <View
-              className="rounded-xl p-4 mt-2"
-              style={{ backgroundColor: isDark ? colors.backgroundTertiary : '#F9FAFB' }}
-            >
-              <Text
-                className="text-sm"
-                style={{ color: colors.textSecondary }}
-              >
+            <View style={[styles.infoBox, { backgroundColor: isDark ? colors.backgroundTertiary : '#F9FAFB' }]}>
+              <Text style={[styles.infoBoxText, { color: colors.textSecondary }]}>
                 Your current design's fonts, colors, and icons will be preserved.
               </Text>
             </View>
@@ -689,10 +613,9 @@ export default function CreateDesignScreen() {
             {/* Apply Button */}
             <TouchableOpacity
               onPress={handleApplyDesign}
-              className="py-4 rounded-xl mt-6 items-center"
-              style={{ backgroundColor: colors.accent }}
+              style={[styles.applyButton, { backgroundColor: colors.accent }]}
             >
-              <Text className="font-semibold text-lg" style={{ color: '#FFFFFF' }}>
+              <Text style={[styles.applyButtonText, { color: '#FFFFFF' }]}>
                 Apply to Note
               </Text>
             </TouchableOpacity>
@@ -713,14 +636,7 @@ export default function CreateDesignScreen() {
         animationType="fade"
         onRequestClose={handleCancelQuality}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
+        <View style={styles.modalOverlay}>
           <QualityPreview
             imageUri={previewData?.uri || ''}
             qualityMetadata={previewData?.qualityMetadata || DEFAULT_SUCCESS_QUALITY}
@@ -735,3 +651,73 @@ export default function CreateDesignScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+
+  // Container layouts
+  scrollContent: { flexGrow: 1 },
+  stepContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 32 },
+  stepContainerOptions: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
+
+  // Instructions section
+  instructionsContainer: { alignItems: 'center', marginBottom: 32 },
+  instructionsTitle: { fontSize: 20, fontWeight: '700', marginTop: 16, textAlign: 'center' },
+  instructionsText: { textAlign: 'center', marginTop: 8, paddingHorizontal: 32 },
+
+  // Image selection area
+  imageArea: { height: 256, borderRadius: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  imageAreaDashed: { height: 256, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  imageOverlay: { position: 'absolute', width: '100%', height: '100%', opacity: 0.3 },
+  generatingText: { marginTop: 16, fontWeight: '500' },
+  generatingSubtext: { fontSize: 14, marginTop: 4 },
+  selectImageText: { marginTop: 16, fontWeight: '600', fontSize: 18 },
+
+  // Cost indicator
+  costContainer: { alignItems: 'center', marginTop: 32 },
+  costBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999 },
+  costBadgeText: { fontWeight: '600', marginLeft: 8, fontSize: 16 },
+  costSubtext: { fontSize: 14, marginTop: 12 },
+
+  // Preview row
+  previewRow: { flexDirection: 'row', marginBottom: 24 },
+  previewColumn: { flex: 1, marginRight: 8 },
+  previewColumnRight: { flex: 1, marginLeft: 8 },
+  previewLabel: { fontSize: 12, marginBottom: 8, textAlign: 'center' },
+  previewBox: { aspectRatio: 1, borderRadius: 12, overflow: 'hidden' },
+  previewBoxCentered: { aspectRatio: 1, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  previewImage: { width: '100%', height: '100%' },
+  previewPlaceholderText: { fontSize: 12, textAlign: 'center', paddingHorizontal: 8 },
+
+  // Options section
+  optionsSectionTitle: { fontSize: 14, fontWeight: '600', marginBottom: 12 },
+  optionCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 2 },
+  optionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  optionContent: { flex: 1, marginLeft: 12 },
+  optionTitle: { fontWeight: '600' },
+  optionDescription: { fontSize: 14 },
+
+  // Info box & Apply button
+  infoBox: { borderRadius: 12, padding: 16, marginTop: 8 },
+  infoBoxText: { fontSize: 14 },
+  applyButton: { paddingVertical: 16, borderRadius: 12, marginTop: 24, alignItems: 'center' },
+  applyButtonText: { fontWeight: '600', fontSize: 18 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
+});

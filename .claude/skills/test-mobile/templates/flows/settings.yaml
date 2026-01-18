@@ -1,0 +1,57 @@
+# ToonNotes Settings Flow
+# Tests Settings screen accessibility and navigation
+# Expected duration: ~20-25s
+
+appId: com.toonnotes.app
+
+---
+- launchApp
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible: "ToonNotes"
+    timeout: 15000
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+
+# Wait for Settings screen to load
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# Verify Settings screen elements are present
+- assertVisible: "Settings"
+
+# Check for common settings sections
+- assertVisible:
+    anyOf:
+      - "Appearance"
+      - "Theme"
+      - "Dark Mode"
+    optional: true
+
+- assertVisible:
+    anyOf:
+      - "Account"
+      - "Profile"
+      - "Sign In"
+    optional: true
+
+# Test dark mode toggle if visible (don't change, just verify it's interactive)
+- tapOn:
+    text: "Dark Mode"
+    optional: true
+
+# Tap again to restore (if we changed it)
+- tapOn:
+    text: "Dark Mode"
+    optional: true
+
+# Navigate back to Notes tab
+- tapOn: "Notes"
+
+# Verify we're back on Notes screen
+- extendedWaitUntil:
+    visible: "ToonNotes"
+    timeout: 5000

@@ -7,21 +7,21 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Plus, MagnifyingGlass, X, PushPin, XCircle } from 'phosphor-react-native';
+import { Plus, MagnifyingGlass, X, PushPin, XCircle, NotePencil } from 'phosphor-react-native';
 
 import { useNoteStore, useUserStore, useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note, NoteColor } from '@/types';
 import { useTheme } from '@/src/theme';
-import { LogoPreview } from '@/components/settings/LogoPreview';
 
 // Calculate item dimensions for consistent 2-column grid
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GRID_PADDING = 12;
-const GRID_GAP = 10;
+const GRID_PADDING = 16;
+const GRID_GAP = 12;
 const ITEM_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 const ITEM_HEIGHT = ITEM_WIDTH + 12; // Square aspect ratio + margin bottom
 
@@ -80,7 +80,7 @@ export default function NotesScreen() {
 
   // Memoized renderItem - fixed width to prevent stretching on odd items
   const renderItem = useCallback(({ item }: { item: Note }) => (
-    <View style={{ width: ITEM_WIDTH, marginBottom: 10 }}>
+    <View style={{ width: ITEM_WIDTH, marginBottom: 12 }}>
       <NoteCard
         note={item}
         design={getDesign(item.designId)}
@@ -92,13 +92,13 @@ export default function NotesScreen() {
   ), [getDesign, handleNotePress, isDark]);
 
   const renderHeader = useCallback(() => (
-    <View className="mb-4">
+    <View style={styles.headerSection}>
       {/* Pinned Section */}
       {pinnedNotes.length > 0 && (
-        <View className="mb-6">
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP }}>
+        <View style={styles.pinnedSection}>
+          <View style={styles.pinnedGrid}>
             {pinnedNotes.map((note) => (
-              <View key={note.id} style={{ width: ITEM_WIDTH, marginBottom: 10 }}>
+              <View key={note.id} style={{ width: ITEM_WIDTH, marginBottom: 12 }}>
                 <NoteCard
                   note={note}
                   design={getDesign(note.designId)}
@@ -114,8 +114,8 @@ export default function NotesScreen() {
 
       {/* Others Section Header */}
       {unpinnedNotes.length > 0 && pinnedNotes.length > 0 && (
-        <View className="flex-row items-center mb-3 px-1">
-          <Text className="text-xs uppercase tracking-wider font-medium" style={{ color: colors.textSecondary }}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
             Recent
           </Text>
         </View>
@@ -124,30 +124,14 @@ export default function NotesScreen() {
   ), [pinnedNotes, unpinnedNotes, getDesign, handleNotePress, isDark, colors]);
 
   const renderEmpty = () => (
-    <View className="flex-1 items-center justify-center py-20">
-      <View
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: `${colors.accent}15`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <Text className="text-4xl">📝</Text>
+    <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIcon, { backgroundColor: `${colors.accent}15` }]}>
+        <NotePencil size={40} color={colors.textSecondary} weight="regular" />
       </View>
-      <Text
-        className="text-xl font-semibold mb-2"
-        style={{ color: colors.textPrimary }}
-      >
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
         No notes yet
       </Text>
-      <Text
-        className="text-center px-8"
-        style={{ color: colors.textSecondary }}
-      >
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Tap the + button to create your first note
       </Text>
     </View>
@@ -155,29 +139,19 @@ export default function NotesScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: colors.backgroundSecondary }}
+      style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
-      <View
-        className="px-4 py-3"
-        style={{ backgroundColor: colors.backgroundSecondary }}
-      >
-        <View className="flex-row items-center justify-between">
-          <LogoPreview
-            colorScheme="toonRainbow"
-            font="nunito"
-            size="large"
-            showLabel={false}
-            showBackground={false}
-          />
+      <View style={[styles.header, { backgroundColor: colors.backgroundSecondary }]}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Notes</Text>
           <TouchableOpacity
             onPress={() => setIsSearching(!isSearching)}
-            className="p-2 rounded-full"
-            style={{
-              backgroundColor: isSearching ? `${colors.accent}15` : 'transparent'
-            }}
+            style={[
+              styles.searchButton,
+              { backgroundColor: isSearching ? `${colors.accent}15` : 'transparent' }
+            ]}
             accessibilityLabel={isSearching ? "Close search" : "Search notes"}
             accessibilityRole="button"
           >
@@ -192,20 +166,14 @@ export default function NotesScreen() {
         {/* Search Bar - Apple Style */}
         {isSearching && (
           <View
-            className="mt-3 flex-row items-center rounded-xl px-3"
-            style={{
-              backgroundColor: isDark ? 'rgba(118, 118, 128, 0.24)' : 'rgba(118, 118, 128, 0.12)',
-              height: 36,
-            }}
+            style={[
+              styles.searchBar,
+              { backgroundColor: isDark ? 'rgba(118, 118, 128, 0.24)' : 'rgba(118, 118, 128, 0.12)' }
+            ]}
           >
             <MagnifyingGlass size={17} color={colors.textTertiary} weight="regular" />
             <TextInput
-              className="flex-1 ml-2"
-              style={{
-                color: colors.textPrimary,
-                fontSize: 17,
-                height: 36,
-              }}
+              style={[styles.searchInput, { color: colors.textPrimary }]}
               placeholder="Search"
               placeholderTextColor={colors.textTertiary}
               value={searchQuery}
@@ -255,15 +223,17 @@ export default function NotesScreen() {
       {/* FAB */}
       <TouchableOpacity
         onPress={handleCreateNote}
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-full items-center justify-center"
-        style={{
-          backgroundColor: colors.accent,
-          shadowColor: colors.accent,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.35,
-          shadowRadius: 12,
-          elevation: 8,
-        }}
+        style={[
+          styles.fab,
+          {
+            backgroundColor: colors.accent,
+            shadowColor: colors.accent,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.35,
+            shadowRadius: 12,
+            elevation: 8,
+          }
+        ]}
         accessibilityLabel="Create new note"
         accessibilityRole="button"
       >
@@ -273,3 +243,97 @@ export default function NotesScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: '700',
+  },
+  searchButton: {
+    padding: 8,
+    borderRadius: 9999,
+  },
+  searchBar: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 36,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 17,
+    height: 36,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  // Header section styles
+  headerSection: {
+    marginBottom: 16,
+  },
+  pinnedSection: {
+    marginBottom: 24,
+  },
+  pinnedGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GRID_GAP,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  // Empty state styles
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+});

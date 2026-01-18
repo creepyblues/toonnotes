@@ -4,6 +4,8 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -13,6 +15,12 @@ import { useNoteStore, useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note } from '@/types';
 import { useTheme } from '@/src/theme';
+
+// Grid constants for consistent 2-column layout
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const GRID_PADDING = 16;
+const GRID_GAP = 12;
+const ITEM_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 
 export default function ArchiveScreen() {
   const router = useRouter();
@@ -27,30 +35,14 @@ export default function ArchiveScreen() {
   };
 
   const renderEmpty = () => (
-    <View className="flex-1 items-center justify-center py-20">
-      <View
-        style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: `${colors.accent}15`,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 16,
-        }}
-      >
+    <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIcon, { backgroundColor: `${colors.accent}15` }]}>
         <Archive size={40} color={colors.textSecondary} weight="regular" />
       </View>
-      <Text
-        className="text-xl font-semibold mb-2"
-        style={{ color: colors.textPrimary }}
-      >
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
         No archived notes
       </Text>
-      <Text
-        className="text-center px-8"
-        style={{ color: colors.textSecondary }}
-      >
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Notes you archive will appear here
       </Text>
     </View>
@@ -58,25 +50,23 @@ export default function ArchiveScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: colors.backgroundSecondary }}
+      style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}
       edges={['top']}
     >
       {/* Header */}
       <View
-        className="flex-row items-center px-2 py-2 border-b"
-        style={{
-          backgroundColor: colors.backgroundSecondary,
-          borderBottomColor: colors.separator,
-        }}
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.backgroundSecondary,
+            borderBottomColor: colors.separator,
+          },
+        ]}
       >
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text
-          className="text-lg font-semibold ml-2"
-          style={{ color: colors.textPrimary }}
-        >
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Archive
         </Text>
       </View>
@@ -89,10 +79,10 @@ export default function ArchiveScreen() {
           data={archivedNotes}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          contentContainerStyle={{ padding: 12 }}
-          columnWrapperStyle={{ gap: 8 }}
+          contentContainerStyle={{ padding: GRID_PADDING }}
+          columnWrapperStyle={{ gap: GRID_GAP }}
           renderItem={({ item }) => (
-            <View className="flex-1 mb-2">
+            <View style={{ width: ITEM_WIDTH, marginBottom: 12 }}>
               <NoteCard
                 note={item}
                 design={item.designId ? getDesignById(item.designId) : null}
@@ -107,3 +97,46 @@ export default function ArchiveScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  // Empty state styles
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+});

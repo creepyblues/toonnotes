@@ -1,0 +1,43 @@
+# ToonNotes Create Note Flow
+# Tests creating a new note with title and content
+# Expected duration: ~30-45s
+#
+# STATUS: Template - needs verification with actual app
+
+appId: com.toonnotes.app
+
+---
+- launchApp
+
+# Wait for home screen to load
+- extendedWaitUntil:
+    visible: "Recent"
+    timeout: 15000
+
+# Tap FAB to create new note (try visible + icon approach)
+- tapOn:
+    point: "95%,90%"  # FAB typically in bottom-right corner
+
+# Wait for editor to open - look for Title placeholder
+- extendedWaitUntil:
+    visible: "Title"
+    timeout: 5000
+
+# Enter note title
+- tapOn: "Title"
+- inputText: "Test Note from Maestro"
+
+# Wait a moment for auto-save
+- extendedWaitUntil:
+    timeout: 2000
+
+# Navigate back to save and return to list
+- back
+
+# Wait for navigation to complete
+- extendedWaitUntil:
+    visible: "Recent"
+    timeout: 5000
+
+# Verify the new note appears in the list
+- assertVisible: "Test Note from Maestro"

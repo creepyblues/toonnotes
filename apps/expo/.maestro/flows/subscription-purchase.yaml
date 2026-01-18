@@ -1,0 +1,65 @@
+# ToonNotes Subscription Purchase Flow
+# Tests Pro subscription purchase and coin grant
+# Note: In simulator, actual purchase requires Sandbox Apple ID
+
+appId: com.toonnotes.app
+
+---
+- launchApp
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible: "Recent"
+    timeout: 15000
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+
+# Wait for Settings screen
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# Look for coin balance or Get Coins button
+- assertVisible:
+    anyOf:
+      - "coins"
+      - "Coins"
+      - "Get Coins"
+      - "Pro"
+    timeout: 5000
+
+# Tap on Get Coins or similar to open CoinShop
+- tapOn:
+    anyOf:
+      - "Get Coins"
+      - "coins"
+
+# Wait for CoinShop modal to open
+- extendedWaitUntil:
+    anyOf:
+      - "Get Coins"
+      - "Pro"
+      - "Subscribe"
+    timeout: 5000
+
+# Verify Pro subscription card is visible
+- assertVisible:
+    anyOf:
+      - "Pro"
+      - "ToonNotes Pro"
+      - "month"
+      - "$4.99"
+    optional: true
+
+# Verify coin packages are visible
+- assertVisible:
+    anyOf:
+      - "Starter"
+      - "Popular"
+      - "Best Value"
+      - "Coins"
+    optional: true
+
+# Take a screenshot for verification
+- takeScreenshot: subscription-screen

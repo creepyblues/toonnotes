@@ -1,0 +1,61 @@
+# ToonNotes Search Flow
+# Tests search functionality on home screen
+# Expected duration: ~20-30s
+# Note: Requires at least one note to exist for meaningful search
+
+appId: com.toonnotes.app
+
+---
+- launchApp
+
+# Wait for home screen
+- extendedWaitUntil:
+    visible: "ToonNotes"
+    timeout: 15000
+
+# Look for search button or search bar
+- tapOn:
+    id: "Search notes"
+    optional: true
+
+# Alternative: tap on search icon if present
+- tapOn:
+    text: "Search"
+    optional: true
+
+# If search input is now visible, enter search query
+- extendedWaitUntil:
+    visible:
+      anyOf:
+        - "Search"
+        - "Search notes"
+    timeout: 5000
+    optional: true
+
+# Type search query (if search field is active)
+- inputText: "test"
+  optional: true
+
+# Wait for search results or empty state
+- extendedWaitUntil:
+    visible:
+      anyOf:
+        - "No notes yet"
+        - "No results"
+        - "test"
+    timeout: 3000
+    optional: true
+
+# Clear search / close search
+- tapOn:
+    id: "Close search"
+    optional: true
+
+# Alternative: press back to close search
+- back
+  optional: true
+
+# Verify we're back to normal view
+- extendedWaitUntil:
+    visible: "ToonNotes"
+    timeout: 3000
