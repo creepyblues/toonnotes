@@ -125,7 +125,9 @@ export function CoinShop({ visible, onClose }: CoinShopProps) {
     } else {
       Alert.alert(
         'Manage Subscription',
-        'Please manage your subscription through the App Store settings.'
+        Platform.OS === 'ios'
+          ? 'Please manage your subscription through the App Store settings.'
+          : 'Please manage your subscription through the Play Store settings.'
       );
     }
   };

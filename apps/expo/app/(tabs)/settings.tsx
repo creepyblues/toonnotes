@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Alert, ScrollView, Linking, StyleSheet } from 'react-native';
+import { View, Text, Alert, ScrollView, Linking, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -112,8 +112,11 @@ export default function SettingsScreen() {
       if (managementURL) {
         await Linking.openURL(managementURL);
       } else {
-        // Fallback to App Store subscriptions
-        await Linking.openURL('https://apps.apple.com/account/subscriptions');
+        // Platform-specific fallback
+        const fallbackURL = Platform.OS === 'ios'
+          ? 'https://apps.apple.com/account/subscriptions'
+          : 'https://play.google.com/store/account/subscriptions';
+        await Linking.openURL(fallbackURL);
       }
     } catch (error) {
       console.error('[Settings] Error opening subscription management:', error);
