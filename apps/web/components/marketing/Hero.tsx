@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useAnalytics } from '@/lib/analytics';
 
 interface HeroProps {
   appStoreUrl: string;
@@ -6,6 +9,12 @@ interface HeroProps {
 }
 
 export function Hero({ appStoreUrl, playStoreUrl }: HeroProps) {
+  const { trackAppStoreClick } = useAnalytics();
+
+  const handleAppStoreClick = (store: 'ios' | 'android') => {
+    trackAppStoreClick(store, 'hero');
+  };
+
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-warm-50">
       <div className="mx-auto max-w-5xl px-6 py-20 md:py-32">
@@ -42,6 +51,7 @@ export function Hero({ appStoreUrl, playStoreUrl }: HeroProps) {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 md:mb-16 px-4 sm:px-0">
             <Link
               href={appStoreUrl}
+              onClick={() => handleAppStoreClick('ios')}
               className="inline-flex items-center justify-center gap-3 rounded-xl bg-teal-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-teal-700 hover:shadow-lg"
             >
               <AppleIcon className="h-6 w-6" />
@@ -49,6 +59,7 @@ export function Hero({ appStoreUrl, playStoreUrl }: HeroProps) {
             </Link>
             <Link
               href={playStoreUrl}
+              onClick={() => handleAppStoreClick('android')}
               className="inline-flex items-center justify-center gap-3 rounded-xl bg-warm-800 px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-warm-900 hover:shadow-lg"
             >
               <PlayStoreIcon className="h-5 w-5" />

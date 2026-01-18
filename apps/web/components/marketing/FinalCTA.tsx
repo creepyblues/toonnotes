@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useAnalytics } from '@/lib/analytics';
 
 interface FinalCTAProps {
   appStoreUrl: string;
@@ -6,6 +9,12 @@ interface FinalCTAProps {
 }
 
 export function FinalCTA({ appStoreUrl, playStoreUrl }: FinalCTAProps) {
+  const { trackAppStoreClick } = useAnalytics();
+
+  const handleAppStoreClick = (store: 'ios' | 'android') => {
+    trackAppStoreClick(store, 'final_cta');
+  };
+
   return (
     <section className="py-16 md:py-24 lg:py-32 bg-teal-600">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 text-center">
@@ -24,6 +33,7 @@ export function FinalCTA({ appStoreUrl, playStoreUrl }: FinalCTAProps) {
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-6 md:mb-8 px-4 sm:px-0">
           <Link
             href={appStoreUrl}
+            onClick={() => handleAppStoreClick('ios')}
             className="inline-flex items-center justify-center gap-3 rounded-xl bg-white px-8 py-4 text-lg font-semibold text-teal-700 transition-all hover:bg-teal-50 hover:shadow-lg"
           >
             <AppleIcon className="h-6 w-6" />
@@ -31,6 +41,7 @@ export function FinalCTA({ appStoreUrl, playStoreUrl }: FinalCTAProps) {
           </Link>
           <Link
             href={playStoreUrl}
+            onClick={() => handleAppStoreClick('android')}
             className="inline-flex items-center justify-center gap-3 rounded-xl bg-teal-700 px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-teal-800 hover:shadow-lg border border-teal-500"
           >
             <PlayStoreIcon className="h-5 w-5" />

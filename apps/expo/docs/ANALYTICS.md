@@ -1,9 +1,9 @@
 # Analytics Implementation Guide
 
-> **Status:** Phase 1-2 Complete ✅ | Phase 3-4 Pending
+> **Status:** Phase 1-3 Complete ✅ | Phase 4 Pending
 > **Last Updated:** January 2025
 > **Cost:** $0/month (Firebase Analytics is free)
-> **Platforms:** iOS, Android, Web App, Marketing Website (planned)
+> **Platforms:** iOS, Android, Web App, Marketing Website
 
 ---
 
@@ -84,14 +84,26 @@ Comprehensive behavioral analytics across all ToonNotes platforms to:
 - `apps/webapp/lib/analytics/index.ts` - Re-exports
 - `apps/webapp/components/providers/AnalyticsProvider.tsx` - Page view tracking
 
-### ⏳ Phase 3: Marketing Site (NOT STARTED)
+### ✅ Phase 3: Marketing Site (COMPLETE)
 
-| Task | Status |
-|------|--------|
-| 3.1 Add gtag.js | ⏳ Pending |
-| 3.2 Configure same measurement ID | ⏳ Pending |
-| 3.3 CTA click tracking | ⏳ Pending |
-| 3.4 App store link tracking | ⏳ Pending |
+| Task | Status | Details |
+|------|--------|---------|
+| 3.1 Install Firebase SDK | ✅ | `pnpm add firebase` in apps/web |
+| 3.2 Create analytics module | ✅ | `lib/analytics/` with firebase.ts, events.ts, hooks.ts |
+| 3.3 Add Analytics Provider | ✅ | Auto page view + scroll depth tracking |
+| 3.4 CTA click tracking | ✅ | Hero + FinalCTA app store links tracked |
+
+**Files Created:**
+- `apps/web/lib/analytics/firebase.ts` - Firebase initialization
+- `apps/web/lib/analytics/events.ts` - Marketing-specific events
+- `apps/web/lib/analytics/hooks.ts` - useAnalytics, useScrollDepthTracking
+- `apps/web/lib/analytics/index.ts` - Re-exports
+- `apps/web/components/providers/AnalyticsProvider.tsx` - Page view + scroll tracking
+
+**Files Modified:**
+- `apps/web/app/layout.tsx` - Wrapped with AnalyticsProvider
+- `apps/web/components/marketing/Hero.tsx` - Added app store click tracking
+- `apps/web/components/marketing/FinalCTA.tsx` - Added app store click tracking
 
 ### ⏳ Phase 4: GA4 Configuration (NOT STARTED)
 
@@ -416,30 +428,6 @@ adb shell setprop debug.firebase.analytics.app com.toonnotes.app
 ---
 
 ## Remaining Work
-
-### Phase 3: Marketing Site
-
-Add gtag.js with same GA4 measurement ID:
-
-```html
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-XXXXXXXXXX');
-
-  // Track CTA clicks
-  document.querySelectorAll('[data-track-cta]').forEach(el => {
-    el.addEventListener('click', () => {
-      gtag('event', 'cta_clicked', {
-        cta_id: el.dataset.trackCta,
-        cta_text: el.textContent,
-      });
-    });
-  });
-</script>
-```
 
 ### Phase 4: GA4 Configuration
 

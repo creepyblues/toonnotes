@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Outfit, Caveat, Playfair_Display } from 'next/font/google';
 import './globals.css';
+import { AnalyticsProvider } from '@/components/providers';
 
 // Font optimization - loaded at build time, self-hosted
 const inter = Inter({
@@ -61,7 +62,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable} ${caveat.variable} ${playfair.variable}`}>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <AnalyticsProvider>{children}</AnalyticsProvider>
+      </body>
     </html>
   );
 }
