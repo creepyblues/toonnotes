@@ -1,6 +1,6 @@
 # Analytics Implementation Guide
 
-> **Status:** Phase 1-3 Complete ✅ | Phase 4 Pending
+> **Status:** Phase 1-4 Complete ✅
 > **Last Updated:** January 2025
 > **Cost:** $0/month (Firebase Analytics is free)
 > **Platforms:** iOS, Android, Web App, Marketing Website
@@ -105,14 +105,17 @@ Comprehensive behavioral analytics across all ToonNotes platforms to:
 - `apps/web/components/marketing/Hero.tsx` - Added app store click tracking
 - `apps/web/components/marketing/FinalCTA.tsx` - Added app store click tracking
 
-### ⏳ Phase 4: GA4 Configuration (NOT STARTED)
+### ✅ Phase 4: GA4 Configuration (COMPLETE - Guide Created)
 
-| Task | Status |
-|------|--------|
-| 4.1 Create custom dimensions | ⏳ Pending |
-| 4.2 Build funnel explorations | ⏳ Pending |
-| 4.3 Set up retention reports | ⏳ Pending |
-| 4.4 Configure alerts | ⏳ Pending |
+| Task | Status | Details |
+|------|--------|---------|
+| 4.1 Create custom dimensions | ✅ | 10 event-scoped + 7 user-scoped defined |
+| 4.2 Create custom metrics | ✅ | 4 metrics defined |
+| 4.3 Build funnel explorations | ✅ | Design, Onboarding, Purchase, Marketing funnels |
+| 4.4 Set up audiences | ✅ | 6 audiences defined |
+| 4.5 Configure alerts | ✅ | 4 alerts for anomaly detection |
+
+**Configuration Guide:** See [`GA4-CONFIGURATION-GUIDE.md`](./GA4-CONFIGURATION-GUIDE.md) for step-by-step instructions to configure these in the Firebase/GA4 console.
 
 ---
 
@@ -429,21 +432,24 @@ adb shell setprop debug.firebase.analytics.app com.toonnotes.app
 
 ## Remaining Work
 
-### Phase 4: GA4 Configuration
+All implementation phases are complete. The following are ongoing operational tasks:
 
-**Custom Dimensions to Create:**
-- Event-scoped: `note_id`, `design_id`, `label_name`, `source`, `error_type`
-- User-scoped: `subscription_tier`, `account_age_days`
+### Console Configuration (One-Time Setup)
 
-**Funnel Explorations to Build:**
-1. Design Conversion Funnel
-2. Onboarding Drop-off
-3. Purchase Conversion
+Follow the [`GA4-CONFIGURATION-GUIDE.md`](./GA4-CONFIGURATION-GUIDE.md) to complete console setup:
+- [ ] Create custom dimensions in GA4
+- [ ] Create custom metrics in GA4
+- [ ] Build funnel explorations
+- [ ] Set up audiences
+- [ ] Configure alerts
+- [ ] Set data retention to 14 months
 
-**Alerts to Configure:**
-- Crash spike (>2x daily average)
-- Purchase drop (<50% of 7-day average)
-- Generation failure rate (>10%)
+### Ongoing Maintenance
+
+- Weekly review of key metrics and funnels
+- Monitor alerts for anomalies
+- Update tracking as features evolve
+- Quarterly review of user properties and segments
 
 ---
 
@@ -451,9 +457,10 @@ adb shell setprop debug.firebase.analytics.app com.toonnotes.app
 
 | Date | Change |
 |------|--------|
+| Jan 18, 2025 | Phase 4 complete - GA4 Configuration Guide created |
+| Jan 18, 2025 | Phase 3 complete - Marketing site analytics (scroll depth, app store clicks) |
 | Jan 2025 | Phase 1-2 complete - Full mobile + web analytics implementation |
-| Jan 2, 2026 | Phase 1 (Firebase setup) complete |
-| Jan 2026 | Initial documentation created |
+| Jan 2025 | Initial documentation created |
 
 ---
 
