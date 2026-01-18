@@ -5,6 +5,7 @@ import { PRO_MONTHLY_COINS } from '@/constants/products';
 import { generateUUID } from '@/utils/uuid';
 import { debouncedStorage } from './debouncedStorage';
 import { CoachMarkId } from '@/constants/onboardingConfig';
+import { Analytics, updateUserProperties, getCoinBalanceTier } from '@/services/firebaseAnalytics';
 
 // ============================================================================
 // Onboarding State Types
@@ -114,14 +115,26 @@ export const useUserStore = create<UserState>()(
           set((state) => ({
             user: { ...state.user, freeDesignsUsed: state.user.freeDesignsUsed + 1 },
           }));
+
+          // Track free design usage
+          Analytics.coinsSpent(0, 'design_free');
+          const newRemaining = FREE_DESIGN_QUOTA - user.freeDesignsUsed - 1;
+          updateUserProperties({ free_designs_remaining: newRemaining });
+
           return true;
         }
 
         // Otherwise, spend a coin
         if (user.coinBalance >= 1) {
+          const newBalance = user.coinBalance - 1;
           set((state) => ({
-            user: { ...state.user, coinBalance: state.user.coinBalance - 1 },
+            user: { ...state.user, coinBalance: newBalance },
           }));
+
+          // Track coin spending
+          Analytics.coinsSpent(1, 'design_paid');
+          updateUserProperties({ coin_balance_tier: getCoinBalanceTier(newBalance) });
+
           return true;
         }
 
@@ -145,13 +158,18 @@ export const useUserStore = create<UserState>()(
 
       // Purchase actions
       addPurchase: (purchase) => {
+        const newBalance = get().user.coinBalance + purchase.coinsGranted;
         set((state) => ({
           purchases: [...state.purchases, purchase],
           user: {
             ...state.user,
-            coinBalance: state.user.coinBalance + purchase.coinsGranted,
+            coinBalance: newBalance,
           },
         }));
+
+        // Track coins granted from purchase
+        Analytics.coinsGranted(purchase.coinsGranted, 'purchase');
+        updateUserProperties({ coin_balance_tier: getCoinBalanceTier(newBalance) });
       },
 
       setProcessingPurchase: (processing) => {
@@ -194,21 +212,28 @@ export const useUserStore = create<UserState>()(
         set((state) => ({
           onboarding: { ...state.onboarding, hasCompletedWelcome: true },
         }));
+
+        // Track onboarding completion
+        Analytics.onboardingCompleted();
+        updateUserProperties({ onboarding_complete: true });
       },
 
       markCoachMarkSeen: (id: CoachMarkId | string) => {
-        set((state) => {
-          // Don't add duplicates
-          if (state.onboarding.seenCoachMarks.includes(id)) {
-            return state;
-          }
-          return {
-            onboarding: {
-              ...state.onboarding,
-              seenCoachMarks: [...state.onboarding.seenCoachMarks, id],
-            },
-          };
-        });
+        const { onboarding } = get();
+        // Don't add duplicates or track if already seen
+        if (onboarding.seenCoachMarks.includes(id)) {
+          return;
+        }
+
+        set((state) => ({
+          onboarding: {
+            ...state.onboarding,
+            seenCoachMarks: [...state.onboarding.seenCoachMarks, id],
+          },
+        }));
+
+        // Track coach mark dismissal
+        Analytics.coachMarkDismissed(id);
       },
 
       hasSeenCoachMark: (id: CoachMarkId | string) => {
@@ -240,6 +265,8 @@ export const useUserStore = create<UserState>()(
       // ========================================================================
 
       setSubscription: (subscription: Partial<Subscription>) => {
+        const wasPro = get().user.subscription.isPro;
+
         set((state) => ({
           user: {
             ...state.user,
@@ -249,6 +276,18 @@ export const useUserStore = create<UserState>()(
             },
           },
         }));
+
+        // Track subscription changes
+        const newIsPro = subscription.isPro ?? get().user.subscription.isPro;
+        if (!wasPro && newIsPro) {
+          // User just became Pro
+          Analytics.subscriptionStarted('pro');
+          updateUserProperties({ subscription_tier: 'pro' });
+        } else if (wasPro && !newIsPro) {
+          // User lost Pro status
+          Analytics.subscriptionCancelled('pro');
+          updateUserProperties({ subscription_tier: 'free' });
+        }
       },
 
       isPro: () => {
@@ -272,6 +311,9 @@ export const useUserStore = create<UserState>()(
 
         // Grant the monthly coins
         addCoins(PRO_MONTHLY_COINS);
+
+        // Track monthly coin grant
+        Analytics.coinsGranted(PRO_MONTHLY_COINS, 'pro_monthly');
 
         // Update last grant date - use provided grantDate (from RevenueCat purchase time)
         // to prevent re-granting on subsequent checks when timestamps differ

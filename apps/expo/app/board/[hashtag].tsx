@@ -4,7 +4,7 @@
  * Uses custom board design if available, otherwise preset colors.
  */
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -48,6 +48,7 @@ import { useTheme } from '@/src/theme';
 import { useFontsLoaded } from '@/app/_layout';
 import { getPresetFonts, PresetFontStyle, SYSTEM_FONT_FALLBACKS } from '@/constants/fonts';
 import { LabelPresetId, getPresetById } from '@/constants/labelPresets';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 // Phosphor icon mapping for board background (same as BoardCard)
 const BOARD_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
@@ -116,6 +117,13 @@ export default function BoardDetailScreen() {
 
   // Decode hashtag from URL
   const decodedHashtag = decodeURIComponent(hashtag || '');
+
+  // Track board view on mount
+  useEffect(() => {
+    if (decodedHashtag) {
+      Analytics.boardViewed(decodedHashtag, decodedHashtag);
+    }
+  }, [decodedHashtag]);
 
   // Get notes with this hashtag
   const notes = getNotesByLabel(decodedHashtag);

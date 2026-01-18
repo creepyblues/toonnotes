@@ -5,6 +5,7 @@ import { debouncedStorage } from './debouncedStorage';
 import { SYSTEM_DEFAULT_DESIGNS } from '@/constants/themes';
 import { getPresetById, LabelPresetId } from '@/constants/labelPresets';
 import { labelPresetToNoteDesign } from '@/services/designEngine';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 // Cache for label preset designs (no need to persist - computed from constants)
 const labelPresetDesignCache: Map<string, NoteDesign> = new Map();
@@ -64,6 +65,10 @@ export const useDesignStore = create<DesignState>()(
         set((state) => ({
           designs: [design, ...state.designs],
         }));
+
+        // Track design creation/save
+        Analytics.designSaved(design.id);
+
         syncToCloud(design);
       },
 
@@ -71,6 +76,10 @@ export const useDesignStore = create<DesignState>()(
         set((state) => ({
           designs: state.designs.filter((d) => d.id !== id),
         }));
+
+        // Track design deletion
+        Analytics.featureUsed('design_deleted');
+
         deleteFromCloud(id);
       },
 

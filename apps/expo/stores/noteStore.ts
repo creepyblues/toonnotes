@@ -10,6 +10,7 @@ import {
 import { normalizeLabel } from '@/utils/labelNormalization';
 import { debouncedStorage } from './debouncedStorage';
 import { getPresetForLabel, LabelPresetId } from '@/constants/labelPresets';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 // Lazy import to avoid circular dependency
 const getAuthUserId = () => {
@@ -137,6 +138,9 @@ export const useNoteStore = create<NoteState>()(
 
         set((state) => ({ notes: [newNote, ...state.notes] }));
 
+        // Track note creation
+        Analytics.noteCreated(newNote.id);
+
         // Sync to cloud
         syncToCloud(newNote);
 
@@ -201,6 +205,9 @@ export const useNoteStore = create<NoteState>()(
           ),
         }));
 
+        // Track note deletion (soft delete)
+        Analytics.noteDeleted(id);
+
         // Sync soft delete to cloud
         const deletedNote = get().notes.find((n) => n.id === id);
         if (deletedNote) {
@@ -216,6 +223,9 @@ export const useNoteStore = create<NoteState>()(
               : note
           ),
         }));
+
+        // Track note restoration
+        Analytics.noteRestored(id);
 
         // Sync restore to cloud
         const restoredNote = get().notes.find((n) => n.id === id);
@@ -242,6 +252,9 @@ export const useNoteStore = create<NoteState>()(
           ),
         }));
 
+        // Track note archival
+        Analytics.noteArchived(id);
+
         // Sync archive to cloud
         const archivedNote = get().notes.find((n) => n.id === id);
         if (archivedNote) {
@@ -255,6 +268,9 @@ export const useNoteStore = create<NoteState>()(
             note.id === id ? { ...note, isArchived: false } : note
           ),
         }));
+
+        // Track note unarchival (restoration from archive)
+        Analytics.noteRestored(id);
 
         // Sync unarchive to cloud
         const unarchivedNote = get().notes.find((n) => n.id === id);
@@ -270,6 +286,9 @@ export const useNoteStore = create<NoteState>()(
           ),
         }));
 
+        // Track note pinning
+        Analytics.notePinned(id, true);
+
         // Sync pin to cloud
         const pinnedNote = get().notes.find((n) => n.id === id);
         if (pinnedNote) {
@@ -283,6 +302,9 @@ export const useNoteStore = create<NoteState>()(
             note.id === id ? { ...note, isPinned: false } : note
           ),
         }));
+
+        // Track note unpinning
+        Analytics.notePinned(id, false);
 
         // Sync unpin to cloud
         const unpinnedNote = get().notes.find((n) => n.id === id);
@@ -333,6 +355,10 @@ export const useNoteStore = create<NoteState>()(
           createdAt: Date.now(),
         };
         set((state) => ({ labels: [...state.labels, newLabel] }));
+
+        // Track label creation
+        Analytics.labelCreated(normalizedName);
+
         return newLabel;
       },
 
@@ -444,6 +470,9 @@ export const useNoteStore = create<NoteState>()(
           }),
         }));
 
+        // Track label added to note
+        Analytics.labelAddedToNote(normalizedName, noteId);
+
         // Sync to cloud
         const updatedNote = get().notes.find((n) => n.id === noteId);
         if (updatedNote) {
@@ -495,6 +524,9 @@ export const useNoteStore = create<NoteState>()(
             };
           }),
         }));
+
+        // Track label removed from note
+        Analytics.labelRemoved(normalizedName, noteId);
 
         // Sync to cloud
         const updatedNote = get().notes.find((n) => n.id === noteId);

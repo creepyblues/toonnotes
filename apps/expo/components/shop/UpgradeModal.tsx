@@ -26,12 +26,7 @@ import { purchaseService, PurchasesPackage } from '@/services/purchaseService';
 import { PRODUCT_CONFIG, getCoinsForProduct, ProductId } from '@/constants/products';
 import { generateUUID } from '@/utils/uuid';
 import { Purchase } from '@/types';
-import {
-  trackPaywallDismissed,
-  trackPurchaseStarted,
-  trackPurchaseCompleted,
-  trackPurchaseFailed,
-} from '@/utils/analytics';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 // Check if running in Expo Go
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -87,7 +82,7 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   };
 
   const handlePurchase = async (pkg: PurchasesPackage) => {
-    trackPurchaseStarted(pkg.product.identifier);
+    Analytics.purchaseStarted(pkg.product.identifier, pkg.product.price);
     setSelectedPackage(pkg.identifier);
     setProcessingPurchase(true);
 
@@ -106,11 +101,7 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
       };
 
       addPurchase(purchase);
-      trackPurchaseCompleted(
-        pkg.product.identifier,
-        result.coinsGranted,
-        pkg.product.priceString
-      );
+      Analytics.purchaseCompleted(pkg.product.identifier, pkg.product.price);
 
       Alert.alert(
         'Purchase Complete!',
@@ -118,7 +109,7 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
         [{ text: 'Continue', onPress: onClose }]
       );
     } else if (!result.userCancelled) {
-      trackPurchaseFailed(pkg.product.identifier, result.error || 'Unknown error');
+      Analytics.purchaseFailed(pkg.product.identifier, result.error || 'Unknown error');
       Alert.alert('Purchase Failed', result.error || 'Please try again.');
     }
 
@@ -127,7 +118,7 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   };
 
   const handleDismiss = () => {
-    trackPaywallDismissed();
+    Analytics.paywallDismissed();
     onClose();
   };
 

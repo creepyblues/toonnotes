@@ -43,11 +43,7 @@ import { UpgradeModal } from '@/components/shop/UpgradeModal';
 import { QualityPreview } from '@/components/designs/QualityPreview';
 import { isLowQuality, DEFAULT_SUCCESS_QUALITY } from '@/utils/validation/apiResponse';
 import { trackQualityDecision } from '@/services/qualityService';
-import {
-  trackDesignFlowStarted,
-  trackDesignGenerated,
-  trackPaywallShown,
-} from '@/utils/analytics';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 type ApplyOption = 'sticker' | 'background' | 'both';
 
@@ -78,7 +74,7 @@ export default function CreateDesignScreen() {
 
   // Track flow started on mount
   useEffect(() => {
-    trackDesignFlowStarted(freeRemaining, user.coinBalance);
+    Analytics.designFlowStarted('editor');
   }, []);
 
   // Get current note's design to preserve label preset elements
@@ -92,7 +88,7 @@ export default function CreateDesignScreen() {
   const handleSelectImage = async () => {
     if (!canAfford) {
       // Show upgrade modal instead of alert
-      trackPaywallShown(freeRemaining, user.coinBalance);
+      Analytics.paywallShown('design_creation', freeRemaining, user.coinBalance);
       setShowUpgradeModal(true);
       return;
     }
@@ -204,7 +200,7 @@ export default function CreateDesignScreen() {
     spendCoin();
 
     // Track the design generation
-    trackDesignGenerated(usingFreeDesign);
+    Analytics.designGenerated(usingFreeDesign ? 'free' : 'paid');
 
     // Navigate based on origin
     if (returnTo === 'note' && noteId) {

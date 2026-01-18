@@ -32,6 +32,7 @@ import {
   DEFAULT_CAROUSEL_SLIDES,
 } from '@/constants/onboardingConfig';
 import { getOnboardingConfig } from '@/services/onboardingService';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -275,6 +276,11 @@ export function WelcomeCarousel({ onComplete }: WelcomeCarouselProps) {
   const { isDark, colors } = useTheme();
   const [slides, setSlides] = useState<CarouselSlide[]>(DEFAULT_CAROUSEL_SLIDES);
 
+  // Track onboarding started on mount
+  useEffect(() => {
+    Analytics.onboardingStarted();
+  }, []);
+
   // Load remote config
   useEffect(() => {
     getOnboardingConfig().then((config) => {
@@ -283,6 +289,12 @@ export function WelcomeCarousel({ onComplete }: WelcomeCarouselProps) {
       }
     });
   }, []);
+
+  // Handle skip - track and complete
+  const handleSkip = () => {
+    Analytics.onboardingSkipped();
+    onComplete();
+  };
 
   // Build pages for onboarding component
   const pages = slides.map((slide) => ({
@@ -301,7 +313,7 @@ export function WelcomeCarousel({ onComplete }: WelcomeCarouselProps) {
       <Onboarding
         pages={pages}
         onDone={onComplete}
-        onSkip={onComplete}
+        onSkip={handleSkip}
         showSkip={true}
         showNext={true}
         showDone={true}

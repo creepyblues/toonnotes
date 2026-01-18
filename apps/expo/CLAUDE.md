@@ -154,7 +154,7 @@ ToonNotes_Expo/
 │   ├── migrationService.ts   # Local-to-cloud data migration
 │   ├── subscriptionService.ts # Premium/Pro tier management
 │   ├── purchaseService.ts    # In-app purchase handling
-│   ├── firebaseAnalytics.ts  # Analytics tracking
+│   ├── firebaseAnalytics.ts  # Firebase Analytics (~45 events, user properties)
 │   ├── labelingEngine.ts     # AI-powered label suggestions
 │   ├── onboardingService.ts  # Onboarding flow management
 │   ├── shareService.ts       # Share as image functionality
@@ -165,7 +165,6 @@ ToonNotes_Expo/
 │   │   └── apiResponse.ts    # Zod schemas for API responses
 │   ├── validation.ts         # Input sanitization
 │   ├── uuid.ts               # UUID generation
-│   ├── analytics.ts          # Analytics helpers
 │   ├── devLog.ts             # Development logging
 │   ├── labelNormalization.ts # Label text normalization
 │   └── shadows.ts            # Shadow style utilities

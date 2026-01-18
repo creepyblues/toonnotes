@@ -36,6 +36,7 @@ import {
 } from 'phosphor-react-native';
 import { useTheme } from '@/src/theme';
 import { getPresetForLabel, CATEGORY_COLORS, LabelCategory } from '@/constants/labelPresets';
+import { Analytics } from '@/services/firebaseAnalytics';
 
 interface LabelSuggestionSheetProps {
   noteId: string;
@@ -56,6 +57,13 @@ export function LabelSuggestionSheet({
     state.getSuggestionsForNote(noteId)
   );
   const clearSuggestions = useLabelSuggestionStore((state) => state.clearSuggestions);
+
+  // Track when suggestions are shown (on mount)
+  React.useEffect(() => {
+    suggestions.forEach((s) => {
+      Analytics.labelSuggestionShown(s.labelName, noteId);
+    });
+  }, []);
 
   // Track selected suggestions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -91,11 +99,21 @@ export function LabelSuggestionSheet({
       .filter((s) => s.isNewLabel)
       .map((s) => s.labelName);
 
+    // Track each accepted suggestion
+    selectedSuggestions.forEach((s) => {
+      Analytics.labelSuggestionAccepted(s.labelName, noteId);
+    });
+
     clearSuggestions(noteId);
     onApply(existingLabels, newLabelNames);
   }, [suggestions, selectedIds, noteId, clearSuggestions, onApply]);
 
   const handleSkip = useCallback(() => {
+    // Track declined suggestions
+    suggestions.forEach((s) => {
+      Analytics.labelSuggestionDeclined(s.labelName, noteId);
+    });
+
     clearSuggestions(noteId);
     onSkip();
   }, [noteId, clearSuggestions, onSkip]);

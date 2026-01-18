@@ -98,6 +98,7 @@ import {
   createPendingSuggestions,
   useAuthStore,
 } from '@/stores';
+import { Analytics } from '@/services/firebaseAnalytics';
 import { createShareLink } from '@/services/shareService';
 import {
   useEditorContent,
@@ -203,6 +204,13 @@ export default function NoteEditorScreen() {
 
   // Track if we've initialized from note content (moved up for sync effects)
   const hasInitializedRef = useRef(false);
+
+  // Track note opened on mount
+  useEffect(() => {
+    if (id) {
+      Analytics.noteOpened(id);
+    }
+  }, [id]);
 
   // Sync designId from note when it changes (e.g., after navigation, store hydration, or auto-apply)
   useEffect(() => {
@@ -765,6 +773,9 @@ export default function NoteEditorScreen() {
     try {
       const result = await createShareLink(note, user.id);
       if (result) {
+        // Track successful share
+        Analytics.noteShared(note.id, 'text');
+
         await Share.share({
           message: `Check out my note "${note.title || 'Untitled'}": ${result.shareUrl}`,
           url: result.shareUrl, // iOS only
