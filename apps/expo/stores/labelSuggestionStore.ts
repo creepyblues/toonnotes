@@ -44,6 +44,10 @@ export interface AutoApplyToast {
   labels: string[];
   expiresAt: number; // Timestamp when toast should auto-apply
   undone: boolean;
+  error?: {
+    message: string;
+    code: number | null;
+  };
 }
 
 interface LabelSuggestionState {
@@ -71,6 +75,7 @@ interface LabelSuggestionState {
 
   // Toast actions
   showAutoApplyToast: (noteId: string, labels: string[]) => void;
+  showErrorToast: (noteId: string, error: { message: string; code: number | null }) => void;
   hideAutoApplyToast: () => void;
   undoAutoApply: () => void;
   confirmAutoApply: () => string[]; // Returns labels to apply
@@ -175,6 +180,20 @@ export const useLabelSuggestionStore = create<LabelSuggestionState>()(
             labels,
             expiresAt: Date.now() + TOAST_DURATION_MS,
             undone: false,
+          },
+        });
+      },
+
+      showErrorToast: (noteId, error) => {
+        // Error toasts last longer (5 seconds) to give users time to read
+        const ERROR_TOAST_DURATION_MS = 5000;
+        set({
+          activeToast: {
+            noteId,
+            labels: [],
+            expiresAt: Date.now() + ERROR_TOAST_DURATION_MS,
+            undone: false,
+            error,
           },
         });
       },

@@ -53,6 +53,10 @@ export interface LabelAnalysisResponse {
   analysis: ValidatedAnalysisResult['analysis'];
   hasHighConfidenceMatch: boolean;
   hasSuggestions: boolean;
+  error?: {
+    message: string;
+    code: number | null;  // HTTP status code if available
+  };
 }
 
 export interface LabelDesignRequest {
@@ -88,6 +92,8 @@ export async function analyzeNoteContent(
   }
 
   let lastError: Error | null = null;
+  let lastStatusCode: number | null = null;
+  let lastErrorMessage: string = 'Unknown error';
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
@@ -108,6 +114,7 @@ export async function analyzeNoteContent(
 
       // Handle rate limiting
       if (response.status === 429) {
+        lastStatusCode = 429;
         const errorData = await response.json().catch(() => ({}));
         const retryAfter = errorData.retryAfter || Math.pow(2, attempt) * (BASE_DELAY_MS / 1000);
 
@@ -116,12 +123,15 @@ export async function analyzeNoteContent(
           await delay(retryAfter * 1000);
           continue;
         } else {
+          lastErrorMessage = 'Rate limited';
           throw new Error(`Rate limit exceeded. Please wait ${retryAfter} seconds.`);
         }
       }
 
       if (!response.ok) {
+        lastStatusCode = response.status;
         const errorData = await response.json().catch(() => ({}));
+        lastErrorMessage = response.status === 404 ? 'API not available' : `API error`;
         throw new Error(errorData.error || `API error: ${response.status}`);
       }
 
@@ -157,17 +167,22 @@ export async function analyzeNoteContent(
                              error.message?.includes('fetch') ||
                              error.name === 'TypeError';
 
-      if (isNetworkError && attempt < MAX_RETRIES - 1) {
-        const waitTime = BASE_DELAY_MS * Math.pow(2, attempt);
-        devLog(`🏷️ Network error, retrying in ${waitTime}ms...`);
-        await delay(waitTime);
-        continue;
+      if (isNetworkError) {
+        lastStatusCode = null;
+        lastErrorMessage = 'Network error';
+
+        if (attempt < MAX_RETRIES - 1) {
+          const waitTime = BASE_DELAY_MS * Math.pow(2, attempt);
+          devLog(`🏷️ Network error, retrying in ${waitTime}ms...`);
+          await delay(waitTime);
+          continue;
+        }
       }
     }
   }
 
-  // Return empty result on failure (don't block the user)
-  devWarn('🏷️ Analysis failed, returning empty result:', lastError);
+  // Return empty result with error info (don't block the user)
+  devWarn('🏷️ Analysis failed, returning error result:', lastError);
   return {
     autoApplyLabels: [],
     suggestLabels: [],
@@ -175,6 +190,10 @@ export async function analyzeNoteContent(
     analysis: { topics: [], mood: 'calm', contentType: 'notes' },
     hasHighConfidenceMatch: false,
     hasSuggestions: false,
+    error: {
+      message: lastErrorMessage,
+      code: lastStatusCode,
+    },
   };
 }
 

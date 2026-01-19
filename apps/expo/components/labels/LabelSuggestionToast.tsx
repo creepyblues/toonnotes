@@ -15,7 +15,8 @@ import {
   TextInput,
 } from 'react-native';
 import { useLabelSuggestionStore, useNoteStore } from '@/stores';
-import { Tag, X, Check, Hash, Plus } from 'phosphor-react-native';
+import { Tag, X, Check, Hash, Plus, WarningCircle } from 'phosphor-react-native';
+import { Linking } from 'react-native';
 import { useTheme } from '@/src/theme';
 
 const ANIMATION_DURATION_MS = 200;
@@ -50,6 +51,19 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
       setInputValue('');
     }
   }, [activeToast]);
+
+  // Auto-dismiss error toast after 5 seconds
+  useEffect(() => {
+    if (activeToast?.error && !activeToast.undone) {
+      const timeUntilExpiry = activeToast.expiresAt - Date.now();
+      const timeout = setTimeout(() => {
+        hideAutoApplyToast();
+        onComplete?.();
+      }, Math.max(0, timeUntilExpiry));
+
+      return () => clearTimeout(timeout);
+    }
+  }, [activeToast, hideAutoApplyToast, onComplete]);
 
   // Animate toast in/out
   useEffect(() => {
@@ -124,10 +138,87 @@ export function LabelSuggestionToast({ onComplete }: LabelSuggestionToastProps) 
     onComplete?.();
   }, [hideAutoApplyToast, onComplete]);
 
+  // Handler for "Report this issue" link
+  const handleReportIssue = useCallback(() => {
+    const errorDetails = activeToast?.error;
+    const errorCode = errorDetails?.code ? `Code: ${errorDetails.code}` : 'No code';
+    const errorMessage = errorDetails?.message || 'Unknown error';
+    const issueUrl = `https://github.com/anthropics/claude-code/issues/new?title=${encodeURIComponent('[ToonNotes] Auto-labeling API error')}&body=${encodeURIComponent(`## Error Details\n- Message: ${errorMessage}\n- ${errorCode}\n\n## Steps to Reproduce\n1. Edit a note with content\n2. Navigate back from the note editor\n3. Error toast appears\n\n## Expected Behavior\nAuto-labeling should suggest labels for the note.\n\n## Additional Context\n(Please add any additional context here)`)}`;
+    Linking.openURL(issueUrl);
+  }, [activeToast?.error]);
+
   if (!activeToast || activeToast.undone) {
     return null;
   }
 
+  // Error state rendering
+  if (activeToast.error) {
+    const errorCode = activeToast.error.code;
+    const errorMessage = activeToast.error.message;
+    const errorDetail = errorCode ? `${errorMessage} (${errorCode})` : errorMessage;
+
+    return (
+      <View style={styles.overlay}>
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              backgroundColor: isDark ? '#292524' : '#FFFFFF',
+              transform: [{ scale }],
+              opacity,
+              shadowColor: '#000000',
+            },
+          ]}
+        >
+          <View style={styles.content}>
+            {/* Header row with warning icon */}
+            <View style={styles.headerRow}>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? '#78350F' : '#FEF3C7' }]}>
+                <WarningCircle size={18} color={isDark ? '#FBBF24' : '#D97706'} weight="bold" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
+                  Auto-labeling unavailable
+                </Text>
+                <Text style={[styles.errorDetail, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+                  {errorDetail}
+                </Text>
+              </View>
+
+              {/* Dismiss button only */}
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  onPress={handleDismiss}
+                  style={[
+                    styles.dismissButton,
+                    { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
+                  ]}
+                  accessibilityLabel="Dismiss"
+                  accessibilityRole="button"
+                >
+                  <X size={18} color={isDark ? '#9CA3AF' : '#6B7280'} weight="bold" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Report issue link */}
+            <TouchableOpacity
+              onPress={handleReportIssue}
+              style={styles.reportLinkRow}
+              accessibilityLabel="Report this issue"
+              accessibilityRole="link"
+            >
+              <Text style={[styles.reportLink, { color: isDark ? '#FBBF24' : '#D97706' }]}>
+                Report this issue
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  }
+
+  // Normal label suggestion toast
   return (
     <View style={styles.overlay}>
       <Animated.View
@@ -289,6 +380,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     flex: 1,
+  },
+  errorDetail: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  reportLinkRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  reportLink: {
+    fontSize: 14,
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   actions: {
     flexDirection: 'row',

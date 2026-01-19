@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "toonnotes-analytics": {
+      "url": "https://mcp-analytics.vercel.app/api/mcp"
+    }
+  }
+}

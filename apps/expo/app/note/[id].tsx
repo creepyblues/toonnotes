@@ -190,6 +190,7 @@ export default function NoteEditorScreen() {
   // Label suggestion store hooks
   const setPendingSuggestions = useLabelSuggestionStore((state) => state.setPendingSuggestions);
   const showAutoApplyToast = useLabelSuggestionStore((state) => state.showAutoApplyToast);
+  const showErrorToast = useLabelSuggestionStore((state) => state.showErrorToast);
   const getSuggestionsForNote = useLabelSuggestionStore((state) => state.getSuggestionsForNote);
   const clearSuggestions = useLabelSuggestionStore((state) => state.clearSuggestions);
   const currentDesign = note?.designId ? getDesignById(note.designId) : null;
@@ -447,6 +448,12 @@ export default function NoteEditorScreen() {
         noteContent: content,
         existingLabels: existingLabelNames,
       });
+
+      // Check for API error and show error toast
+      if (result.error) {
+        showErrorToast(id, result.error);
+        return true; // Show toast before navigation
+      }
 
       // Filter out labels already applied to this note
       const normalizedNoteLabels = note.labels.map((l) => normalizeLabel(l));
