@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { getDiaryEntry, listDiaryEntries } from '@/lib/marketing/diary';
+import { DiaryContent } from '@/components/marketing/diary';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,9 +121,7 @@ export default async function DiaryEntryPage({ params }: PageProps) {
         </header>
 
         {/* Content */}
-        <article className="prose prose-warm max-w-none prose-headings:font-display prose-h2:text-2xl prose-h3:text-xl prose-a:text-teal-600 prose-code:rounded prose-code:bg-warm-100 prose-code:px-1 prose-code:py-0.5 prose-code:text-warm-800 prose-code:before:content-none prose-code:after:content-none prose-pre:bg-warm-900 prose-img:rounded-xl prose-img:shadow-lg">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.rawContent}</ReactMarkdown>
-        </article>
+        <DiaryContent content={entry.rawContent} />
 
         {/* Navigation */}
         <nav className="mt-12 flex items-center justify-between border-t border-warm-200 pt-8">
