@@ -1,8 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-// Diary content lives in the marketing directory
-const DIARY_ROOT = path.join(process.cwd(), '..', 'marketing', 'development_diary');
+// Diary content lives in the marketing directory at the monorepo root
+// From apps/web, we need to go up two levels to reach the root
+const DIARY_ROOT = path.join(process.cwd(), '..', '..', 'marketing', 'development_diary');
 
 /**
  * Diary entry categories for classifying work

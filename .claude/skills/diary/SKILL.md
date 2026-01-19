@@ -62,12 +62,21 @@ Take a screenshot of current app state.
 
 When `/diary generate` is invoked:
 
+### Date Determination
+
+First, determine the target date for the entry:
+
+1. **If user specified `--date=YYYY-MM-DD`:** Use that date (e.g., `/diary generate --date=2026-01-08` → use `2026-01-08`)
+2. **If no date specified:** Use today's date in `YYYY-MM-DD` format
+
+Store this as the `TARGET_DATE` to use in all subsequent steps.
+
 ### Step 1: Collect Claude Code History
 
 Run `scripts/collect_history.py` to parse `~/.claude/history.jsonl`:
 
 ```bash
-python3 .claude/skills/diary/scripts/collect_history.py --date=2026-01-09
+python3 .claude/skills/diary/scripts/collect_history.py --date={TARGET_DATE}
 ```
 
 This extracts:
@@ -80,7 +89,7 @@ This extracts:
 Run `scripts/analyze_commits.py` to get git activity:
 
 ```bash
-python3 .claude/skills/diary/scripts/analyze_commits.py --date=2026-01-09
+python3 .claude/skills/diary/scripts/analyze_commits.py --date={TARGET_DATE}
 ```
 
 This extracts:
@@ -108,7 +117,7 @@ Match prompts with commits by timestamp proximity. Categorize all activities usi
 Check for insights added during the day via `/diary add`:
 
 ```
-marketing/development_diary/drafts/.insights-2026-01-09.json
+marketing/development_diary/drafts/.insights-{TARGET_DATE}.json
 ```
 
 ### Step 5: Capture Screenshots (if --screenshot)
@@ -120,7 +129,7 @@ mcp__plugin_playwright_playwright__browser_navigate
 mcp__plugin_playwright_playwright__browser_take_screenshot
 ```
 
-Save to: `marketing/development_diary/screenshots/2026-01-09/`
+Save to: `marketing/development_diary/screenshots/{TARGET_DATE}/`
 
 ### Step 6: Generate Entry
 
@@ -136,7 +145,7 @@ Use the template at `marketing/development_diary/templates/daily-entry.md` to ge
 
 ### Step 7: Save Draft
 
-Write to: `marketing/development_diary/drafts/2026-01-09.md`
+Write to: `marketing/development_diary/drafts/{TARGET_DATE}.md`
 
 ## Privacy Guidelines
 
