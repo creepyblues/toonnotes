@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   lineContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minHeight: 10,
     paddingVertical: 1,
   },

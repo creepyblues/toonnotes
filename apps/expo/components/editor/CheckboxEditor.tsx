@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   lineContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minHeight: 40,
     paddingVertical: 4,
   },
