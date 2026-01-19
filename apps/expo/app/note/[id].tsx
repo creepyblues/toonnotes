@@ -1588,7 +1588,9 @@ export default function NoteEditorScreen() {
           paddingHorizontal: 16,
           paddingVertical: 8,
           zIndex: 100,
-          transform: [{ translateY: Animated.multiply(keyboardHeight, -1) }],
+          transform: Platform.OS === 'ios'
+            ? [{ translateY: Animated.multiply(keyboardHeight, -1) }]
+            : [],
         }}>
           {/* Label pills on left */}
           <TouchableOpacity
