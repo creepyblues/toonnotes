@@ -14,7 +14,7 @@
  * when the corresponding label is added to a note.
  */
 
-import { StickerPosition } from '@/types';
+import { Mode, OrganizeStage, StickerPosition } from '@/types';
 
 // ============================================
 // Type Definitions
@@ -98,6 +98,10 @@ export interface LabelPreset {
   description: string;
   isSystemLabel?: boolean; // True for system labels like 'uncategorized'
 
+  // MODE Framework (v2.0)
+  mode: Mode;              // Cognitive mode for this label type
+  organizeStage?: OrganizeStage;  // Only for ORGANIZE mode labels
+
   colors: {
     primary: string; // Main accent color
     secondary: string; // Secondary accent
@@ -162,6 +166,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'CheckSquare',
     mood: 'energetic',
     description: 'Tasks & action items',
+    mode: 'manage',
     colors: {
       primary: '#FF6B6B',
       secondary: '#FFE66D',
@@ -186,6 +191,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Spinner',
     mood: 'energetic',
     description: 'Currently working on',
+    mode: 'manage',
     colors: {
       primary: '#0984E3',
       secondary: '#74B9FF',
@@ -210,6 +216,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'CheckCircle',
     mood: 'calm',
     description: 'Completed tasks',
+    mode: 'manage',
     colors: {
       primary: '#00B894',
       secondary: '#55EFC4',
@@ -233,6 +240,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Hourglass',
     mood: 'calm',
     description: 'Blocked or pending',
+    mode: 'manage',
     colors: {
       primary: '#FDCB6E',
       secondary: '#F8E9C7',
@@ -257,6 +265,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Star',
     mood: 'bold',
     description: 'High priority items',
+    mode: 'manage',
     colors: {
       primary: '#E17055',
       secondary: '#FDCB6E',
@@ -285,6 +294,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Target',
     mood: 'energetic',
     description: 'Personal goals & milestones',
+    mode: 'manage',
     colors: {
       primary: '#00B894',
       secondary: '#55EFC4',
@@ -309,6 +319,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Users',
     mood: 'serious',
     description: 'Meeting notes & agendas',
+    mode: 'manage',
     colors: {
       primary: '#636E72',
       secondary: '#B2BEC3',
@@ -332,6 +343,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Calendar',
     mood: 'calm',
     description: 'Plans & schedules',
+    mode: 'manage',
     colors: {
       primary: '#6C5CE7',
       secondary: '#A29BFE',
@@ -356,6 +368,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Alarm',
     mood: 'bold',
     description: 'Time-sensitive tasks',
+    mode: 'manage',
     colors: {
       primary: '#D63031',
       secondary: '#FF7675',
@@ -380,6 +393,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Folder',
     mood: 'serious',
     description: 'Project documentation',
+    mode: 'manage',
     colors: {
       primary: '#E17055',
       secondary: '#FAB1A0',
@@ -407,6 +421,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'ShoppingCart',
     mood: 'playful',
     description: 'Shopping & grocery lists',
+    mode: 'manage',
     colors: {
       primary: '#00CEC9',
       secondary: '#81ECEC',
@@ -431,6 +446,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Star',
     mood: 'dreamy',
     description: 'Things you want',
+    mode: 'manage',
     colors: {
       primary: '#FD79A8',
       secondary: '#FDCCE5',
@@ -455,6 +471,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Suitcase',
     mood: 'energetic',
     description: 'Travel packing lists',
+    mode: 'manage',
     colors: {
       primary: '#0984E3',
       secondary: '#74B9FF',
@@ -479,6 +496,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'MapPin',
     mood: 'dreamy',
     description: 'Life goals & experiences',
+    mode: 'manage',
     colors: {
       primary: '#F8B500',
       secondary: '#FFEAA7',
@@ -503,6 +521,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'MapTrifold',
     mood: 'energetic',
     description: 'Tasks to do outside',
+    mode: 'manage',
     colors: {
       primary: '#00B894',
       secondary: '#55EFC4',
@@ -530,6 +549,8 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'BookOpen',
     mood: 'calm',
     description: 'Books & manga notes',
+    mode: 'organize',
+    organizeStage: 'store',
     colors: {
       primary: '#6C5CE7',
       secondary: '#A29BFE',
@@ -554,6 +575,8 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Television',
     mood: 'playful',
     description: 'Shows & anime to watch',
+    mode: 'organize',
+    organizeStage: 'store',
     colors: {
       primary: '#0984E3',
       secondary: '#74B9FF',
@@ -578,6 +601,8 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'BookmarkSimple',
     mood: 'calm',
     description: 'Saved links & references',
+    mode: 'organize',
+    organizeStage: 'store',
     colors: {
       primary: '#9B59B6',
       secondary: '#D7BDE2',
@@ -601,6 +626,8 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'ChatCircleText',
     mood: 'serious',
     description: 'Reviews & ratings',
+    mode: 'organize',
+    organizeStage: 'store',
     colors: {
       primary: '#FDCB6E',
       secondary: '#F39C12',
@@ -624,6 +651,8 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'HeartStraight',
     mood: 'playful',
     description: 'Things to share',
+    mode: 'organize',
+    organizeStage: 'store',
     colors: {
       primary: '#FD79A8',
       secondary: '#FDCCE5',
@@ -652,6 +681,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Lightbulb',
     mood: 'energetic',
     description: 'Concepts & inspiration',
+    mode: 'develop',
     colors: {
       primary: '#FFEAA7',
       secondary: '#FDCB6E',
@@ -676,6 +706,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'NotePencil',
     mood: 'calm',
     description: 'Work in progress',
+    mode: 'develop',
     colors: {
       primary: '#74B9FF',
       secondary: '#A3DAFF',
@@ -700,6 +731,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Brain',
     mood: 'energetic',
     description: 'Mind maps & free thinking',
+    mode: 'develop',
     colors: {
       primary: '#9B59B6',
       secondary: '#8E44AD',
@@ -724,6 +756,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Sparkle',
     mood: 'dreamy',
     description: 'Mood boards & references',
+    mode: 'develop',
     colors: {
       primary: '#F8B500',
       secondary: '#FFEAA7',
@@ -748,6 +781,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'MagnifyingGlass',
     mood: 'serious',
     description: 'Deep dives & analysis',
+    mode: 'develop',
     colors: {
       primary: '#0984E3',
       secondary: '#74B9FF',
@@ -775,6 +809,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Notebook',
     mood: 'dreamy',
     description: 'Daily reflections',
+    mode: 'experience',
     colors: {
       primary: '#FDCB6E',
       secondary: '#F8E9C7',
@@ -799,6 +834,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Camera',
     mood: 'dreamy',
     description: 'Nostalgic moments',
+    mode: 'experience',
     colors: {
       primary: '#DFE6E9',
       secondary: '#B2BEC3',
@@ -823,6 +859,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'SunHorizon',
     mood: 'calm',
     description: 'Self-reflection & thoughts',
+    mode: 'experience',
     colors: {
       primary: '#81ECEC',
       secondary: '#00CEC9',
@@ -847,6 +884,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Heart',
     mood: 'calm',
     description: 'Things to be thankful for',
+    mode: 'experience',
     colors: {
       primary: '#FF7675',
       secondary: '#FAB1A0',
@@ -871,6 +909,7 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     noteIcon: 'Quotes',
     mood: 'dreamy',
     description: 'Memorable lines',
+    mode: 'experience',
     colors: {
       primary: '#DFE6E9',
       secondary: '#B2BEC3',
@@ -900,6 +939,8 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
     mood: 'calm',
     description: 'Notes awaiting organization',
     isSystemLabel: true,
+    mode: 'organize',
+    organizeStage: 'inbox',
     colors: {
       primary: '#636E72',
       secondary: '#B2BEC3',
@@ -1071,3 +1112,75 @@ export const CATEGORY_ORDER: Exclude<LabelCategory, 'system'>[] = [
   'creative',
   'personal',
 ];
+
+// ============================================
+// MODE Framework Helper Functions
+// ============================================
+
+/**
+ * Get all presets for a specific mode
+ */
+export function getPresetsForMode(mode: Mode): LabelPreset[] {
+  return ALL_LABEL_PRESETS.filter((p) => p.mode === mode);
+}
+
+/**
+ * Get presets grouped by mode
+ */
+export const PRESETS_BY_MODE: Record<Mode, LabelPreset[]> = {
+  manage: ALL_LABEL_PRESETS.filter((p) => p.mode === 'manage'),
+  develop: ALL_LABEL_PRESETS.filter((p) => p.mode === 'develop'),
+  organize: ALL_LABEL_PRESETS.filter((p) => p.mode === 'organize'),
+  experience: ALL_LABEL_PRESETS.filter((p) => p.mode === 'experience'),
+};
+
+/**
+ * Get the mode for a given label name
+ */
+export function getModeForLabel(labelName: string): Mode | undefined {
+  const preset = getPresetForLabelFuzzy(labelName);
+  return preset?.mode;
+}
+
+/**
+ * MODE display configuration
+ */
+export const MODE_CONFIG: Record<
+  Mode,
+  {
+    name: string;
+    icon: string;
+    color: string;
+    agentName: string;
+    coreQuestion: string;
+  }
+> = {
+  manage: {
+    name: 'Manage',
+    icon: '🎯',
+    color: '#FF6B6B',
+    agentName: 'The Manager',
+    coreQuestion: 'What needs to happen?',
+  },
+  develop: {
+    name: 'Develop',
+    icon: '💡',
+    color: '#FFEAA7',
+    agentName: 'The Muse',
+    coreQuestion: 'What could this become?',
+  },
+  organize: {
+    name: 'Organize',
+    icon: '📚',
+    color: '#00CEC9',
+    agentName: 'The Librarian',
+    coreQuestion: 'Where should this live?',
+  },
+  experience: {
+    name: 'Experience',
+    icon: '📔',
+    color: '#A29BFE',
+    agentName: 'The Biographer',
+    coreQuestion: 'What do you want to remember?',
+  },
+};

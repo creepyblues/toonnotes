@@ -3,6 +3,341 @@
 // Based on PRD.md specifications
 // ============================================
 
+// ============================================
+// MODE Framework Types (v2.0)
+// ============================================
+
+/**
+ * The four cognitive modes that define note/board intent
+ * Each mode has a dedicated AI Agent with specialized skills
+ */
+export type Mode = 'manage' | 'develop' | 'organize' | 'experience';
+
+/**
+ * Sub-stages for ORGANIZE mode
+ * INBOX → STORE → LEARN
+ */
+export type OrganizeStage = 'inbox' | 'store' | 'learn';
+
+/**
+ * Agent identifiers corresponding to each mode
+ */
+export type AgentId = 'manager' | 'muse' | 'librarian' | 'biographer';
+
+/**
+ * AI Agent personality configuration
+ */
+export interface AgentPersonality {
+  tone: string;           // e.g., "direct and action-oriented"
+  approach: string;       // e.g., "breaks down complexity"
+  values: string[];       // e.g., ["efficiency", "completion", "clarity"]
+  avoids: string[];       // e.g., ["overwhelm", "guilt", "pressure"]
+}
+
+/**
+ * Skill trigger types
+ */
+export type SkillTriggerType = 'time' | 'event' | 'pattern' | 'manual';
+
+/**
+ * Skill trigger condition
+ */
+export interface SkillTriggerCondition {
+  type: SkillTriggerType;
+  event?: string;         // For event triggers: 'note_created', 'note_updated', etc.
+  pattern?: string;       // For pattern triggers: 'no_deadline', 'untouched_7_days', etc.
+  schedule?: string;      // For time triggers: cron-like expression
+  threshold?: number;     // Threshold value for pattern triggers
+}
+
+/**
+ * Skill trigger
+ */
+export interface SkillTrigger {
+  type: SkillTriggerType;
+  condition: SkillTriggerCondition;
+  cooldown?: number;      // Prevent spam (milliseconds)
+}
+
+/**
+ * Skill result action types
+ */
+export type SkillResultAction = 'nudge' | 'prompt' | 'auto_action' | 'none';
+
+/**
+ * Nudge action types
+ */
+export type NudgeActionType =
+  | 'navigate'
+  | 'update_note'
+  | 'move_note'
+  | 'dismiss'
+  | 'snooze'
+  | 'custom';
+
+/**
+ * Nudge action
+ */
+export type NudgeAction =
+  | { type: 'navigate'; target: string }
+  | { type: 'update_note'; noteId: string; changes: Partial<Note> }
+  | { type: 'move_note'; noteId: string; targetBoard: string }
+  | { type: 'dismiss' }
+  | { type: 'snooze'; duration: number }
+  | { type: 'custom'; handler: string; data?: Record<string, unknown> };
+
+/**
+ * Nudge option for user interaction
+ */
+export interface NudgeOption {
+  id: string;
+  label: string;
+  icon?: string;
+  action: NudgeAction;
+  isPrimary?: boolean;
+}
+
+/**
+ * Nudge priority levels
+ */
+export type NudgePriority = 'low' | 'medium' | 'high' | 'urgent';
+
+/**
+ * Nudge delivery channels
+ */
+export type NudgeDeliveryChannel = 'toast' | 'sheet' | 'notification' | 'inline';
+
+/**
+ * Nudge outcome tracking
+ */
+export type NudgeOutcome = 'accepted' | 'dismissed' | 'snoozed' | 'ignored' | 'expired';
+
+/**
+ * Nudge entity
+ */
+export interface Nudge {
+  id: string;
+  skillId: string;
+  agentId: AgentId;
+
+  // Content
+  title: string;
+  body: string;
+  options: NudgeOption[];
+
+  // Context
+  noteId?: string;
+  boardId?: string;
+
+  // Delivery
+  priority: NudgePriority;
+  deliveryChannel: NudgeDeliveryChannel;
+
+  // Timing
+  createdAt: number;
+  showAt?: number;        // Scheduled delivery
+  expiresAt?: number;
+
+  // Tracking
+  shownAt?: number;
+  interactedAt?: number;
+  outcome?: NudgeOutcome;
+}
+
+// ============================================
+// Note Behavior Tracking (MODE Framework)
+// ============================================
+
+/**
+ * MANAGE mode usefulness levels
+ */
+export type ManageUsefulnessLevel = 'captured' | 'scheduled' | 'ready' | 'complete';
+
+/**
+ * DEVELOP mode maturity levels
+ */
+export type DevelopMaturityLevel = 'spark' | 'explored' | 'developed' | 'ready';
+
+/**
+ * ORGANIZE mode flow stages
+ */
+export type OrganizeFlowStage = 'filed' | 'accessed' | 'valuable' | 'essential';
+
+/**
+ * EXPERIENCE mode depth levels
+ */
+export type ExperienceDepthLevel = 'logged' | 'detailed' | 'connected' | 'memory';
+
+/**
+ * Content type detection for DEVELOP mode
+ */
+export type DevelopContentType = 'story' | 'business' | 'blog' | 'design' | 'general';
+
+/**
+ * Sentiment analysis for EXPERIENCE mode
+ */
+export type Sentiment = 'positive' | 'neutral' | 'negative';
+
+/**
+ * State transition record
+ */
+export interface StateTransition {
+  from: string;
+  to: string;
+  timestamp: number;
+  trigger?: string;       // What caused the transition
+}
+
+/**
+ * MANAGE mode specific data
+ */
+export interface ManageData {
+  hasDeadline: boolean;
+  deadline?: number;      // Unix timestamp
+  hasPriority: boolean;
+  priority?: 'low' | 'medium' | 'high';
+  hasSubtasks: boolean;
+  subtaskCount?: number;
+  completedSubtasks?: number;
+  completedAt?: number;
+  stateHistory: StateTransition[];
+  usefulnessLevel: ManageUsefulnessLevel;
+}
+
+/**
+ * DEVELOP mode specific data
+ */
+export interface DevelopData {
+  maturityLevel: DevelopMaturityLevel;
+  contentType?: DevelopContentType;
+  expansionCount: number; // Number of times AI expanded the idea
+  linkedIdeas: string[];  // Related note IDs
+  lastExpandedAt?: number;
+  readyForAction?: boolean; // Ready to bridge to MANAGE
+}
+
+/**
+ * ORGANIZE mode specific data
+ */
+export interface OrganizeData {
+  stage: OrganizeStage;
+  processedAt?: number;   // When moved from INBOX
+  usageCount: number;     // How many times accessed/used
+  lastUsedAt?: number;
+  tags: string[];
+  autoTags?: string[];    // AI-suggested tags
+  // LEARN specific
+  masteryLevel?: number;  // 0-100
+  nextReviewAt?: number;  // Spaced repetition
+  reviewHistory?: Array<{
+    timestamp: number;
+    result: 'knew' | 'forgot' | 'skipped';
+  }>;
+  flowStage: OrganizeFlowStage;
+}
+
+/**
+ * EXPERIENCE mode specific data
+ */
+export interface ExperienceData {
+  entryDate: number;
+  sentiment?: Sentiment;
+  hasMedia: boolean;
+  hasLocation: boolean;
+  location?: {
+    name?: string;
+    coordinates?: { lat: number; lng: number };
+  };
+  peopleTagged: string[];
+  streakDays: number;     // Consecutive journaling days
+  lastEntryAt?: number;
+  depthLevel: ExperienceDepthLevel;
+}
+
+/**
+ * Union type for mode-specific data
+ */
+export type ModeData = ManageData | DevelopData | OrganizeData | ExperienceData;
+
+/**
+ * Note behavior tracking entity
+ * Tracks engagement and lifecycle of notes within the MODE framework
+ */
+export interface NoteBehavior {
+  noteId: string;
+  mode: Mode;
+
+  // Lifecycle
+  usefulnessScore: number;  // 0-100
+  usefulnessLevel: string;  // Mode-specific level name
+
+  // Engagement
+  lastAccessedAt: number;
+  accessCount: number;
+  editCount: number;
+  createdAt: number;
+
+  // Mode-specific data
+  modeData: ModeData;
+
+  // Learning
+  lastNudgedAt?: number;
+  nudgeCount: number;
+  nudgeResponseRate?: number; // 0-1, how often user responds to nudges
+}
+
+// ============================================
+// User Behavior Learning (MODE Framework)
+// ============================================
+
+/**
+ * User patterns learned by the behavior system
+ */
+export interface UserPatterns {
+  // Time patterns
+  activeHours: number[];      // 0-23, hours when user is most active
+  journalingTime?: number;    // Preferred journaling hour
+  taskCompletionTime?: number; // Preferred task time
+
+  // Engagement patterns
+  nudgeResponseRate: number;   // Overall nudge response rate
+  preferredNudgeChannel: NudgeDeliveryChannel;
+  dismissedSkillIds: string[]; // Skills user consistently dismisses
+
+  // Content patterns
+  averageNoteLength: number;
+  commonTags: string[];
+  modeDistribution: Record<Mode, number>; // % of notes in each mode
+
+  // Updated timestamp
+  lastUpdatedAt: number;
+}
+
+/**
+ * User event for behavior tracking
+ */
+export interface UserBehaviorEvent {
+  id: string;
+  userId: string;
+  eventType: string;
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
+
+// ============================================
+// Mode-Aware Board Extension
+// ============================================
+
+/**
+ * Mode configuration for boards
+ */
+export interface BoardModeConfig {
+  mode: Mode;
+  organizeStage?: OrganizeStage;  // Only for ORGANIZE mode
+  agentEnabled: boolean;          // Whether AI agent is active
+  customSettings?: Record<string, unknown>;
+}
+
 export type StickerPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 export type StickerScale = 'small' | 'medium' | 'large';
 
@@ -308,6 +643,11 @@ export interface Board {
   boardDesignId?: string;    // Reference to BoardDesign
   createdAt: number;
   updatedAt: number;
+
+  // MODE Framework (v2.0)
+  mode?: Mode;               // Cognitive mode for this board
+  organizeStage?: OrganizeStage;  // Only for ORGANIZE mode boards
+  modeConfig?: BoardModeConfig;   // Full mode configuration
 }
 
 // Board accent decoration types

@@ -15,3 +15,21 @@ export {
   type PendingSuggestion,
   type AutoApplyToast,
 } from './labelSuggestionStore';
+
+// MODE Framework v2.0 stores
+export {
+  useBehaviorStore,
+  calculateUsefulnessScore,
+  createDefaultBehavior,
+  createDefaultManageData,
+  createDefaultDevelopData,
+  createDefaultOrganizeData,
+  createDefaultExperienceData,
+} from './behaviorStore';
+
+export {
+  useNudgeStore,
+  NudgeBuilder,
+  createNudge,
+  NudgeActions,
+} from './nudgeStore';
