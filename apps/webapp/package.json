@@ -38,6 +38,7 @@
     "@tiptap/starter-kit": "^3.15.3",
     "@toonnotes/constants": "workspace:*",
     "@toonnotes/design-engine": "workspace:*",
+    "@toonnotes/label-ai": "workspace:*",
     "@toonnotes/supabase": "workspace:*",
     "@toonnotes/types": "workspace:*",
     "clsx": "^2.1.1",

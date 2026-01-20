@@ -25,10 +25,11 @@ import {
   TextT,
   Tag,
 } from '@phosphor-icons/react';
-import { LabelPill, LabelPicker } from '@/components/labels';
+import { LabelPill, LabelPicker, LabelSuggestionToast } from '@/components/labels';
 import { Note, NoteColor, EditorMode } from '@toonnotes/types';
-import { useNoteStore } from '@/stores';
+import { useNoteStore, useLabelSuggestionStore } from '@/stores';
 import { cn, textToHtml, htmlToPlainText } from '@/lib/utils';
+import { analyzeNoteContent, filterExistingLabels } from '@toonnotes/label-ai';
 
 interface NoteEditorProps {
   noteId: string;
@@ -48,7 +49,8 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   const router = useRouter();
   const titleRef = useRef<HTMLInputElement>(null);
 
-  const getNoteById = useNoteStore((state) => state.getNoteById);
+  // Note store
+  const note = useNoteStore((state) => state.notes.find((n) => n.id === noteId));
   const updateNote = useNoteStore((state) => state.updateNote);
   const deleteNote = useNoteStore((state) => state.deleteNote);
   const restoreNote = useNoteStore((state) => state.restoreNote);
@@ -56,8 +58,21 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   const unarchiveNote = useNoteStore((state) => state.unarchiveNote);
   const pinNote = useNoteStore((state) => state.pinNote);
   const unpinNote = useNoteStore((state) => state.unpinNote);
+  const addLabelToNote = useNoteStore((state) => state.addLabelToNote);
+  const removeLabelFromNote = useNoteStore((state) => state.removeLabelFromNote);
+  const allLabels = useNoteStore((state) => state.labels);
 
-  const note = getNoteById(noteId);
+  // Label suggestion store
+  const {
+    showAutoApplyToast,
+    showSuggestionToast,
+    showErrorToast,
+    setAnalyzing,
+    isAnalyzing,
+  } = useLabelSuggestionStore();
+
+  // Track labels applied via auto-labeling (for undo)
+  const autoAppliedLabelsRef = useRef<string[]>([]);
 
   const [title, setTitle] = useState(note?.title || '');
   const [color, setColor] = useState<NoteColor>(note?.color || NoteColor.White);
@@ -173,9 +188,117 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
     }
   }, [title]);
 
-  const handleBack = useCallback(() => {
-    router.back();
+  // Analyze note content and suggest labels
+  // Returns true if a toast was shown (analysis had results)
+  const analyzeAndSuggestLabels = useCallback(async (): Promise<boolean> => {
+    if (!note) return false;
+
+    const currentContent = htmlToPlainText(contentRef.current);
+
+    // Skip analysis for very short notes
+    if (!title?.trim() && currentContent.length < 20) {
+      return false;
+    }
+
+    // Get existing label names for matching
+    const existingLabelNames = allLabels.map((l) => l.name);
+
+    setAnalyzing(true, noteId);
+
+    try {
+      const response = await analyzeNoteContent({
+        noteTitle: title,
+        noteContent: currentContent,
+        existingLabels: existingLabelNames,
+      });
+
+      // Handle API errors
+      if (response.error) {
+        showErrorToast(noteId, response.error);
+        return false;
+      }
+
+      // Filter out labels already on the note
+      const newAutoApplyLabels = filterExistingLabels(
+        response.autoApplyLabels,
+        note.labels
+      );
+      const newSuggestLabels = filterExistingLabels(
+        response.suggestLabels,
+        note.labels
+      );
+
+      // Show toast for auto-apply OR suggested labels
+      if (newAutoApplyLabels.length > 0) {
+        // High-confidence labels: auto-apply with undo option
+        const labelNames = newAutoApplyLabels.map((l) => l.labelName);
+        showAutoApplyToast(noteId, labelNames);
+        return true;
+      } else if (newSuggestLabels.length > 0) {
+        // Medium-confidence labels: show suggestion for user to accept/decline
+        const labelNames = newSuggestLabels.map((l) => l.labelName);
+        showSuggestionToast(noteId, labelNames);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('[NoteEditor] Analysis error:', error);
+      showErrorToast(noteId, { message: 'Analysis failed', code: null });
+      return false;
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [note, noteId, title, allLabels, setAnalyzing, showAutoApplyToast, showSuggestionToast, showErrorToast]);
+
+  // Track if we're waiting for toast action before navigating
+  const pendingNavigationRef = useRef(false);
+
+  // Handle applying labels from toast
+  const handleApplyLabels = useCallback((labels: string[]) => {
+    labels.forEach((label) => {
+      addLabelToNote(noteId, label);
+    });
+    autoAppliedLabelsRef.current = labels;
+    // Navigate after applying labels if we were waiting
+    if (pendingNavigationRef.current) {
+      pendingNavigationRef.current = false;
+      router.back();
+    }
+  }, [noteId, addLabelToNote, router]);
+
+  // Handle undo auto-applied labels
+  const handleUndoLabels = useCallback(() => {
+    autoAppliedLabelsRef.current.forEach((label) => {
+      removeLabelFromNote(noteId, label);
+    });
+    autoAppliedLabelsRef.current = [];
+    // Navigate after undo if we were waiting
+    if (pendingNavigationRef.current) {
+      pendingNavigationRef.current = false;
+      router.back();
+    }
+  }, [noteId, removeLabelFromNote, router]);
+
+  // Handle declining suggestions (dismiss toast without applying)
+  const handleDecline = useCallback(() => {
+    // Navigate after decline if we were waiting
+    if (pendingNavigationRef.current) {
+      pendingNavigationRef.current = false;
+      router.back();
+    }
   }, [router]);
+
+  const handleBack = useCallback(async () => {
+    // Trigger label analysis before navigating away
+    const hasToast = await analyzeAndSuggestLabels();
+    if (hasToast) {
+      // Wait for user to handle the toast before navigating
+      pendingNavigationRef.current = true;
+    } else {
+      // No toast, navigate immediately
+      router.back();
+    }
+  }, [analyzeAndSuggestLabels, router]);
 
   const handlePin = useCallback(() => {
     if (note?.isPinned) {
@@ -426,6 +549,13 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           />
         </div>
       </div>
+
+      {/* Label Suggestion Toast */}
+      <LabelSuggestionToast
+        onApplyLabels={handleApplyLabels}
+        onUndo={handleUndoLabels}
+        onDecline={handleDecline}
+      />
     </div>
   );
 }

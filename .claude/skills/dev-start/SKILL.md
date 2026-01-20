@@ -5,98 +5,152 @@ description: Starts the ToonNotes Expo development environment with clean state 
 
 # Dev Start
 
-This skill provides a one-command solution to start a fully functioning ToonNotes Expo development environment with clean state.
+This skill provides a one-command solution to start the ToonNotes development environment across all platforms: website, webapp, iOS simulator, and Android emulator.
 
 ## When to Use This Skill
 
 - Starting a new development session
 - After seeing "API error" or port conflict errors
-- When the iOS Simulator shows stale content
+- When simulators show stale content
 - After restarting your machine
-- When `npm run ios` fails with port already in use
+- When any dev server fails with "port already in use"
 - To ensure all development services are running correctly
 
 ## Prerequisites
 
-- Xcode installed with iOS Simulator
 - Node.js 18+
+- pnpm installed (`npm install -g pnpm`)
+- Xcode installed with iOS Simulator (for iOS development)
+- Android Studio with emulator (for Android development)
 - The ToonNotes repo cloned
 
 ## Commands
 
 ```
-/dev-start                  # Full clean start (recommended)
-/dev-start --quick          # Skip simulator reset, just restart servers
-/dev-start --api-only       # Start only the local API server
-/dev-start --expo-only      # Start only Expo dev server (no API)
+/dev-start                  # Interactive mode - choose what to start
+/dev-start --all            # Start everything (website, webapp, API, Expo iOS)
+/dev-start --mobile         # Mobile dev: API + Expo iOS (recommended for app dev)
+/dev-start --web            # Web dev: website + webapp
+/dev-start --ios            # Start Expo with iOS simulator
+/dev-start --android        # Start Expo with Android emulator
+/dev-start --website        # Start website only (port 3000)
+/dev-start --webapp         # Start webapp only (port 3002)
+/dev-start --api            # Start local API server only (port 3001)
 /dev-start --status         # Check status of all services
-/dev-start --kill           # Kill all dev processes without restarting
+/dev-start --kill           # Kill all dev processes
 ```
 
 ## Development Environment Components
 
-| Component | Port | Command | Purpose |
-|-----------|------|---------|---------|
-| Expo Dev Server | 6061 | `npm start` | Metro bundler, serves JS to simulator |
-| Local API Server | 3001 | `npm run api` | Local Gemini API proxy (optional) |
-| iOS Simulator | - | Launched by Expo | Runs the app |
+| Component | Port | Directory | Purpose |
+|-----------|------|-----------|---------|
+| Website | 3000 | `apps/web` | Marketing site, dev diary |
+| Local API | 3001 | `apps/expo` | Gemini AI proxy for mobile |
+| Webapp | 3002 | `apps/webapp` | Web dashboard |
+| Expo Dev | 6061 | `apps/expo` | Metro bundler for mobile |
+| iOS Simulator | - | - | Runs iOS app |
+| Android Emulator | - | - | Runs Android app |
 
-### When is Local API Server Needed?
+### Port Allocation Strategy
 
-The local API server (`npm run api`) is needed when:
-- Testing AI features locally without using production API quota
-- Developing or debugging API endpoints
-- Working offline (with cached responses)
+| Port | Service | Notes |
+|------|---------|-------|
+| 3000 | Website (Next.js) | Marketing & diary pages |
+| 3001 | Local API Server | AI endpoints for Expo |
+| 3002 | Webapp (Next.js) | Web dashboard (shifted from 3001) |
+| 6061 | Expo Dev Server | Metro bundler |
 
-By default, the app uses `https://toonnotes-api.vercel.app` for AI features. The local server is optional but recommended for active AI feature development.
+## Startup Modes
+
+### Mobile Development (`/dev-start --mobile`)
+
+Best for developing the iOS/Android app:
+
+1. Kills existing processes on ports 3001 and 6061
+2. Starts local API server (background, port 3001)
+3. Starts Expo dev server with iOS simulator
+
+```
+Services started:
+  - Local API: http://localhost:3001
+  - Expo Dev: http://localhost:6061
+  - iOS Simulator: Running
+```
+
+### Web Development (`/dev-start --web`)
+
+Best for developing website or webapp:
+
+1. Kills existing processes on ports 3000 and 3002
+2. Starts website (background, port 3000)
+3. Starts webapp (background, port 3002)
+
+```
+Services started:
+  - Website: http://localhost:3000
+  - Webapp: http://localhost:3002
+```
+
+### Full Stack (`/dev-start --all`)
+
+Starts everything for comprehensive testing:
+
+1. Kills all existing dev processes
+2. Starts website (background, port 3000)
+3. Starts webapp (background, port 3002)
+4. Starts local API server (background, port 3001)
+5. Starts Expo with iOS simulator (foreground)
 
 ## Startup Workflow
 
-When `/dev-start` is invoked, execute these steps:
+When `/dev-start` is invoked, execute these steps based on the mode:
 
 ### Step 1: Kill Existing Processes
 
 ```bash
-# Kill processes on Expo dev server port (6061)
-lsof -ti :6061 | xargs kill -9 2>/dev/null || true
+# Kill by port
+lsof -ti :3000 | xargs kill -9 2>/dev/null || true  # Website
+lsof -ti :3001 | xargs kill -9 2>/dev/null || true  # Local API
+lsof -ti :3002 | xargs kill -9 2>/dev/null || true  # Webapp
+lsof -ti :6061 | xargs kill -9 2>/dev/null || true  # Expo
 
-# Kill processes on local API server port (3001)
-lsof -ti :3001 | xargs kill -9 2>/dev/null || true
-
-# Kill any orphaned node processes
+# Kill by process name
 pkill -f "expo start" 2>/dev/null || true
 pkill -f "local-api-server" 2>/dev/null || true
+pkill -f "next dev" 2>/dev/null || true
 ```
 
-### Step 2: Start Local API Server (Background)
+### Step 2: Start Services
 
 ```bash
-cd /Users/sungholee/code/toonnotes/apps/expo
+REPO_ROOT="/Users/sungholee/code/toonnotes"
 
-# Start API server in background
+# Website (background)
+cd "$REPO_ROOT/apps/web"
+nohup npm run dev > /tmp/toonnotes-website.log 2>&1 &
+
+# Webapp on port 3002 (background)
+cd "$REPO_ROOT/apps/webapp"
+nohup npm run dev -- --port 3002 > /tmp/toonnotes-webapp.log 2>&1 &
+
+# Local API (background)
+cd "$REPO_ROOT/apps/expo"
 nohup npm run api > /tmp/toonnotes-api.log 2>&1 &
 
-# Wait for startup
-sleep 2
-
-# Verify
-lsof -ti :3001 > /dev/null && echo "API server running" || echo "API failed to start"
-```
-
-### Step 3: Start Expo with iOS Simulator
-
-```bash
-cd /Users/sungholee/code/toonnotes/apps/expo
+# Expo with iOS (foreground - takes over terminal)
+cd "$REPO_ROOT/apps/expo"
 npm run ios
 ```
 
-### Step 4: Verify Environment
+### Step 3: Verify Environment
 
 ```bash
 # Check all services
-lsof -i :6061 > /dev/null && echo "[OK] Expo on :6061"
+lsof -i :3000 > /dev/null && echo "[OK] Website on :3000"
 lsof -i :3001 > /dev/null && echo "[OK] API on :3001"
-xcrun simctl list devices booted | grep -q "Booted" && echo "[OK] Simulator booted"
+lsof -i :3002 > /dev/null && echo "[OK] Webapp on :3002"
+lsof -i :6061 > /dev/null && echo "[OK] Expo on :6061"
+xcrun simctl list devices booted | grep -q "Booted" && echo "[OK] iOS Simulator"
 ```
 
 ## Console Output Format
@@ -104,58 +158,90 @@ xcrun simctl list devices booted | grep -q "Booted" && echo "[OK] Simulator boot
 ```
 Starting ToonNotes Development Environment...
 
-[1/4] Cleaning up existing processes
-      Port 6061: Killed process 12345
-      Port 3001: No process found
+Mode: Full Stack (--all)
 
-[2/4] Starting local API server
+[1/5] Cleaning up existing processes
+      Port 3000: Killed (website)
+      Port 3001: Clear
+      Port 3002: Clear
+      Port 6061: Killed (expo)
+
+[2/5] Starting Website
+      Command: npm run dev (background)
+      URL: http://localhost:3000
+      Logs: /tmp/toonnotes-website.log
+
+[3/5] Starting Webapp
+      Command: npm run dev --port 3002 (background)
+      URL: http://localhost:3002
+      Logs: /tmp/toonnotes-webapp.log
+
+[4/5] Starting Local API Server
       Command: npm run api (background)
+      URL: http://localhost:3001
       Logs: /tmp/toonnotes-api.log
-      Status: Running on port 3001
 
-[3/4] Starting Expo dev server with iOS
-      Command: npm run ios
-
-[4/4] Environment ready!
+[5/5] Starting Expo with iOS Simulator
 
 Summary:
-  Expo Dev Server: http://localhost:6061
-  Local API Server: http://localhost:3001
+  Website:      http://localhost:3000
+  Webapp:       http://localhost:3002
+  Local API:    http://localhost:3001
+  Expo Dev:     http://localhost:6061
   iOS Simulator: Running
 
-Next steps:
-  - The app should open automatically in the simulator
-  - If AI features fail, check: tail -f /tmp/toonnotes-api.log
-  - Press 'r' in terminal to reload the app
+Logs:
+  tail -f /tmp/toonnotes-website.log
+  tail -f /tmp/toonnotes-webapp.log
+  tail -f /tmp/toonnotes-api.log
 ```
 
 ## Quick Reference Commands
 
-### Check What's Using a Port
+### Check What's Using Ports
 
 ```bash
-lsof -i :6061  # Expo port
-lsof -i :3001  # API port
+lsof -i :3000  # Website
+lsof -i :3001  # API
+lsof -i :3002  # Webapp
+lsof -i :6061  # Expo
 ```
 
-### Kill Specific Port
+### Kill Specific Service
 
 ```bash
-lsof -ti :6061 | xargs kill -9  # Kill Expo
+lsof -ti :3000 | xargs kill -9  # Kill website
 lsof -ti :3001 | xargs kill -9  # Kill API
+lsof -ti :3002 | xargs kill -9  # Kill webapp
+lsof -ti :6061 | xargs kill -9  # Kill Expo
 ```
 
-### View API Server Logs
+### View Service Logs
 
 ```bash
+tail -f /tmp/toonnotes-website.log
+tail -f /tmp/toonnotes-webapp.log
 tail -f /tmp/toonnotes-api.log
 ```
 
-### Restart Just the API Server
+### Restart Individual Services
 
 ```bash
+# Restart website
+lsof -ti :3000 | xargs kill -9 2>/dev/null
+cd /Users/sungholee/code/toonnotes/apps/web && npm run dev
+
+# Restart webapp
+lsof -ti :3002 | xargs kill -9 2>/dev/null
+cd /Users/sungholee/code/toonnotes/apps/webapp && npm run dev -- --port 3002
+
+# Restart API
 lsof -ti :3001 | xargs kill -9 2>/dev/null
 cd /Users/sungholee/code/toonnotes/apps/expo && npm run api
+
+# Restart Expo
+lsof -ti :6061 | xargs kill -9 2>/dev/null
+cd /Users/sungholee/code/toonnotes/apps/expo && npm run ios
 ```
 
 ## Troubleshooting
@@ -163,15 +249,32 @@ cd /Users/sungholee/code/toonnotes/apps/expo && npm run api
 ### "Address already in use" Error
 
 ```bash
-lsof -ti :6061 | xargs kill -9
-lsof -ti :3001 | xargs kill -9
+# Kill all dev processes
+lsof -ti :3000 | xargs kill -9 2>/dev/null
+lsof -ti :3001 | xargs kill -9 2>/dev/null
+lsof -ti :3002 | xargs kill -9 2>/dev/null
+lsof -ti :6061 | xargs kill -9 2>/dev/null
 ```
 
-### Simulator Shows Old Version
+### iOS Simulator Shows Old Version
 
 ```bash
 cd /Users/sungholee/code/toonnotes/apps/expo
 npx expo run:ios --device
+```
+
+### Android Emulator Not Starting
+
+```bash
+# List available emulators
+emulator -list-avds
+
+# Start specific emulator
+emulator -avd Pixel_7_API_34
+
+# Then run Expo Android
+cd /Users/sungholee/code/toonnotes/apps/expo
+npm run android
 ```
 
 ### API Server Crashes on Start
@@ -190,10 +293,13 @@ rm -rf node_modules/.cache
 npm start -- --reset-cache
 ```
 
-### "Cannot connect to design server" Error
+### Website/Webapp Build Errors
 
-1. **Production API (default)**: Check internet connection to `toonnotes-api.vercel.app`
-2. **Local development**: Start the API server with `npm run api`
+```bash
+cd /Users/sungholee/code/toonnotes
+pnpm install
+pnpm run build
+```
 
 ### Simulator Won't Boot
 
@@ -205,11 +311,18 @@ xcrun simctl boot "iPhone 15 Pro"
 
 ## Environment Variables
 
-The local API server requires:
+### Required for Local API Server
 
 | Variable | Purpose | Location |
 |----------|---------|----------|
 | `GEMINI_API_KEY` | Google Gemini API access | `apps/expo/.env` |
+
+### Required for Webapp/Website
+
+| Variable | Purpose | Location |
+|----------|---------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase connection | `apps/web/.env.local` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase auth | `apps/web/.env.local` |
 
 ## Script Location
 
@@ -217,12 +330,16 @@ For automated execution:
 
 ```bash
 bash .claude/skills/dev-start/scripts/start-dev.sh
+bash .claude/skills/dev-start/scripts/start-dev.sh --mobile
+bash .claude/skills/dev-start/scripts/start-dev.sh --web
+bash .claude/skills/dev-start/scripts/start-dev.sh --all
 bash .claude/skills/dev-start/scripts/start-dev.sh --status
 bash .claude/skills/dev-start/scripts/start-dev.sh --kill
 ```
 
 ## Related Skills
 
-- `/test-mobile` - Run E2E tests after starting dev environment
+- `/test-mobile` - Run E2E tests on mobile after starting dev environment
+- `/test-e2e` - Run Playwright E2E tests on webapp
 - `/health-check` - Verify all services are running
 - `/deploy-staging` - Deploy to staging when ready

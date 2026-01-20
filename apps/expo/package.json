@@ -17,6 +17,7 @@
   "dependencies": {
     "@toonnotes/constants": "workspace:*",
     "@toonnotes/design-engine": "workspace:*",
+    "@toonnotes/label-ai": "workspace:*",
     "@toonnotes/supabase": "workspace:*",
     "@toonnotes/types": "workspace:*",
     "@expo-google-fonts/bebas-neue": "^0.4.1",

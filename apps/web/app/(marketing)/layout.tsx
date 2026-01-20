@@ -19,10 +19,10 @@ export default function MarketingLayout({
             </span>
           </Link>
           <Link
-            href="#features"
+            href="/development_diary"
             className="hidden sm:block text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
           >
-            Features
+            Dev Diary
           </Link>
         </nav>
       </header>
