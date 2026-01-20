@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { Campaign, MarketingFile, FileContent, CopyDirectory } from './types';
+import type { Campaign, MarketingFile, FileContent, CopyDirectory, DocCategory, DocWithMetadata, CategoryInfo } from './types';
 
 // Marketing content lives in the parent directory
 const MARKETING_ROOT = path.join(process.cwd(), '..', 'marketing');
@@ -186,8 +186,8 @@ export async function listTemplates(): Promise<MarketingFile[]> {
   }
 }
 
-// ToonNotes_Expo root for docs access
-const EXPO_ROOT = path.join(process.cwd(), '..', 'ToonNotes_Expo');
+// apps/expo root for docs access
+const EXPO_ROOT = path.join(process.cwd(), '..', 'expo');
 
 /**
  * Get a documentation file from ToonNotes_Expo
@@ -402,4 +402,211 @@ export async function getReleaseNotes(version: string): Promise<FileContent | nu
   } catch {
     return null;
   }
+}
+
+// ============================================================================
+// Documentation metadata and categorization
+// ============================================================================
+
+/**
+ * Category information with display details
+ */
+export const DOC_CATEGORIES: CategoryInfo[] = [
+  {
+    id: 'legal',
+    label: 'Legal',
+    description: 'Privacy policy and terms of service',
+    icon: 'Scale',
+    colorClass: 'bg-amber-50 text-amber-700 border-amber-200',
+  },
+  {
+    id: 'product',
+    label: 'Product',
+    description: 'Product requirements, monetization, and onboarding',
+    icon: 'Lightbulb',
+    colorClass: 'bg-purple-50 text-purple-700 border-purple-200',
+  },
+  {
+    id: 'technical',
+    label: 'Technical',
+    description: 'Architecture, build guides, and configuration',
+    icon: 'Code',
+    colorClass: 'bg-blue-50 text-blue-700 border-blue-200',
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    description: 'GA4 and Firebase analytics configuration',
+    icon: 'BarChart3',
+    colorClass: 'bg-green-50 text-green-700 border-green-200',
+  },
+  {
+    id: 'quality',
+    label: 'Quality & UX',
+    description: 'Testing, UX documentation, and quality assessments',
+    icon: 'CheckCircle',
+    colorClass: 'bg-teal-50 text-teal-700 border-teal-200',
+  },
+];
+
+/**
+ * Mapping of doc filenames to their categories
+ */
+const DOC_CATEGORY_MAP: Record<string, DocCategory> = {
+  // Legal
+  'privacy-policy.md': 'legal',
+  'terms-of-service.md': 'legal',
+  // Product
+  'PRD.md': 'product',
+  'PRD-v2-MODE-Framework.md': 'product',
+  'MONETIZATION-STRATEGY.md': 'product',
+  'ONBOARDING-USER-PROFILING.md': 'product',
+  // Technical
+  'BUILD_GUIDE.md': 'technical',
+  'AUTH-CONFIGURATION.md': 'technical',
+  'MULTI-PLATFORM-ARCHITECTURE.md': 'technical',
+  'CLOUD-BACKUP-STRATEGY.md': 'technical',
+  'CLAUDE.md': 'technical',
+  // Analytics
+  'ANALYTICS.md': 'analytics',
+  'GA4-CONFIGURATION-GUIDE.md': 'analytics',
+  // Quality
+  'UX-DOCUMENTATION.md': 'quality',
+  'UI-ALIGNMENT-AUDIT.md': 'quality',
+  'quality-assessment-dec2024.md': 'quality',
+  'PRODUCTION-READINESS-REPORT.md': 'quality',
+  'MANUAL-TEST-SCENARIOS.md': 'quality',
+};
+
+/**
+ * Extract metadata from markdown content
+ */
+function extractDocMetadata(content: string, filename: string): { title: string; description: string; readingTime: number } {
+  // Extract title from first H1
+  const h1Match = content.match(/^#\s+(.+)$/m);
+  const title = h1Match?.[1] || filename.replace(/\.md$/, '').replace(/[-_]/g, ' ');
+
+  // Extract description from first paragraph after H1
+  const lines = content.split('\n');
+  let description = '';
+  let foundH1 = false;
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      foundH1 = true;
+      continue;
+    }
+    if (foundH1 && line.trim() && !line.startsWith('#') && !line.startsWith('```') && !line.startsWith('|') && !line.startsWith('-') && !line.startsWith('*')) {
+      description = line.trim().slice(0, 150);
+      if (line.length > 150) description += '...';
+      break;
+    }
+  }
+
+  // Calculate reading time (average 200 words per minute)
+  const wordCount = content.split(/\s+/).length;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+
+  return { title, description, readingTime };
+}
+
+/**
+ * List doc files with full metadata and categorization
+ */
+export async function listDocFilesWithMetadata(): Promise<DocWithMetadata[]> {
+  const docs: DocWithMetadata[] = [];
+
+  // Check root level markdown files
+  const rootFiles = ['PRD.md', 'CLAUDE.md'];
+  for (const file of rootFiles) {
+    try {
+      const fullPath = path.join(EXPO_ROOT, file);
+      const content = await fs.readFile(fullPath, 'utf-8');
+      const stats = await fs.stat(fullPath);
+      const { title, description, readingTime } = extractDocMetadata(content, file);
+
+      docs.push({
+        name: file,
+        path: file,
+        type: 'file',
+        extension: 'md',
+        title,
+        description,
+        category: DOC_CATEGORY_MAP[file] || 'technical',
+        readingTime,
+        lastModified: stats.mtime,
+      });
+    } catch {
+      // File doesn't exist
+    }
+  }
+
+  // Check docs folder
+  try {
+    const docsDir = path.join(EXPO_ROOT, 'docs');
+    const entries = await fs.readdir(docsDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.endsWith('.md')) {
+        const fullPath = path.join(docsDir, entry.name);
+        const content = await fs.readFile(fullPath, 'utf-8');
+        const stats = await fs.stat(fullPath);
+        const { title, description, readingTime } = extractDocMetadata(content, entry.name);
+
+        docs.push({
+          name: entry.name,
+          path: `docs/${entry.name}`,
+          type: 'file',
+          extension: 'md',
+          title,
+          description,
+          category: DOC_CATEGORY_MAP[entry.name] || 'technical',
+          readingTime,
+          lastModified: stats.mtime,
+        });
+      }
+    }
+  } catch {
+    // docs folder doesn't exist
+  }
+
+  return docs;
+}
+
+/**
+ * Get metadata for a single doc file
+ */
+export async function getDocMetadata(filePath: string): Promise<DocWithMetadata | null> {
+  if (!filePath.endsWith('.md') || filePath.includes('..')) {
+    return null;
+  }
+
+  const fullPath = path.join(EXPO_ROOT, filePath);
+  const filename = path.basename(filePath);
+
+  try {
+    const content = await fs.readFile(fullPath, 'utf-8');
+    const stats = await fs.stat(fullPath);
+    const { title, description, readingTime } = extractDocMetadata(content, filename);
+
+    return {
+      name: filename,
+      path: filePath,
+      type: 'file',
+      extension: 'md',
+      title,
+      description,
+      category: DOC_CATEGORY_MAP[filename] || 'technical',
+      readingTime,
+      lastModified: stats.mtime,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get category info by ID
+ */
+export function getCategoryInfo(category: DocCategory): CategoryInfo {
+  return DOC_CATEGORIES.find((c) => c.id === category) || DOC_CATEGORIES[0];
 }

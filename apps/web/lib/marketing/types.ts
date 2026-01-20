@@ -44,3 +44,22 @@ export interface CopyDirectory {
   path: string;
   files: MarketingFile[];
 }
+
+// Documentation types
+export type DocCategory = 'legal' | 'product' | 'technical' | 'analytics' | 'quality';
+
+export interface DocWithMetadata extends MarketingFile {
+  title: string;
+  description: string;
+  category: DocCategory;
+  readingTime: number; // in minutes
+  lastModified?: Date;
+}
+
+export interface CategoryInfo {
+  id: DocCategory;
+  label: string;
+  description: string;
+  icon: string; // Lucide icon name
+  colorClass: string; // Tailwind color classes
+}
