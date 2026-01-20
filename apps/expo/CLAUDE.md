@@ -24,6 +24,9 @@ npm run ios          # Run on iOS simulator
 npm run android      # Run on Android emulator
 npm run web          # Run in browser
 npx tsc --noEmit     # Type check without emitting
+npm test             # Run all Jest tests
+npm test -- --testPathPattern="modeFramework"  # Run MODE Framework tests
+npm test -- --testPathPattern="behaviorLearner"  # Run behavior learner tests
 ```
 
 ## Tech Stack
@@ -110,6 +113,12 @@ ToonNotes_Expo/
 │   │   ├── CoachMarksProvider.tsx
 │   │   ├── CoachMarkTooltip.tsx
 │   │   └── WelcomeCarousel.tsx
+│   ├── nudges/               # MODE Framework nudge UI
+│   │   ├── NudgeToast.tsx    # Toast-style nudge notifications
+│   │   └── NudgeSheet.tsx    # Bottom sheet nudge interactions
+│   ├── mode/                 # MODE Framework UI
+│   │   ├── ModeSelector.tsx  # Board mode selection
+│   │   └── UsefulnessIndicator.tsx # Note usefulness score display
 │   ├── settings/
 │   │   └── LogoPreview.tsx
 │   ├── ErrorBoundary.tsx     # Global error fallback UI
@@ -143,9 +152,11 @@ ToonNotes_Expo/
 │   ├── authStore.ts          # Authentication state + sync orchestration
 │   ├── boardDesignStore.ts   # Board-specific design state
 │   ├── labelSuggestionStore.ts # AI label suggestion queue
+│   ├── behaviorStore.ts      # MODE Framework: note behavior tracking
+│   ├── nudgeStore.ts         # MODE Framework: nudge queue management
 │   ├── debouncedStorage.ts   # Batched AsyncStorage writes
 │   └── index.ts              # Export all stores
-├── services/                 # External services (14 files)
+├── services/                 # External services
 │   ├── geminiService.ts      # Gemini AI (calls Vercel edge functions)
 │   ├── designEngine.ts       # Design composition engine
 │   ├── authService.ts        # OAuth authentication (Google/Apple)
@@ -159,7 +170,25 @@ ToonNotes_Expo/
 │   ├── onboardingService.ts  # Onboarding flow management
 │   ├── shareService.ts       # Share as image functionality
 │   ├── sentry.ts             # Error monitoring configuration
-│   └── index.ts              # Service exports
+│   ├── index.ts              # Service exports
+│   │
+│   │   # MODE Framework (Smart Assistant)
+│   ├── agents/               # AI agent personalities
+│   │   ├── Agent.ts          # Base agent class & interfaces
+│   │   ├── ManagerAgent.ts   # MANAGE mode: task-focused agent
+│   │   ├── MuseAgent.ts      # DEVELOP mode: idea expansion agent
+│   │   ├── LibrarianAgent.ts # ORGANIZE mode: information agent
+│   │   └── BiographerAgent.ts # EXPERIENCE mode: journaling agent
+│   ├── skills/               # Agent capabilities
+│   │   ├── index.ts          # SkillBuilder, SkillRegistry
+│   │   ├── manager/          # Manager skills (deadline, relevance, decompose)
+│   │   ├── muse/             # Muse skills (expand, resurface, connect)
+│   │   ├── librarian/        # Librarian skills (sweep, enrich, categorize)
+│   │   └── biographer/       # Biographer skills (nudge, timecapsule, streak)
+│   ├── behaviorLearner.ts    # User pattern detection & skill confidence
+│   ├── triggerEngine.ts      # Skill trigger evaluation
+│   ├── nudgeDeliveryService.ts # Proactive nudge delivery
+│   └── modeDetectionService.ts # Note/board mode detection
 ├── utils/
 │   ├── validation/
 │   │   └── apiResponse.ts    # Zod schemas for API responses
@@ -178,6 +207,10 @@ ToonNotes_Expo/
 │   ├── fonts.ts              # Font definitions
 │   ├── products.ts           # In-app purchase product definitions
 │   └── onboardingConfig.ts   # Onboarding flow configuration
+├── __tests__/                # Jest unit tests
+│   └── services/
+│       ├── behaviorLearner.test.ts  # Behavior learner tests (16 tests)
+│       └── modeFramework.test.ts    # MODE Framework tests (31 tests)
 ├── tailwind.config.js        # Tailwind theme (iOS HIG colors)
 ├── global.css                # Tailwind imports
 └── metro.config.js           # Metro + NativeWind
@@ -344,6 +377,83 @@ useEffect(() => {
   return () => clearTimeout(timeout);
 }, [title, content]);
 ```
+
+### MODE Framework (Smart Assistant)
+
+The MODE Framework provides intelligent, proactive assistance through four cognitive modes:
+
+| Mode | Agent | Purpose |
+|------|-------|---------|
+| MANAGE | Manager | Task completion, deadlines, prioritization |
+| DEVELOP | Muse | Idea expansion, creative prompts |
+| ORGANIZE | Librarian | Information filing, deduplication, learning |
+| EXPERIENCE | Biographer | Journaling, memories, time capsules |
+
+**Architecture:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Smart Assistant                               │
+├─────────────────────────────────────────────────────────────────┤
+│  Agents → Skills → Triggers → Nudges                            │
+│                                                                  │
+│  behaviorLearner.ts    Learn user patterns, skill confidence    │
+│  triggerEngine.ts      Evaluate skill triggers                  │
+│  nudgeDeliveryService  Queue and deliver nudges                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Skill Definition Pattern:**
+
+```typescript
+import { SkillBuilder, skillRegistry, createNudgeResult } from '@/services/skills';
+
+const mySkill = new SkillBuilder({
+  id: 'my-skill',
+  name: 'My Skill',
+  agentId: 'manager',
+  cooldownMs: 4 * 60 * 60 * 1000, // 4 hours
+})
+  .onEvent('note_created')
+  .when((ctx) => ctx.note && someCondition(ctx))
+  .do(async (ctx) => {
+    return createNudgeResult({
+      title: 'Nudge Title',
+      body: 'Nudge body text',
+      priority: 'medium',
+      deliveryChannel: 'toast',
+      options: [/* nudge options */],
+    });
+  })
+  .build();
+
+skillRegistry.register(mySkill, 'manager');
+```
+
+**Behavior Learning:**
+
+```typescript
+import { behaviorLearner } from '@/services/behaviorLearner';
+
+// Track user events
+behaviorLearner.trackEvent({ type: 'note_created', timestamp: Date.now() });
+
+// Record nudge outcomes for skill confidence
+behaviorLearner.recordNudgeOutcome({
+  nudgeId: 'nudge-123',
+  skillId: 'deadline-skill',
+  agentId: 'manager',
+  outcome: 'accepted', // or 'dismissed', 'snoozed', 'ignored'
+  timestamp: Date.now(),
+});
+
+// Check skill suppression
+if (behaviorLearner.shouldSuppressSkill('skill-id')) {
+  // Don't show this skill's nudges
+}
+```
+
+See `docs/PRD-v2-MODE-Framework.md` for full specification.
 
 ### API Response Validation
 
@@ -589,6 +699,16 @@ eas build --platform ios --profile development
 - [x] Welcome carousel
 - [x] Coach marks system
 - [x] Remote config for onboarding
+
+### MODE Framework (Smart Assistant)
+- [x] Four cognitive modes (MANAGE, DEVELOP, ORGANIZE, EXPERIENCE)
+- [x] AI agent system with distinct personalities
+- [x] Skill-based behavior triggers
+- [x] Proactive nudge system (toast/sheet delivery)
+- [x] Behavior learning with pattern detection
+- [x] Skill confidence tracking & suppression
+- [x] Cooldown management per skill
+- [x] Unit tests (47 tests passing)
 
 ## Quality Score: 85/100
 
