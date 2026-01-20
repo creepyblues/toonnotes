@@ -65,6 +65,7 @@ class NudgeDeliveryService {
   private static instance: NudgeDeliveryService;
   private listeners: Map<string, Set<NudgeEventListener>> = new Map();
   private processingQueue: boolean = false;
+  private isProcessingNudge: boolean = false; // Prevent race condition in queue processing
 
   private constructor() {
     // Initialize event listener maps
@@ -528,25 +529,37 @@ class NudgeDeliveryService {
    * Start processing the nudge queue
    * This runs in the background and delivers nudges as they become ready
    */
-  startQueueProcessing(onNudgeReady: (nudge: Nudge) => void): () => void {
+  startQueueProcessing(onNudgeReady: (nudge: Nudge) => void | Promise<void>): () => void {
     this.processingQueue = true;
 
-    const intervalId = setInterval(() => {
-      if (!this.processingQueue) return;
+    const processNextNudge = async () => {
+      // Prevent concurrent processing (race condition fix)
+      if (!this.processingQueue || this.isProcessingNudge) return;
 
-      const nudge = this.getNextNudge();
-      if (nudge) {
-        onNudgeReady(nudge);
-        this.markAsShown(nudge.id);
+      this.isProcessingNudge = true;
+      try {
+        const nudge = this.getNextNudge();
+        if (nudge) {
+          // Await callback in case it's async
+          await onNudgeReady(nudge);
+          this.markAsShown(nudge.id);
+        }
+
+        // Also clear expired nudges
+        useNudgeStore.getState().clearExpired();
+      } catch (error) {
+        console.error('[NudgeDeliveryService] Error processing nudge:', error);
+      } finally {
+        this.isProcessingNudge = false;
       }
+    };
 
-      // Also clear expired nudges
-      useNudgeStore.getState().clearExpired();
-    }, 5000); // Check every 5 seconds
+    const intervalId = setInterval(processNextNudge, 5000); // Check every 5 seconds
 
     // Return stop function
     return () => {
       this.processingQueue = false;
+      this.isProcessingNudge = false;
       clearInterval(intervalId);
     };
   }

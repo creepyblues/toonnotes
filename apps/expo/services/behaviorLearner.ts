@@ -380,8 +380,6 @@ class BehaviorLearner {
    * Track skills that are frequently dismissed
    */
   private trackDismissedSkills(outcome: NudgeOutcome): void {
-    if (outcome.outcome !== 'dismissed') return;
-
     const skillOutcomes = this.data.nudgeOutcomes.filter(
       o => o.skillId === outcome.skillId
     );
@@ -585,7 +583,24 @@ class BehaviorLearner {
    * Reset all learned data
    */
   async reset(): Promise<void> {
-    this.data = DEFAULT_LEARNER_DATA;
+    // Clear any pending saves
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+
+    // Reset data to defaults (create new object to avoid reference issues)
+    this.data = {
+      patterns: { ...DEFAULT_PATTERNS },
+      skillConfidences: {},
+      recentEvents: [],
+      nudgeOutcomes: [],
+      lastUpdated: Date.now(),
+    };
+
+    // Reset initialized flag so initialize() will reload from storage
+    this.initialized = false;
+
     await AsyncStorage.removeItem(STORAGE_KEY);
     console.log('[BehaviorLearner] Data reset');
   }

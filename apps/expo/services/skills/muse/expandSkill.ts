@@ -38,10 +38,11 @@ const expandSkill = new SkillBuilder({
   .when((ctx: SkillContext) => {
     if (!ctx.note || !ctx.behavior || ctx.behavior.mode !== 'develop') return false;
 
-    const data = ctx.behavior.modeData as DevelopData;
+    const data = ctx.behavior.modeData as DevelopData | undefined;
 
-    // Only for unexpanded ideas
-    if (data.expansionCount > 0) return false;
+    // Only for unexpanded ideas (defensive null check)
+    const expansionCount = data?.expansionCount ?? 0;
+    if (expansionCount > 0) return false;
 
     // Check if it's a brief idea
     return isBriefIdea(ctx.note.content);
@@ -51,10 +52,11 @@ const expandSkill = new SkillBuilder({
   .do(async (ctx: SkillContext): Promise<SkillResult> => {
     if (!ctx.note || !ctx.behavior) return noAction();
 
-    const data = ctx.behavior.modeData as DevelopData;
+    const data = ctx.behavior.modeData as DevelopData | undefined;
 
-    // Already expanded
-    if (data.expansionCount > 0) return noAction();
+    // Already expanded (defensive null check)
+    const expansionCount = data?.expansionCount ?? 0;
+    if (expansionCount > 0) return noAction();
 
     // Not brief enough
     if (!isBriefIdea(ctx.note.content)) return noAction();

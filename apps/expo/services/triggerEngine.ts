@@ -26,6 +26,7 @@ import { useNudgeStore } from '@/stores/nudgeStore';
 import { useBehaviorStore } from '@/stores/behaviorStore';
 import type { Skill, SkillContext } from './agents/Agent';
 import { skillRegistry } from './skills';
+import { behaviorLearner } from './behaviorLearner';
 
 // ============================================
 // Event Types
@@ -324,12 +325,20 @@ export class TriggerEngine {
     const results: TriggerEvaluationResult[] = [];
     const skills = skillRegistry.getAll();
 
+    // Get recent behavior history for pattern detection
+    const allBehaviors = Object.values(useBehaviorStore.getState().behaviors);
+    const behaviorHistory = allBehaviors
+      .filter(b => context.behavior ? b.mode === context.behavior.mode : true)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 20); // Last 20 behaviors for pattern analysis
+
     const skillContext: SkillContext = {
       note: context.note,
       behavior: context.behavior,
       boardId: context.boardId,
       boardHashtag: context.boardHashtag,
       timestamp: event.timestamp,
+      behaviorHistory,
     };
 
     for (const skill of skills) {
@@ -351,6 +360,16 @@ export class TriggerEngine {
           triggered: false,
           reason: 'cooldown',
           cooldownRemaining: cooldownEnd - Date.now(),
+        });
+        continue;
+      }
+
+      // Check if skill is suppressed due to user behavior (frequent dismissals)
+      if (behaviorLearner.shouldSuppressSkill(skill.id)) {
+        results.push({
+          skill,
+          triggered: false,
+          reason: 'suppressed',
         });
         continue;
       }
