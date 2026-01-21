@@ -1,0 +1,431 @@
+# ToonNotes v2.0 MODE Framework Launch - Social Content Schedule
+# Campaign: v2-mode-launch
+# Generated: 2026-01-20
+
+# ============================================================
+# PHASE 1: TEASER (Week -1)
+# Goal: Build anticipation without revealing details
+# ============================================================
+
+teaser_week:
+  day_minus_7:
+    - platform: instagram
+      type: story
+      time: "10:00 AM PT"
+      content: |
+        [Image: ToonNotes logo with subtle glow]
+        "Something big is coming..."
+      hashtags: "#ToonNotes #ComingSoon"
+
+    - platform: twitter
+      type: tweet
+      time: "10:00 AM PT"
+      content: |
+        Something's brewing at ToonNotes...
+
+        Four new friends are about to arrive.
+
+        Stay tuned.
+      hashtags: "#ToonNotes"
+
+  day_minus_5:
+    - platform: instagram
+      type: story
+      time: "12:00 PM PT"
+      content: |
+        [Animation: Four silhouettes appearing one by one]
+        "Meet your new team..."
+        M - ?
+        O - ?
+        D - ?
+        E - ?
+
+    - platform: tiktok
+      type: video
+      time: "7:00 PM PT"
+      content: |
+        [5 second teaser]
+        "POV: Your notes are about to change forever"
+        *flash of four icons*
+        "Coming [launch date]"
+
+  day_minus_3:
+    - platform: instagram
+      type: carousel
+      time: "11:00 AM PT"
+      slides:
+        - "M is for Manager"
+        - "O is for Organizer"
+        - "D is for Developer"
+        - "E is for Experiencer"
+        - "What could it mean? Find out soon."
+      hashtags: "#ToonNotes #MODE #ComingSoon"
+
+    - platform: twitter
+      type: tweet
+      time: "11:00 AM PT"
+      content: |
+        M.O.D.E.
+
+        Four letters. Four agents. One mission.
+
+        Reveal in 3 days.
+      hashtags: "#ToonNotes"
+
+  day_minus_1:
+    - platform: instagram
+      type: story
+      time: "9:00 AM PT"
+      content: |
+        [Countdown sticker]
+        "Tomorrow changes everything."
+
+    - platform: twitter
+      type: tweet
+      time: "9:00 AM PT"
+      content: |
+        Tomorrow.
+
+        Your notes will finally understand you.
+      hashtags: "#ToonNotes"
+
+    - platform: tiktok
+      type: video
+      time: "6:00 PM PT"
+      content: |
+        [Teaser compilation]
+        Pain montage: "I saved it somewhere..." / "My ideas just die..."
+        "Tomorrow, we fix this."
+
+# ============================================================
+# PHASE 2: LAUNCH (Week 0)
+# Goal: Full announcement, maximize reach
+# ============================================================
+
+launch_week:
+  launch_day:
+    - platform: app-store
+      type: what_s_new
+      time: "6:00 AM PT"
+      content: |
+        See ios-v2.md for full What's New copy
+      priority: critical
+
+    - platform: instagram
+      type: reel
+      time: "9:00 AM PT"
+      duration: "30-60s"
+      content: |
+        [Full launch video]
+        See TikTok Script 1 in copy.md
+      hashtags: "#ToonNotes #MODE #AIAssistant #SmartNotes #ProductivityApp"
+      priority: critical
+
+    - platform: instagram
+      type: carousel
+      time: "12:00 PM PT"
+      content: |
+        Launch Announcement Carousel (5 slides)
+        See copy.md for slide content
+      hashtags: "#ToonNotes #MODEFramework #SmartNotes"
+
+    - platform: twitter
+      type: thread
+      time: "9:00 AM PT"
+      content: |
+        Launch Thread (7 tweets)
+        See copy.md for thread content
+      priority: critical
+
+    - platform: tiktok
+      type: video
+      time: "7:00 PM PT"
+      content: |
+        Launch video (30s)
+        See TikTok Script 1 in copy.md
+      hashtags: "#ToonNotes #AI #Notes #ProductivityTok"
+      priority: critical
+
+    - platform: email
+      type: announcement
+      time: "10:00 AM PT"
+      content: |
+        Launch email
+        See copy.md for email body
+      segment: all_users
+
+  day_plus_1:
+    - platform: instagram
+      type: carousel
+      time: "11:00 AM PT"
+      content: |
+        Trip Planning Scenario Carousel (4 slides)
+        See copy.md for slide content
+      hashtags: "#ToonNotes #TravelPlanning #OrganizeYourTrip"
+
+    - platform: twitter
+      type: tweets
+      time: "10:00 AM - 4:00 PM PT"
+      content: |
+        Feature highlight tweets (4)
+        - One per MODE
+        - 2 hour intervals
+      count: 4
+
+    - platform: instagram
+      type: story
+      time: "throughout day"
+      content: |
+        User reaction reposts
+        DM reshares
+        Poll: "Which agent are you most excited for?"
+
+  day_plus_2:
+    - platform: tiktok
+      type: video
+      time: "7:00 PM PT"
+      content: |
+        Trip Planning POV (15s)
+        See TikTok Script 2 in copy.md
+      hashtags: "#TravelTok #TripPlanning #ToonNotes"
+
+    - platform: twitter
+      type: poll
+      time: "12:00 PM PT"
+      content: |
+        Which MODE are you most excited about?
+        - Manager (Chaos → Plans)
+        - Muse (Sparks → Ideas)
+        - Librarian (Saved → Used)
+        - Biographer (Past → Present)
+
+  day_plus_3:
+    - platform: instagram
+      type: reel
+      time: "11:00 AM PT"
+      content: |
+        Idea That Grew scenario video
+        See TikTok Script 3 adapted for Reels
+      hashtags: "#IdeaCapture #ToonNotes #CreativeTok"
+
+    - platform: reddit
+      type: post
+      time: "2:00 PM PT"
+      subreddits:
+        - r/productivity
+        - r/notetaking
+      content: |
+        [Discussion post about MODE Framework concept]
+        Not promotional - genuine discussion about
+        organizing notes by purpose vs. by content
+
+  day_plus_5:
+    - platform: instagram
+      type: carousel
+      time: "11:00 AM PT"
+      content: |
+        Recipe Scenario Carousel (4 slides)
+      hashtags: "#RecipeOrganizer #CookingTok #ToonNotes"
+
+    - platform: tiktok
+      type: video
+      time: "7:00 PM PT"
+      content: |
+        "POV: You saved 100 recipes but cook the same 5 meals"
+      hashtags: "#RecipeTok #FoodTok #ToonNotes"
+
+  day_plus_7:
+    - platform: instagram
+      type: carousel
+      time: "11:00 AM PT"
+      content: |
+        Memory Scenario Carousel (4 slides)
+      hashtags: "#JournalApp #Memories #ToonNotes"
+
+    - platform: twitter
+      type: tweet
+      time: "10:00 AM PT"
+      content: |
+        Week 1 update:
+        - X users trying MODE features
+        - X ideas have grown from Spark to Developed
+        - X memories resurfaced
+
+        Thank you for being part of this launch.
+
+# ============================================================
+# PHASE 3: DEEP DIVES (Weeks 1-4)
+# Goal: Spotlight each MODE with dedicated content
+# ============================================================
+
+deep_dive_weeks:
+  week_1_manage:
+    theme: "MANAGE Mode Spotlight"
+    focus: "Trip planning, project organization, deadline management"
+    content:
+      monday:
+        - platform: instagram
+          type: reel
+          content: "Deep dive: How Sarah planned her Japan trip"
+      wednesday:
+        - platform: tiktok
+          type: video
+          content: "Manager Agent transformation montage"
+      friday:
+        - platform: instagram
+          type: carousel
+          content: "5 types of chaos the Manager can organize"
+      weekend:
+        - platform: twitter
+          type: thread
+          content: "Thread: Real user trip planning stories"
+
+  week_2_develop:
+    theme: "DEVELOP Mode Spotlight"
+    focus: "Idea growth, creative development, business planning"
+    content:
+      monday:
+        - platform: instagram
+          type: reel
+          content: "Deep dive: How Alex's idea became MoodRead"
+      wednesday:
+        - platform: tiktok
+          type: video
+          content: "Muse Agent expansion prompts demo"
+      friday:
+        - platform: instagram
+          type: carousel
+          content: "Spark → Explored → Developed → Ready"
+      weekend:
+        - platform: twitter
+          type: thread
+          content: "Thread: Ideas our users are developing"
+
+  week_3_organize:
+    theme: "ORGANIZE Mode Spotlight"
+    focus: "Recipe tracking, reference management, favorites"
+    content:
+      monday:
+        - platform: instagram
+          type: reel
+          content: "Deep dive: Jamie's recipe journey"
+      wednesday:
+        - platform: tiktok
+          type: video
+          content: "Librarian tracking your favorites"
+      friday:
+        - platform: instagram
+          type: carousel
+          content: "Saved vs. Actually Used: The gap we're closing"
+      weekend:
+        - platform: twitter
+          type: thread
+          content: "Thread: What users are actually cooking"
+
+  week_4_experience:
+    theme: "EXPERIENCE Mode Spotlight"
+    focus: "Memory resurfacing, journaling, reflection"
+    content:
+      monday:
+        - platform: instagram
+          type: reel
+          content: "Deep dive: Maya's first-day anniversary"
+      wednesday:
+        - platform: tiktok
+          type: video
+          content: "One year ago today... emotional montage"
+      friday:
+        - platform: instagram
+          type: carousel
+          content: "Messages from your past self"
+      weekend:
+        - platform: twitter
+          type: thread
+          content: "Thread: User reflection stories (anonymized)"
+
+# ============================================================
+# PHASE 4: USER STORIES (Ongoing)
+# Goal: Social proof and community building
+# ============================================================
+
+ongoing:
+  user_story_collection:
+    frequency: weekly
+    sources:
+      - App Store reviews
+      - Direct messages
+      - Twitter mentions
+      - Reddit discussions
+    format:
+      - Quote graphics
+      - Before/after screenshots (with permission)
+      - Video testimonials
+
+  engagement_posts:
+    frequency: "2-3x weekly"
+    types:
+      - "Which MODE do you use most?"
+      - "Show us your organized boards"
+      - "Share your developed ideas"
+      - "What memory surprised you?"
+
+  community_features:
+    frequency: monthly
+    content:
+      - User spotlight posts
+      - Creative use case highlights
+      - Community milestones
+
+# ============================================================
+# CONTENT CALENDAR SUMMARY
+# ============================================================
+
+calendar_summary:
+  teaser_week:
+    total_posts: 9
+    platforms:
+      instagram: 4 (2 stories, 1 carousel, 1 story)
+      twitter: 3
+      tiktok: 2
+
+  launch_week:
+    total_posts: 18
+    platforms:
+      instagram: 7 (2 reels, 2 carousels, 3+ stories)
+      twitter: 7 (1 thread, 4 highlights, 1 poll, 1 update)
+      tiktok: 3
+      email: 1
+      reddit: 1
+
+  deep_dive_weeks:
+    posts_per_week: 4
+    total_over_4_weeks: 16
+    platforms:
+      instagram: 8 (4 reels, 4 carousels)
+      tiktok: 4
+      twitter: 4 threads
+
+# ============================================================
+# TRACKING & METRICS
+# ============================================================
+
+metrics:
+  track_per_post:
+    - impressions
+    - engagement_rate
+    - saves
+    - shares
+    - link_clicks
+    - app_downloads_attributed
+
+  weekly_review:
+    - best_performing_content
+    - optimal_posting_times
+    - audience_growth
+    - conversion_to_downloads
+
+  campaign_goals:
+    impressions: 500000
+    engagement_rate: ">3%"
+    app_downloads: 10000
+    mode_feature_activations: 5000

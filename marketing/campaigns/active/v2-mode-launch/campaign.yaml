@@ -1,0 +1,346 @@
+# ToonNotes v2.0 MODE Framework Launch Campaign
+# Generated: 2026-01-20
+# Status: Planning
+
+name: ToonNotes v2.0 MODE Framework Launch
+slug: v2-mode-launch
+type: feature-launch
+status: planning
+
+# Campaign Dates
+dates:
+  created: 2026-01-20
+  planning_start: 2026-01-20
+  launch_date: null  # TBD - when MODE Framework ships
+  end_date: null
+
+# Product Version Targeting
+product:
+  min_version: "2.0.0"
+  platforms:
+    ios:
+      min_version: "2.0.0"
+      status: pending
+    android:
+      min_version: "2.0.0"
+      status: pending
+    web:
+      required: false
+  features:
+    - mode-framework
+    - manager-agent
+    - muse-agent
+    - librarian-agent
+    - biographer-agent
+
+# Feature Details
+feature:
+  name: MODE Framework
+  version: "2.0"
+  category: ai-assistant
+  description: Four AI personalities (Manager, Organizer, Developer, Experiencer) that understand WHY users take notes and help them actually use what they capture
+
+  key_benefits:
+    - AI that understands the purpose behind your notes
+    - Proactive nudges that turn chaos into action
+    - Ideas that grow instead of dying in your notes app
+    - Memories that resurface at the perfect moment
+
+  modes:
+    manage:
+      agent: Manager
+      icon: clipboard-list
+      color: blue
+      purpose: "Turn scattered notes into actionable plans"
+      example: "50 trip notes → organized itinerary"
+
+    organize:
+      agent: Librarian
+      icon: folder-open
+      color: green
+      purpose: "Find and track what you save"
+      example: "Recipe with usage tracking and favorites"
+
+    develop:
+      agent: Muse
+      icon: lightbulb
+      color: amber
+      purpose: "Grow ideas from sparks to reality"
+      example: "One-line idea → full business plan"
+
+    experience:
+      agent: Biographer
+      icon: clock
+      color: purple
+      purpose: "Resurface memories at the right moment"
+      example: "Journal entries with 'on this day' nudges"
+
+# Target Audiences
+audiences:
+  primary: prolific-procrastinator
+  secondary: aesthetic-creators
+  priority_segments:
+    - note_hoarders      # Take lots of notes, struggle to use them
+    - idea_collectors    # Capture ideas that never develop
+    - memory_keepers     # Journal but never look back
+    - trip_planners      # Scattered planning notes
+
+# Core Marketing Message
+messaging:
+  headline: "ToonNotes now understands WHY you're taking notes."
+  subheadline: "Four AI personalities. One goal: Help you actually use what you capture."
+  tagline: "Notes are only useful if they lead to action."
+
+  key_messages:
+    - value: "AI that works with you, not for you"
+    - emotion: "Finally, notes that go somewhere"
+    - action: "Let your notes become more than storage"
+
+  pain_points:
+    - "I have 50 scattered notes but no actual plan"
+    - "I have great ideas but they die in my notes app"
+    - "I save recipes but never cook them"
+    - "I journal but never look back at old entries"
+
+  transformations:
+    manage: "50 random notes → One beautiful itinerary"
+    develop: "A one-line idea → A business plan"
+    organize: "Saved recipes → Recipes you actually cook"
+    experience: "Forgotten journals → Memories that come back"
+
+  ctas:
+    primary: "Meet Your AI Team"
+    secondary: "See How It Works"
+    tertiary: "Download Free"
+
+# Four Scenarios for Marketing
+scenarios:
+  - id: trip-planning
+    mode: manage
+    title: "The Trip That Planned Itself"
+    pain: "I have 50 scattered notes about my Japan trip but no actual plan."
+    user: Sarah
+    file: marketing/copy/scenarios/scenario-manage-trip.md
+
+  - id: idea-growth
+    mode: develop
+    title: "The Idea That Grew Up"
+    pain: "I have great ideas but they die in my notes app."
+    user: Alex
+    file: marketing/copy/scenarios/scenario-develop-idea.md
+
+  - id: recipe-tracking
+    mode: organize
+    title: "The Recipe I Actually Used"
+    pain: "I save recipes but never cook them. They just sit there."
+    user: Jamie
+    file: marketing/copy/scenarios/scenario-organize-recipe.md
+
+  - id: memory-capsule
+    mode: experience
+    title: "The Memory That Came Back"
+    pain: "I journal but never look back at old entries."
+    user: Maya
+    file: marketing/copy/scenarios/scenario-experience-memory.md
+
+# Channel Strategy
+channels:
+  - platform: app-store
+    priority: high
+    content:
+      - Update app description with MODE Framework
+      - New screenshots showing AI nudges
+      - What's New highlighting four AI personalities
+
+  - platform: instagram
+    priority: high
+    content:
+      - Launch announcement reel (60 sec)
+      - 4-slide carousel per scenario
+      - Stories sequence: pain → AI help → result
+      - User transformation highlights
+
+  - platform: tiktok
+    priority: high
+    content:
+      - "POV: Your notes finally go somewhere" video
+      - Before/after transformation montage
+      - Individual MODE deep dives
+
+  - platform: twitter
+    priority: medium
+    content:
+      - Launch announcement thread
+      - Individual scenario tweets
+      - "Which AI personality are you?" poll
+
+  - platform: landing
+    priority: high
+    content:
+      - ModeShowcase component with all 4 scenarios
+      - Features page update with scenario cards
+      - Interactive MODE selector
+
+# Visual Content Specifications
+assets:
+  formats:
+    instagram_carousel:
+      dimensions: "1080x1350"
+      slides_per_scenario: 4
+      structure:
+        - Pain point quote + emoji
+        - User action (capturing the note)
+        - AI nudge appears (show UI)
+        - Result transformation
+
+    app_store_screenshots:
+      dimensions: "1284x2778"
+      count: 5
+      screens:
+        - Hero: "AI that understands your notes"
+        - MANAGE: Trip planning scenario
+        - DEVELOP: Idea expansion nudge
+        - ORGANIZE: Recipe with usage tracking
+        - EXPERIENCE: Time capsule memory
+
+    demo_video:
+      duration: 60
+      structure:
+        - "0-10s: Pain montage (I saved it somewhere..., My ideas just die...)"
+        - "10-20s: Introduce the four MODEs (icons + names)"
+        - "20-40s: Quick demo of each scenario (5 sec each)"
+        - "40-55s: Show transformations (before/after boards)"
+        - "55-60s: CTA - Download ToonNotes"
+
+# Campaign Phases
+phases:
+  teaser:
+    name: "Phase 1: Teaser"
+    timing: "Week -1"
+    content:
+      - "Something big is coming to ToonNotes..."
+      - Hint at four AI personalities
+      - Mystery mode icons reveal
+
+  launch:
+    name: "Phase 2: Launch"
+    timing: "Week 0"
+    content:
+      - Full announcement across all channels
+      - App Store update with v2.0 features
+      - Landing page ModeShowcase section live
+
+  deep_dives:
+    name: "Phase 3: Deep Dives"
+    timing: "Weeks 1-4"
+    schedule:
+      week_1: "MANAGE Mode spotlight (trip planning)"
+      week_2: "DEVELOP Mode spotlight (idea growth)"
+      week_3: "ORGANIZE Mode spotlight (recipe tracking)"
+      week_4: "EXPERIENCE Mode spotlight (memory capsule)"
+
+  user_stories:
+    name: "Phase 4: User Stories"
+    timing: "Ongoing"
+    content:
+      - Collect real user transformations
+      - Before/after showcases
+      - User testimonials
+
+# Goals & Metrics
+goals:
+  primary:
+    metric: mode_feature_adoption
+    target: 10000  # Users who interact with MODE features
+    timeframe: "30 days post-launch"
+
+  secondary:
+    - metric: agent_interactions
+      target: 50000
+      description: "Total nudge interactions across all agents"
+    - metric: idea_progressions
+      target: 5000
+      description: "Ideas that progress through maturity stages"
+    - metric: memory_reflections
+      target: 2000
+      description: "Users who write reflections on past entries"
+
+metrics:
+  tracking:
+    - mode_feature_opens
+    - agent_nudge_impressions
+    - agent_nudge_acceptances
+    - scenario_completions
+    - board_transformations
+    - social_shares
+
+  benchmarks:
+    nudge_acceptance_rate: "30%"
+    scenario_completion: "50%"
+    daily_active_with_mode: "25%"
+
+# Files to Create/Update
+deliverables:
+  campaign:
+    - marketing/campaigns/active/v2-mode-launch/campaign.yaml
+    - marketing/campaigns/active/v2-mode-launch/copy.md
+
+  scenarios:
+    - marketing/copy/scenarios/scenario-manage-trip.md
+    - marketing/copy/scenarios/scenario-develop-idea.md
+    - marketing/copy/scenarios/scenario-organize-recipe.md
+    - marketing/copy/scenarios/scenario-experience-memory.md
+
+  app_store:
+    - marketing/copy/app-store/ios-v2.md
+
+  landing_page:
+    - apps/web/components/marketing/ModeShowcase.tsx
+    - apps/web/app/(marketing)/features/page.tsx
+
+# Launch Checklist
+checklist:
+  pre_launch:
+    - status: pending
+      task: Verify MODE Framework implementation complete in app
+    - status: pending
+      task: Create all four scenario script files
+    - status: pending
+      task: Generate marketing copy for each channel
+    - status: pending
+      task: Update App Store listing with v2.0 copy
+    - status: pending
+      task: Build ModeShowcase component
+    - status: pending
+      task: Create social media assets
+    - status: pending
+      task: Set up analytics tracking for MODE features
+    - status: pending
+      task: QA all AI nudge flows end-to-end
+
+  launch_day:
+    - status: pending
+      task: Push app update to stores
+    - status: pending
+      task: Publish social posts
+    - status: pending
+      task: Deploy landing page updates
+    - status: pending
+      task: Monitor for issues
+
+  post_launch:
+    - status: pending
+      task: Track Week 1 metrics
+    - status: pending
+      task: Execute deep dive content schedule
+    - status: pending
+      task: Collect user stories
+    - status: pending
+      task: Generate campaign report
+
+# Related Documents
+references:
+  - marketing/messaging.md
+  - apps/expo/PRD.md
+  - apps/expo/docs/ai-architecture/MODE-framework.md
+  - marketing/audiences/prolific-procrastinator.yaml

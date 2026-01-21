@@ -2,8 +2,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { Campaign, MarketingFile, FileContent, CopyDirectory, DocCategory, DocWithMetadata, CategoryInfo } from './types';
 
-// Marketing content lives in the parent directory
-const MARKETING_ROOT = path.join(process.cwd(), '..', 'marketing');
+// Marketing content lives at the monorepo root (two levels up from apps/web)
+const MARKETING_ROOT = path.join(process.cwd(), '..', '..', 'marketing');
 
 /**
  * List all campaigns in a given status directory
@@ -51,12 +51,13 @@ export async function listCampaigns(
 export async function getCampaign(
   slug: string,
   status: 'active' | 'archive' = 'active'
-): Promise<{ yaml: string; copy?: string } | null> {
+): Promise<{ yaml: string; copy?: string; schedule?: string } | null> {
   const campaignDir = path.join(MARKETING_ROOT, 'campaigns', status, slug);
 
   try {
     const yamlPath = path.join(campaignDir, 'campaign.yaml');
     const copyPath = path.join(campaignDir, 'copy.md');
+    const schedulePath = path.join(campaignDir, 'schedule.yaml');
 
     const yaml = await fs.readFile(yamlPath, 'utf-8');
 
@@ -67,7 +68,58 @@ export async function getCampaign(
       // copy.md is optional
     }
 
-    return { yaml, copy };
+    let schedule: string | undefined;
+    try {
+      schedule = await fs.readFile(schedulePath, 'utf-8');
+    } catch {
+      // schedule.yaml is optional
+    }
+
+    return { yaml, copy, schedule };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * List scenario files for a campaign
+ */
+export async function listCampaignScenarios(
+  slug: string
+): Promise<MarketingFile[]> {
+  // Check if campaign has scenarios in copy/scenarios folder
+  const scenariosDir = path.join(MARKETING_ROOT, 'copy', 'scenarios');
+
+  try {
+    const entries = await fs.readdir(scenariosDir, { withFileTypes: true });
+
+    return entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+      .map((entry) => ({
+        name: entry.name.replace('.md', '').replace('scenario-', '').replace(/-/g, ' '),
+        path: entry.name,
+        type: 'file' as const,
+        extension: 'md',
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get a scenario file content
+ */
+export async function getScenarioFile(filename: string): Promise<FileContent | null> {
+  const scenarioPath = path.join(MARKETING_ROOT, 'copy', 'scenarios', filename);
+
+  try {
+    const content = await fs.readFile(scenarioPath, 'utf-8');
+    return {
+      name: filename,
+      path: `scenarios/${filename}`,
+      content,
+      type: 'markdown',
+    };
   } catch {
     return null;
   }
