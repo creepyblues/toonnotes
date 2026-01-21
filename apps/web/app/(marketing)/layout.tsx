@@ -18,12 +18,20 @@ export default function MarketingLayout({
               ToonNotes
             </span>
           </Link>
-          <Link
-            href="/development_diary"
-            className="hidden sm:block text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
-          >
-            Dev Diary
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/features"
+              className="hidden sm:block text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
+            >
+              Features
+            </Link>
+            <Link
+              href="/development_diary"
+              className="hidden sm:block text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
+            >
+              Dev Diary
+            </Link>
+          </div>
         </nav>
       </header>
 
