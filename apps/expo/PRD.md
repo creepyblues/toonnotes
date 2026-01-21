@@ -1,8 +1,12 @@
 # ToonNotes - Product Requirements Document
 
-**Version:** 2.0
+**Version:** 1.x (Current)
 **Last Updated:** January 2025
 **Status:** Implementation Complete (v1.1.1)
+
+---
+
+> **v2.0 Development:** See [PRD-v2-MODE-Framework.md](./docs/PRD-v2-MODE-Framework.md) for the MODE Framework & Smart Assistant roadmap.
 
 ---
 
