@@ -237,30 +237,76 @@ All AI features are powered by Vercel edge functions that call Google Gemini API
 
 ### API Deployment
 
-The API functions are deployed to a **separate Vercel project** called `toonnotes-api`. To deploy API changes:
+The API functions are deployed to a **separate Vercel project** called `toonnotes-api`.
+
+#### Deployment Configuration
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| Vercel Project | `toonnotes-api` | Separate from webapp/web projects |
+| Root Directory | `.` (empty) | Must be empty, NOT `apps/expo` |
+| Git Integration | **Disconnected** | Prevents broken auto-deployments |
+| Deploy Method | **CLI only** | Must deploy from `apps/expo` directory |
+
+#### Why This Configuration?
+
+The monorepo structure causes issues with Vercel's Root Directory setting:
+- Setting Root Directory to `apps/expo` breaks CLI deployments (Vercel looks for `apps/expo/apps/expo`)
+- Setting Root Directory to `.` with git integration causes deployments from repo root (missing `vercel.json`)
+- **Solution**: Root Directory `.` + git disconnected + CLI deploy from `apps/expo`
+
+#### How to Deploy
 
 ```bash
-# From apps/expo directory
+# Always deploy from apps/expo directory
 cd /Users/sungholee/code/toonnotes/apps/expo
-
-# Link to the correct Vercel project (only needed once)
-vercel link --project toonnotes-api --yes
 
 # Deploy to production
 vercel --prod
 ```
 
-**Important**: The `apps/expo` directory contains both the Expo app AND the Vercel API functions. The API functions must be deployed to the `toonnotes-api` project, not the `expo` project.
+#### Vercel Projects
 
 | Vercel Project | Domain | Purpose |
 |----------------|--------|---------|
 | `toonnotes-api` | toonnotes-api.vercel.app | Edge functions (API) |
-| `expo` | expo-phi-ruddy.vercel.app | Not used for API |
+| `webapp` | toonnotes.app | Main webapp |
+| `web` | toonnotes.com | Marketing website |
 
-If you see 404 errors for API endpoints, verify the directory is linked to `toonnotes-api`:
+#### Troubleshooting
+
+**API returns 404:**
+1. Verify you're in the correct directory:
+   ```bash
+   pwd  # Should be /Users/sungholee/code/toonnotes/apps/expo
+   ```
+2. Verify project link:
+   ```bash
+   cat .vercel/project.json  # Should show toonnotes-api project
+   ```
+3. Redeploy:
+   ```bash
+   vercel --prod
+   ```
+
+**Check API health:**
 ```bash
-cat .vercel/project.json  # Should show toonnotes-api project
+curl https://toonnotes-api.vercel.app/api/health-check
 ```
+
+**Test AI labeling endpoint:**
+```bash
+curl -X POST 'https://toonnotes-api.vercel.app/api/analyze-note-content' \
+  -H 'Content-Type: application/json' \
+  -d '{"noteTitle":"Test","noteContent":"watching anime"}'
+```
+
+#### Health Monitoring
+
+The API has a built-in health check endpoint with Slack alerts:
+- **Endpoint**: `/api/health-check`
+- **Cron**: Runs daily at 9 AM UTC (`0 9 * * *`)
+- **Alerts**: Sends to Slack if any endpoint fails (requires `SLACK_WEBHOOK_URL` env var)
 
 ## Architecture Patterns
 
