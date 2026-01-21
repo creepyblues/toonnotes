@@ -15,6 +15,8 @@ import { Note, NoteDesign, DesignViewContext } from '@/types';
 import { composeStyle } from '@/services/designEngine';
 import { useFontsLoaded } from '@/app/_layout';
 import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
+import { ShareStatus } from '@/services/shareService';
+import { PublicBadge } from './PublicBadge';
 import {
   // Productivity
   CheckSquare,
@@ -117,6 +119,7 @@ interface NoteCardProps {
   context?: DesignViewContext;
   compact?: boolean; // For board previews - removes aspect ratio constraint
   hideIcon?: boolean; // Hide label icon (when board already shows it)
+  shareStatus?: ShareStatus; // For showing "Public" badge on shared notes
 }
 
 /**
@@ -153,6 +156,9 @@ function arePropsEqual(
   // Check design changes
   if (prevProps.design?.id !== nextProps.design?.id) return false;
   if (prevProps.design?.createdAt !== nextProps.design?.createdAt) return false;
+
+  // Check share status changes
+  if (prevProps.shareStatus?.shareToken !== nextProps.shareStatus?.shareToken) return false;
 
   // Props are equal, skip re-render
   return true;
@@ -194,6 +200,7 @@ function NoteCardComponent({
   context = 'grid',
   compact = false,
   hideIcon = false,
+  shareStatus,
 }: NoteCardProps) {
   // Check if Google Fonts are loaded
   const fontsLoaded = useFontsLoaded();
@@ -363,9 +370,9 @@ function NoteCardComponent({
         </View>
 
         {/* Bottom row: Labels on left, Icon/Sticker on right - hidden in compact mode */}
-        {!compact && (note.labels.length > 0 || !hideIcon) && (
+        {!compact && (note.labels.length > 0 || !hideIcon || shareStatus) && (
           <View style={styles.bottomRow}>
-            {/* Primary Label Only */}
+            {/* Primary Label + Public Badge */}
             <View style={styles.labelsContainer}>
               {note.labels.length > 0 && (
                 <View
@@ -387,6 +394,10 @@ function NoteCardComponent({
                 <Text style={[styles.moreLabels, { color: isDark ? '#98989D' : '#8E8E93' }]}>
                   +{note.labels.length - 1}
                 </Text>
+              )}
+              {/* Public badge for shared notes */}
+              {shareStatus && (
+                <PublicBadge shareStatus={shareStatus} isDark={isDark} />
               )}
             </View>
 

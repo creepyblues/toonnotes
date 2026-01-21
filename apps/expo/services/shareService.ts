@@ -2,21 +2,26 @@
  * Share Service - Manages shareable note links via Supabase
  *
  * Creates unique share tokens that allow anonymous viewing of notes
- * on the ToonNotes website (toonnotes-web.vercel.app/note/{token})
+ * on the ToonNotes website (toonnotes.com/note/{token})
  */
 
 import { supabase } from './supabase';
 import { uploadNote } from './syncService';
 import { Note } from '@/types';
 
-// Base URL for shareable links
-const SHARE_BASE_URL =
-  process.env.EXPO_PUBLIC_SHARE_BASE_URL || 'https://toonnotes-web.vercel.app/note';
+// Base URL for shareable links (hardcoded production domain)
+const SHARE_BASE_URL = 'https://toonnotes.com/note';
 
 export interface ShareLinkResult {
   shareToken: string;
   shareUrl: string;
   isNew: boolean;
+}
+
+export interface ShareStatus {
+  noteId: string;
+  shareToken: string;
+  shareUrl: string;
 }
 
 /**
@@ -180,6 +185,46 @@ export async function getShareAnalytics(
   } catch (error) {
     console.error('[ShareService] Error fetching share analytics:', error);
     return null;
+  }
+}
+
+/**
+ * Get share status for multiple notes in a single query
+ * Returns a Map for O(1) lookup by noteId
+ */
+export async function getShareStatusBatch(
+  noteIds: string[]
+): Promise<Map<string, ShareStatus>> {
+  const statusMap = new Map<string, ShareStatus>();
+
+  if (noteIds.length === 0) {
+    return statusMap;
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_share_status_batch', {
+      p_note_ids: noteIds,
+    });
+
+    if (error) {
+      console.error('[ShareService] Error fetching batch share status:', error);
+      return statusMap;
+    }
+
+    if (data) {
+      for (const row of data) {
+        statusMap.set(row.note_id, {
+          noteId: row.note_id,
+          shareToken: row.share_token,
+          shareUrl: `${SHARE_BASE_URL}/${row.share_token}`,
+        });
+      }
+    }
+
+    return statusMap;
+  } catch (error) {
+    console.error('[ShareService] Error in getShareStatusBatch:', error);
+    return statusMap;
   }
 }
 

@@ -2,7 +2,7 @@
 -- Stores user requests for account deletion (Play Store compliance)
 -- Processed manually by admins
 
-CREATE TABLE public.account_deletion_requests (
+CREATE TABLE IF NOT EXISTS public.account_deletion_requests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   email TEXT NOT NULL,
   reason TEXT,
@@ -14,23 +14,26 @@ CREATE TABLE public.account_deletion_requests (
 );
 
 -- Create index for faster status queries
-CREATE INDEX idx_account_deletion_requests_status ON public.account_deletion_requests(status);
-CREATE INDEX idx_account_deletion_requests_email ON public.account_deletion_requests(email);
+CREATE INDEX IF NOT EXISTS idx_account_deletion_requests_status ON public.account_deletion_requests(status);
+CREATE INDEX IF NOT EXISTS idx_account_deletion_requests_email ON public.account_deletion_requests(email);
 
 -- Enable Row Level Security
 ALTER TABLE public.account_deletion_requests ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to submit a deletion request (public form)
+DROP POLICY IF EXISTS "Anyone can submit deletion request" ON public.account_deletion_requests;
 CREATE POLICY "Anyone can submit deletion request"
   ON public.account_deletion_requests FOR INSERT
   WITH CHECK (true);
 
 -- Only admins can view deletion requests
+DROP POLICY IF EXISTS "Admins can view deletion requests" ON public.account_deletion_requests;
 CREATE POLICY "Admins can view deletion requests"
   ON public.account_deletion_requests FOR SELECT
   USING (EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid()));
 
 -- Only admins can update deletion requests
+DROP POLICY IF EXISTS "Admins can update deletion requests" ON public.account_deletion_requests;
 CREATE POLICY "Admins can update deletion requests"
   ON public.account_deletion_requests FOR UPDATE
   USING (EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid()));

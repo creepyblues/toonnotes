@@ -25,6 +25,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- RLS Policy: Users can manage their own note images
 -- Files are stored as: {user_id}/{note_id}/{filename}
+DROP POLICY IF EXISTS "Users can upload own note images" ON storage.objects;
 CREATE POLICY "Users can upload own note images"
 ON storage.objects FOR INSERT
 WITH CHECK (
@@ -32,6 +33,7 @@ WITH CHECK (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can view own note images" ON storage.objects;
 CREATE POLICY "Users can view own note images"
 ON storage.objects FOR SELECT
 USING (
@@ -39,6 +41,7 @@ USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can update own note images" ON storage.objects;
 CREATE POLICY "Users can update own note images"
 ON storage.objects FOR UPDATE
 USING (
@@ -46,6 +49,7 @@ USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can delete own note images" ON storage.objects;
 CREATE POLICY "Users can delete own note images"
 ON storage.objects FOR DELETE
 USING (
@@ -55,6 +59,7 @@ USING (
 
 -- RLS Policy: Users can manage their own design assets
 -- Files are stored as: {user_id}/stickers/{filename} or {user_id}/sources/{filename}
+DROP POLICY IF EXISTS "Users can upload own design assets" ON storage.objects;
 CREATE POLICY "Users can upload own design assets"
 ON storage.objects FOR INSERT
 WITH CHECK (
@@ -62,6 +67,7 @@ WITH CHECK (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can view own design assets" ON storage.objects;
 CREATE POLICY "Users can view own design assets"
 ON storage.objects FOR SELECT
 USING (
@@ -69,6 +75,7 @@ USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can update own design assets" ON storage.objects;
 CREATE POLICY "Users can update own design assets"
 ON storage.objects FOR UPDATE
 USING (
@@ -76,6 +83,7 @@ USING (
   AND auth.uid()::text = (storage.foldername(name))[1]
 );
 
+DROP POLICY IF EXISTS "Users can delete own design assets" ON storage.objects;
 CREATE POLICY "Users can delete own design assets"
 ON storage.objects FOR DELETE
 USING (

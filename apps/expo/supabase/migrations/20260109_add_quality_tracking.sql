@@ -68,12 +68,14 @@ ON public.quality_events(generation_type, created_at DESC);
 -- Enable Row Level Security
 ALTER TABLE public.quality_events ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies: Users can only access their own quality events
+-- RLS Policies: Users can only access their own quality events (idempotent)
+DROP POLICY IF EXISTS "Users can insert own quality events" ON public.quality_events;
 CREATE POLICY "Users can insert own quality events"
 ON public.quality_events
 FOR INSERT
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can read own quality events" ON public.quality_events;
 CREATE POLICY "Users can read own quality events"
 ON public.quality_events
 FOR SELECT

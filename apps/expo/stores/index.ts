@@ -33,3 +33,6 @@ export {
   createNudge,
   NudgeActions,
 } from './nudgeStore';
+
+// Share status store
+export { useShareStatusStore } from './shareStatusStore';

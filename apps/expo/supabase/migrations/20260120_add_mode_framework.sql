@@ -18,19 +18,31 @@ ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT NULL;
 ALTER TABLE public.boards
 ADD COLUMN IF NOT EXISTS organize_stage TEXT DEFAULT NULL;
 
--- Add check constraints for valid mode values
-ALTER TABLE public.boards
-ADD CONSTRAINT boards_mode_check
-CHECK (mode IS NULL OR mode IN ('manage', 'develop', 'organize', 'experience'));
+-- Add check constraints for valid mode values (idempotent)
+DO $$ BEGIN
+  ALTER TABLE public.boards
+  ADD CONSTRAINT boards_mode_check
+  CHECK (mode IS NULL OR mode IN ('manage', 'develop', 'organize', 'experience'));
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE public.boards
-ADD CONSTRAINT boards_organize_stage_check
-CHECK (organize_stage IS NULL OR organize_stage IN ('inbox', 'store', 'learn'));
+DO $$ BEGIN
+  ALTER TABLE public.boards
+  ADD CONSTRAINT boards_organize_stage_check
+  CHECK (organize_stage IS NULL OR organize_stage IN ('inbox', 'store', 'learn'));
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Add constraint: organize_stage only valid when mode is 'organize'
-ALTER TABLE public.boards
-ADD CONSTRAINT boards_organize_stage_mode_check
-CHECK (organize_stage IS NULL OR mode = 'organize');
+DO $$ BEGIN
+  ALTER TABLE public.boards
+  ADD CONSTRAINT boards_organize_stage_mode_check
+  CHECK (organize_stage IS NULL OR mode = 'organize');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Create index for filtering by mode
 CREATE INDEX IF NOT EXISTS idx_boards_mode ON public.boards(mode);
@@ -86,23 +98,27 @@ CREATE INDEX IF NOT EXISTS idx_note_behaviors_last_accessed ON public.note_behav
 -- Enable RLS
 ALTER TABLE public.note_behaviors ENABLE ROW LEVEL SECURITY;
 
--- RLS policies
+-- RLS policies (idempotent)
+DROP POLICY IF EXISTS "Users can view their own note behaviors" ON public.note_behaviors;
 CREATE POLICY "Users can view their own note behaviors"
 ON public.note_behaviors FOR SELECT
 TO authenticated
 USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert their own note behaviors" ON public.note_behaviors;
 CREATE POLICY "Users can insert their own note behaviors"
 ON public.note_behaviors FOR INSERT
 TO authenticated
 WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own note behaviors" ON public.note_behaviors;
 CREATE POLICY "Users can update their own note behaviors"
 ON public.note_behaviors FOR UPDATE
 TO authenticated
 USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can delete their own note behaviors" ON public.note_behaviors;
 CREATE POLICY "Users can delete their own note behaviors"
 ON public.note_behaviors FOR DELETE
 TO authenticated
@@ -117,6 +133,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_note_behaviors_updated_at ON public.note_behaviors;
 CREATE TRIGGER trigger_note_behaviors_updated_at
 BEFORE UPDATE ON public.note_behaviors
 FOR EACH ROW
@@ -173,23 +190,27 @@ CREATE INDEX IF NOT EXISTS idx_nudges_outcome ON public.nudges(outcome);
 -- Enable RLS
 ALTER TABLE public.nudges ENABLE ROW LEVEL SECURITY;
 
--- RLS policies
+-- RLS policies (idempotent)
+DROP POLICY IF EXISTS "Users can view their own nudges" ON public.nudges;
 CREATE POLICY "Users can view their own nudges"
 ON public.nudges FOR SELECT
 TO authenticated
 USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert their own nudges" ON public.nudges;
 CREATE POLICY "Users can insert their own nudges"
 ON public.nudges FOR INSERT
 TO authenticated
 WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own nudges" ON public.nudges;
 CREATE POLICY "Users can update their own nudges"
 ON public.nudges FOR UPDATE
 TO authenticated
 USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can delete their own nudges" ON public.nudges;
 CREATE POLICY "Users can delete their own nudges"
 ON public.nudges FOR DELETE
 TO authenticated
@@ -232,17 +253,20 @@ CREATE INDEX IF NOT EXISTS idx_user_patterns_user_id ON public.user_patterns(use
 -- Enable RLS
 ALTER TABLE public.user_patterns ENABLE ROW LEVEL SECURITY;
 
--- RLS policies
+-- RLS policies (idempotent)
+DROP POLICY IF EXISTS "Users can view their own patterns" ON public.user_patterns;
 CREATE POLICY "Users can view their own patterns"
 ON public.user_patterns FOR SELECT
 TO authenticated
 USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can insert their own patterns" ON public.user_patterns;
 CREATE POLICY "Users can insert their own patterns"
 ON public.user_patterns FOR INSERT
 TO authenticated
 WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update their own patterns" ON public.user_patterns;
 CREATE POLICY "Users can update their own patterns"
 ON public.user_patterns FOR UPDATE
 TO authenticated
@@ -250,6 +274,7 @@ USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
 -- Trigger to auto-update updated_at
+DROP TRIGGER IF EXISTS trigger_user_patterns_updated_at ON public.user_patterns;
 CREATE TRIGGER trigger_user_patterns_updated_at
 BEFORE UPDATE ON public.user_patterns
 FOR EACH ROW

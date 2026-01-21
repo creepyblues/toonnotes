@@ -321,6 +321,9 @@ export const Analytics = {
   noteShared: (noteId: string, shareMethod: 'image' | 'text') =>
     trackEvent('note_shared', { note_id: noteId, share_method: shareMethod }),
 
+  shareBadgeTapped: (noteId: string) =>
+    trackEvent('share_badge_tapped', { note_id: noteId }),
+
   // ============================================
   // DESIGNS (Aha moment tracking)
   // ============================================

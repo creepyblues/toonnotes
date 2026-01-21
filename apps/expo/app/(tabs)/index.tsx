@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Plus, MagnifyingGlass, X, PushPin, XCircle, NotePencil } from 'phosphor-react-native';
 
-import { useNoteStore, useUserStore, useDesignStore } from '@/stores';
+import { useNoteStore, useUserStore, useDesignStore, useShareStatusStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { Note, NoteColor } from '@/types';
 import { useTheme } from '@/src/theme';
@@ -30,6 +30,7 @@ export default function NotesScreen() {
   const { notes, getActiveNotes, searchNotes, addNote } = useNoteStore();
   const { colors, isDark } = useTheme();
   const { getDesignById } = useDesignStore();
+  const { fetchShareStatusForNotes, getShareStatus } = useShareStatusStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -48,6 +49,14 @@ export default function NotesScreen() {
     }
     return getActiveNotes();
   }, [notes, searchQuery]);
+
+  // Fetch share status for visible notes
+  useEffect(() => {
+    if (filteredNotes.length > 0) {
+      const noteIds = filteredNotes.map((n) => n.id);
+      fetchShareStatusForNotes(noteIds);
+    }
+  }, [filteredNotes]);
 
   // Separate pinned and unpinned
   const pinnedNotes = filteredNotes.filter((n) => n.isPinned);
@@ -87,9 +96,10 @@ export default function NotesScreen() {
         onPress={() => handleNotePress(item.id)}
         isDark={isDark}
         context="grid"
+        shareStatus={getShareStatus(item.id)}
       />
     </View>
-  ), [getDesign, handleNotePress, isDark]);
+  ), [getDesign, handleNotePress, isDark, getShareStatus]);
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
@@ -105,6 +115,7 @@ export default function NotesScreen() {
                   onPress={() => handleNotePress(note.id)}
                   isDark={isDark}
                   context="grid"
+                  shareStatus={getShareStatus(note.id)}
                 />
               </View>
             ))}
@@ -121,7 +132,7 @@ export default function NotesScreen() {
         </View>
       )}
     </View>
-  ), [pinnedNotes, unpinnedNotes, getDesign, handleNotePress, isDark, colors]);
+  ), [pinnedNotes, unpinnedNotes, getDesign, handleNotePress, isDark, colors, getShareStatus]);
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
