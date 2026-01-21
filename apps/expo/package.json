@@ -1,7 +1,7 @@
 {
   "name": "@toonnotes/expo",
   "main": "expo-router/entry",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "scripts": {
     "dev": "expo start --port 6061",
     "start": "expo start --port 6061",
