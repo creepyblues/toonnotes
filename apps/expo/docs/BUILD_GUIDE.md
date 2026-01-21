@@ -63,7 +63,6 @@ EXPO_PUBLIC_REVENUECAT_IOS_KEY=your-revenuecat-ios-key
 EXPO_PUBLIC_REVENUECAT_ANDROID_KEY=your-revenuecat-android-key
 
 # Optional
-EXPO_PUBLIC_SHARE_BASE_URL=https://your-share-domain.com
 EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn
 ```
 
