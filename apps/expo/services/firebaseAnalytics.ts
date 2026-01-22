@@ -465,6 +465,44 @@ export const Analytics = {
     trackEvent('activation_milestone', { milestone }),
 
   // ============================================
+  // AGENT ONBOARDING
+  // ============================================
+  agentOnboardingStarted: () =>
+    trackEvent('agent_onboarding_started'),
+
+  agentOnboardingAgentChosen: (agentId: string, isFirst: boolean) =>
+    trackEvent('agent_onboarding_agent_chosen', { agent_id: agentId, is_first: isFirst }),
+
+  agentOnboardingDemoViewed: (agentId: string) =>
+    trackEvent('agent_onboarding_demo_viewed', { agent_id: agentId }),
+
+  agentOnboardingAgentCompleted: (agentId: string) =>
+    trackEvent('agent_onboarding_agent_completed', { agent_id: agentId }),
+
+  agentOnboardingSkipped: (agentsExperiencedCount: number) =>
+    trackEvent('agent_onboarding_skipped', { agents_experienced_count: agentsExperiencedCount }),
+
+  agentOnboardingCompleted: (agentIds: string[], totalTimeSeconds: number) =>
+    trackEvent('agent_onboarding_completed', {
+      agents_count: agentIds.length,
+      agents: agentIds.join(','),
+      total_time_seconds: totalTimeSeconds,
+    }),
+
+  agentOnboardingReRunFromSettings: () =>
+    trackEvent('agent_onboarding_rerun_from_settings'),
+
+  // Agent Intro events (first-time mode assignment)
+  agentIntroShown: (agentId: string) =>
+    trackEvent('agent_intro_shown', { agent_id: agentId }),
+
+  agentIntroDismissed: (agentId: string) =>
+    trackEvent('agent_intro_dismissed', { agent_id: agentId }),
+
+  agentIntroSeen: (agentId: string) =>
+    trackEvent('agent_intro_seen', { agent_id: agentId }),
+
+  // ============================================
   // EDITOR
   // ============================================
   editorModeChanged: (noteId: string, mode: 'text' | 'checklist' | 'bullet') =>

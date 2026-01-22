@@ -127,6 +127,8 @@ import {
   LabelSuggestionSheet,
   AnalysisProgressModal,
 } from '@/components/labels';
+import { AgentIntroSheet } from '@/components/agents';
+import { useAgentIntroTrigger } from '@/hooks/useAgentIntroTrigger';
 import { composeStyle } from '@/services/designEngine';
 import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { DesignCard } from '@/components/designs/DesignCard';
@@ -194,6 +196,9 @@ export default function NoteEditorScreen() {
   const getSuggestionsForNote = useLabelSuggestionStore((state) => state.getSuggestionsForNote);
   const clearSuggestions = useLabelSuggestionStore((state) => state.clearSuggestions);
   const currentDesign = note?.designId ? getDesignById(note.designId) : null;
+
+  // Agent intro trigger hook - shows first-time agent intro sheet
+  const { showIntroFor, markIntroSeen, checkForIntro } = useAgentIntroTrigger(id);
 
   // Check if Google Fonts are loaded
   const fontsLoaded = useFontsLoaded();
@@ -840,6 +845,16 @@ export default function NoteEditorScreen() {
       // Trigger label analysis if note has content
       if (latest.title.trim() || latest.content.trim()) {
         const hasSuggestions = await analyzeForLabels();
+
+        // Check for agent intro after mode detection (non-blocking)
+        // This creates a note with the current content for mode detection
+        const noteWithCurrentContent = {
+          ...note,
+          title: latest.title,
+          content: latest.content,
+        };
+        checkForIntro(noteWithCurrentContent);
+
         if (hasSuggestions) {
           // Store the navigation action for later dispatch after toast
           pendingNavigationRef.current = e.data.action;
@@ -853,7 +868,7 @@ export default function NoteEditorScreen() {
     });
 
     return unsubscribe;
-  }, [navigation, title, content, color, designId, note, waitingForToast, updateNote, deleteNote]);
+  }, [navigation, title, content, color, designId, note, waitingForToast, updateNote, deleteNote, checkForIntro]);
 
   const handleApplyDesign = (design: NoteDesign) => {
     setDesignId(design.id);
@@ -2040,6 +2055,13 @@ export default function NoteEditorScreen() {
 
       {/* Label suggestion toast - shows after analysis completes */}
       <LabelSuggestionToast onComplete={handleToastComplete} />
+
+      {/* Agent intro sheet - shows on first mode assignment */}
+      <AgentIntroSheet
+        agentId={showIntroFor}
+        visible={showIntroFor !== null}
+        onDismiss={markIntroSeen}
+      />
 
     </SafeAreaView>
   );

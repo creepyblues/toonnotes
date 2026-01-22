@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User, AppSettings, NoteColor, Purchase, Subscription, DEFAULT_SUBSCRIPTION } from '@/types';
+import { User, AppSettings, NoteColor, Purchase, Subscription, DEFAULT_SUBSCRIPTION, AgentId } from '@/types';
 import { PRO_MONTHLY_COINS } from '@/constants/products';
 import { generateUUID } from '@/utils/uuid';
 import { debouncedStorage } from './debouncedStorage';
@@ -22,6 +22,26 @@ interface OnboardingState {
   notesCreatedCount: number;
 }
 
+/** Agent Onboarding State - Interactive agent introduction flow */
+interface AgentOnboardingState {
+  /** Whether user has started the agent onboarding flow */
+  hasStartedAgentOnboarding: boolean;
+  /** Whether user has completed the agent onboarding flow */
+  hasCompletedAgentOnboarding: boolean;
+  /** Agent IDs that user has experienced/met */
+  experiencedAgents: AgentId[];
+  /** First agent chosen by user (for analytics) */
+  firstAgentChosen: AgentId | null;
+  /** Timestamp when onboarding started */
+  onboardingStartedAt: number | null;
+  /** Timestamp when onboarding completed */
+  onboardingCompletedAt: number | null;
+  /** Whether user skipped after meeting some agents */
+  skippedAfterAgent: boolean;
+  /** Agent IDs whose intro sheets have been seen (for first-time mode assignment) */
+  seenAgentIntros: AgentId[];
+}
+
 const INITIAL_ONBOARDING: OnboardingState = {
   hasCompletedWelcome: false,
   seenCoachMarks: [],
@@ -29,10 +49,22 @@ const INITIAL_ONBOARDING: OnboardingState = {
   notesCreatedCount: 0,
 };
 
+const INITIAL_AGENT_ONBOARDING: AgentOnboardingState = {
+  hasStartedAgentOnboarding: false,
+  hasCompletedAgentOnboarding: false,
+  experiencedAgents: [],
+  firstAgentChosen: null,
+  onboardingStartedAt: null,
+  onboardingCompletedAt: null,
+  skippedAfterAgent: false,
+  seenAgentIntros: [],
+};
+
 interface UserState {
   user: User;
   settings: AppSettings;
   onboarding: OnboardingState;
+  agentOnboarding: AgentOnboardingState;
 
   // Purchase state
   purchases: Purchase[];
@@ -66,6 +98,18 @@ interface UserState {
   resetOnboarding: () => void; // For testing/debugging
   setOnboardingVersion: (version: number) => void;
 
+  // Agent Onboarding actions
+  startAgentOnboarding: () => void;
+  completeAgentOnboarding: () => void;
+  recordAgentExperienced: (agentId: AgentId) => void;
+  setFirstAgentChosen: (agentId: AgentId) => void;
+  resetAgentOnboarding: () => void;
+  skipAgentOnboarding: () => void;
+
+  // Agent Intro actions (first-time mode assignment)
+  markAgentIntroSeen: (agentId: AgentId) => void;
+  hasSeenAgentIntro: (agentId: AgentId) => boolean;
+
   // Subscription actions
   setSubscription: (subscription: Partial<Subscription>) => void;
   isPro: () => boolean;
@@ -95,6 +139,7 @@ export const useUserStore = create<UserState>()(
       user: INITIAL_USER,
       settings: INITIAL_SETTINGS,
       onboarding: INITIAL_ONBOARDING,
+      agentOnboarding: INITIAL_AGENT_ONBOARDING,
 
       // Purchase state
       purchases: [],
@@ -261,6 +306,113 @@ export const useUserStore = create<UserState>()(
       },
 
       // ========================================================================
+      // Agent Onboarding Actions
+      // ========================================================================
+
+      startAgentOnboarding: () => {
+        set((state) => ({
+          agentOnboarding: {
+            ...state.agentOnboarding,
+            hasStartedAgentOnboarding: true,
+            onboardingStartedAt: Date.now(),
+          },
+        }));
+        Analytics.agentOnboardingStarted();
+      },
+
+      completeAgentOnboarding: () => {
+        const { agentOnboarding } = get();
+        const totalTimeSeconds = agentOnboarding.onboardingStartedAt
+          ? Math.round((Date.now() - agentOnboarding.onboardingStartedAt) / 1000)
+          : 0;
+
+        set((state) => ({
+          agentOnboarding: {
+            ...state.agentOnboarding,
+            hasCompletedAgentOnboarding: true,
+            onboardingCompletedAt: Date.now(),
+          },
+        }));
+
+        Analytics.agentOnboardingCompleted(agentOnboarding.experiencedAgents, totalTimeSeconds);
+      },
+
+      recordAgentExperienced: (agentId: AgentId) => {
+        const { agentOnboarding } = get();
+        if (agentOnboarding.experiencedAgents.includes(agentId)) return;
+
+        set((state) => ({
+          agentOnboarding: {
+            ...state.agentOnboarding,
+            experiencedAgents: [...state.agentOnboarding.experiencedAgents, agentId],
+          },
+        }));
+
+        Analytics.agentOnboardingAgentCompleted(agentId);
+      },
+
+      setFirstAgentChosen: (agentId: AgentId) => {
+        const { agentOnboarding } = get();
+        if (agentOnboarding.firstAgentChosen) return; // Already set
+
+        set((state) => ({
+          agentOnboarding: {
+            ...state.agentOnboarding,
+            firstAgentChosen: agentId,
+          },
+        }));
+
+        Analytics.agentOnboardingAgentChosen(agentId, true);
+      },
+
+      resetAgentOnboarding: () => {
+        set({ agentOnboarding: INITIAL_AGENT_ONBOARDING });
+        Analytics.agentOnboardingReRunFromSettings();
+      },
+
+      skipAgentOnboarding: () => {
+        const { agentOnboarding } = get();
+
+        set((state) => ({
+          agentOnboarding: {
+            ...state.agentOnboarding,
+            hasCompletedAgentOnboarding: true,
+            skippedAfterAgent: true,
+            onboardingCompletedAt: Date.now(),
+          },
+        }));
+
+        Analytics.agentOnboardingSkipped(agentOnboarding.experiencedAgents.length);
+      },
+
+      // ========================================================================
+      // Agent Intro Actions (first-time mode assignment)
+      // ========================================================================
+
+      markAgentIntroSeen: (agentId: AgentId) => {
+        const { agentOnboarding } = get();
+        // Don't add duplicates
+        if (agentOnboarding.seenAgentIntros.includes(agentId)) {
+          return;
+        }
+
+        set((state) => ({
+          agentOnboarding: {
+            ...state.agentOnboarding,
+            seenAgentIntros: [...state.agentOnboarding.seenAgentIntros, agentId],
+          },
+        }));
+
+        // Track analytics
+        Analytics.agentIntroSeen(agentId);
+      },
+
+      hasSeenAgentIntro: (agentId: AgentId) => {
+        const { agentOnboarding } = get();
+        return agentOnboarding.seenAgentIntros.includes(agentId);
+      },
+
+      // ========================================================================
       // Subscription Actions
       // ========================================================================
 
@@ -340,6 +492,7 @@ export const useUserStore = create<UserState>()(
         user: state.user,
         purchases: state.purchases,
         onboarding: state.onboarding,
+        agentOnboarding: state.agentOnboarding,
         settings: state.settings,
       }),
       // Migration: Handle schema changes for existing users
