@@ -23,9 +23,18 @@ This is part of the ToonNotes monorepo and complements the main ToonNotes_Expo m
 
 ```
 app/
-├── (marketing)/           # Landing page route group
-│   ├── layout.tsx         # Nav + footer wrapper
-│   └── page.tsx           # Hero, features, download CTAs
+├── (marketing)/           # Marketing pages route group
+│   ├── layout.tsx         # Shared header + footer wrapper
+│   ├── page.tsx           # Homepage: Hero, features, CTAs
+│   ├── features/          # Features page
+│   ├── scenarios/         # Scenarios section
+│   │   ├── layout.tsx     # Scenarios-specific layout (solid header)
+│   │   ├── page.tsx       # Scenarios index
+│   │   ├── trip-planning/ # Individual scenario pages
+│   │   ├── idea-growth/
+│   │   ├── memory-capsule/
+│   │   └── recipe-tracking/
+│   └── development_diary/ # Public dev diary
 ├── note/[shareToken]/     # Dynamic shared note routes (SSR)
 │   ├── page.tsx           # Fetches + renders shared note
 │   ├── loading.tsx        # Loading skeleton
@@ -42,11 +51,45 @@ lib/
     ├── types.ts           # SharedNoteData, NoteDesign, ComposedStyle
     └── composeStyle.ts    # Design → CSS composition
 
-components/notes/
-└── SharedNoteCard.tsx     # Client component for note rendering
+components/
+├── marketing/
+│   ├── MarketingHeader.tsx  # Shared header for all marketing pages
+│   ├── Hero.tsx
+│   ├── Features.tsx
+│   └── ...
+└── notes/
+    └── SharedNoteCard.tsx   # Client component for note rendering
 ```
 
 ## Key Patterns
+
+### Marketing Site Header (IMPORTANT)
+
+**All marketing pages MUST use the shared `MarketingHeader` component** to ensure consistent navigation across the site.
+
+- **Location**: `components/marketing/MarketingHeader.tsx`
+- **Navigation items** (always visible, in this order):
+  1. Features (`/features`)
+  2. Scenarios (`/scenarios`)
+  3. Dev Diary (`/development_diary`)
+  4. Download button (CTA)
+
+**Variants:**
+- `transparent` - For pages with hero sections (homepage, features)
+- `solid` - For pages with content starting at the top (scenarios)
+
+**Usage:**
+```tsx
+import { MarketingHeader } from '@/components/marketing';
+
+// In layout.tsx
+<MarketingHeader variant="transparent" />  // or "solid"
+```
+
+**When adding new marketing pages:**
+1. Use the shared `MarketingHeader` - never create inline headers
+2. If a new top-level nav item is needed, add it to the `navItems` array in `MarketingHeader.tsx`
+3. Keep the header consistent across all pages
 
 ### Supabase SSR
 - **Server components**: Use `createServerClient()` from `lib/supabase/server.ts` (handles cookies)

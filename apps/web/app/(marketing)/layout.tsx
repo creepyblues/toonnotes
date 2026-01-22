@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MarketingHeader } from '@/components/marketing';
 
 export default function MarketingLayout({
   children,
@@ -7,33 +8,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Navigation - Minimal & Premium */}
-      <header className="absolute top-0 left-0 right-0 z-50">
-        <nav className="mx-auto flex h-16 sm:h-20 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-teal-600">
-              <span className="text-lg sm:text-xl font-bold text-white">T</span>
-            </div>
-            <span className="font-display text-lg sm:text-xl font-bold text-warm-900">
-              ToonNotes
-            </span>
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/features"
-              className="hidden sm:block text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
-            >
-              Features
-            </Link>
-            <Link
-              href="/development_diary"
-              className="hidden sm:block text-sm font-medium text-warm-600 transition-colors hover:text-warm-900"
-            >
-              Dev Diary
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <MarketingHeader variant="transparent" />
 
       {/* Main content */}
       <main className="flex-1">{children}</main>

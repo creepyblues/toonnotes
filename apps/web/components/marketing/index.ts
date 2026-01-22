@@ -4,3 +4,4 @@ export { TwoPillars } from './TwoPillars';
 export { Features } from './Features';
 export { FinalCTA } from './FinalCTA';
 export { ModeShowcase } from './ModeShowcase';
+export { MarketingHeader } from './MarketingHeader';
