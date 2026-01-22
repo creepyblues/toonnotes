@@ -12,7 +12,7 @@ import 'react-native-reanimated';
 // Onboarding imports
 import { useUserStore } from '@/stores';
 import { useAuthStore } from '@/stores/authStore';
-import { WelcomeCarousel, CoachMarksProvider } from '@/components/onboarding';
+import { AgentOnboarding, CoachMarksProvider } from '@/components/onboarding';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { View, ActivityIndicator } from 'react-native';
 import { Redirect, useSegments, useRootNavigationState } from 'expo-router';
@@ -269,9 +269,12 @@ function NavigationTracker() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { onboarding, completeWelcome } = useUserStore();
+  const { onboarding, agentOnboarding, completeWelcome } = useUserStore();
   const { isInitialized, user, initialize } = useAuthStore();
-  const [showOnboarding, setShowOnboarding] = useState(!onboarding.hasCompletedWelcome);
+  // Show agent onboarding if neither welcome nor agent onboarding is completed
+  const [showOnboarding, setShowOnboarding] = useState(
+    !onboarding.hasCompletedWelcome && !agentOnboarding.hasCompletedAgentOnboarding
+  );
   const segments = useSegments();
   const navigationState = useRootNavigationState();
 
@@ -284,6 +287,7 @@ function RootLayoutNav() {
 
   // Handle onboarding completion
   const handleOnboardingComplete = () => {
+    // Mark both welcome and agent onboarding as complete for backwards compatibility
     completeWelcome();
     setShowOnboarding(false);
   };
@@ -315,12 +319,12 @@ function RootLayoutNav() {
     return <Redirect href="/(tabs)" />;
   }
 
-  // Show welcome carousel if user hasn't completed onboarding
+  // Show agent onboarding if user hasn't completed onboarding
   if (showOnboarding) {
     return (
       <>
         <StatusBar style="dark" />
-        <WelcomeCarousel onComplete={handleOnboardingComplete} />
+        <AgentOnboarding onComplete={handleOnboardingComplete} />
       </>
     );
   }

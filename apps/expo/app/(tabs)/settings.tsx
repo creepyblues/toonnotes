@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Alert, ScrollView, Linking, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Alert, ScrollView, Linking, StyleSheet, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon,
@@ -14,6 +14,7 @@ import {
   Crown,
   Cloud,
   UserMinus,
+  GraduationCap,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -26,6 +27,7 @@ import { CoinShop } from '@/components/shop/CoinShop';
 import { SettingsSection, SettingsRow } from '@/components/settings';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { purchaseService } from '@/services/purchaseService';
+import { AgentOnboarding } from '@/components/onboarding';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -40,6 +42,8 @@ export default function SettingsScreen() {
     closePurchaseSheet,
     resetOnboarding,
     onboarding,
+    agentOnboarding,
+    resetAgentOnboarding,
     getFreeDesignsRemaining,
     isPro,
   } = useUserStore();
@@ -51,6 +55,18 @@ export default function SettingsScreen() {
 
   const archivedCount = getArchivedNotes().length;
   const deletedCount = getDeletedNotes().length;
+
+  // Agent onboarding modal state
+  const [showAgentOnboarding, setShowAgentOnboarding] = useState(false);
+
+  const handleMeetAgents = () => {
+    resetAgentOnboarding();
+    setShowAgentOnboarding(true);
+  };
+
+  const handleAgentOnboardingComplete = () => {
+    setShowAgentOnboarding(false);
+  };
 
   // Version display with build number
   const appVersion = Constants.expoConfig?.version ?? '1.0.0';
@@ -365,6 +381,18 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
+        {/* Learning Section */}
+        <SettingsSection title="Learning">
+          <SettingsRow
+            icon={<GraduationCap size={20} weight="regular" />}
+            iconColor="#8B5CF6"
+            label="Meet Your AI Assistants"
+            subtitle="Re-run the agent introduction"
+            onPress={handleMeetAgents}
+            accessory="chevron"
+          />
+        </SettingsSection>
+
         {/* About Section */}
         <SettingsSection title="About">
           <SettingsRow
@@ -436,6 +464,15 @@ export default function SettingsScreen() {
         visible={isPurchaseSheetOpen}
         onClose={closePurchaseSheet}
       />
+
+      {/* Agent Onboarding Modal */}
+      <Modal
+        visible={showAgentOnboarding}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <AgentOnboarding onComplete={handleAgentOnboardingComplete} />
+      </Modal>
     </SafeAreaView>
   );
 }

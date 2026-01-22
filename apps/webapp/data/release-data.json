@@ -1,6 +1,96 @@
 {
   "commits": [
     {
+      "hash": "5d75a491b",
+      "message": "fix(build): Add pnpm hoisting config for EAS local builds",
+      "date": "2026-01-21T13:24:45-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "92a06dfc2",
+      "message": "chore: Update version to 2.0.0 and refresh release data",
+      "date": "2026-01-21T07:17:57-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "67e76fc4c",
+      "message": "chore(expo): Remove unused EXPO_PUBLIC_SHARE_BASE_URL from docs",
+      "date": "2026-01-21T06:51:21-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "75ac70ae7",
+      "message": "feat(expo): Add Public badge indicator for shared notes",
+      "date": "2026-01-21T06:48:24-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "810dade58",
+      "message": "chore(expo): Bump package.json version to 2.0.0",
+      "date": "2026-01-20T21:09:41-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "c7c61c922",
+      "message": "docs(diary): Publish development diary for 2026-01-20",
+      "date": "2026-01-20T19:50:57-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "a607b9f45",
+      "message": "docs(diary): Publish development diary for 2026-01-19",
+      "date": "2026-01-20T19:47:39-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "93f91c686",
+      "message": "feat(web): Add Features link to homepage header",
+      "date": "2026-01-20T19:43:10-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "215f1f0b7",
+      "message": "feat(marketing): Add MODE Framework v2.0 launch campaign",
+      "date": "2026-01-20T19:39:56-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "68f2a1581",
+      "message": "docs(expo): Document API deployment configuration and troubleshooting",
+      "date": "2026-01-20T19:19:10-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "3ed585937",
+      "message": "docs: Update MODE Framework documentation to reflect implementation complete",
+      "date": "2026-01-20T14:58:49-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "ff40692d0",
+      "message": "fix(expo): MODE Framework bug fixes and unit tests",
+      "date": "2026-01-20T14:42:57-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "498e3d651",
+      "message": "feat(expo): Implement MODE Framework v2.0 - Smart Assistant System",
+      "date": "2026-01-20T13:41:30-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "58ad3a346",
+      "message": "feat(web): Redesign /marketing/docs with categorized cards and metadata",
+      "date": "2026-01-20T12:59:22-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "5df5a6a5d",
+      "message": "v1.0 Final Release - AI Label Suggestion Toast Fix",
+      "date": "2026-01-20T09:53:38-08:00",
+      "author": "Sungho Lee"
+    },
+    {
       "hash": "65d5dbf20",
       "message": "docs(diary): Generate 10 missing development diary entries",
       "date": "2026-01-19T14:09:08-08:00",
@@ -209,98 +299,8 @@
       "message": "feat(webapp): Add command palette with search",
       "date": "2026-01-10T15:01:44-08:00",
       "author": "Sungho Lee"
-    },
-    {
-      "hash": "653567393",
-      "message": "feat(webapp): Add keyboard shortcuts system",
-      "date": "2026-01-10T14:58:50-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "e2c8d82f7",
-      "message": "docs(webapp): Add PRD.md for webapp development",
-      "date": "2026-01-10T13:31:34-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "b6346ddcc",
-      "message": "fix(webapp): Fix hydration timing - data now loads on login",
-      "date": "2026-01-10T10:51:04-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "4d3fdd771",
-      "message": "feat(webapp): Add comprehensive test suite and fix sync issues",
-      "date": "2026-01-10T10:09:48-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "e088f725e",
-      "message": "chore: Trigger Vercel redeploy with pnpm 10.x fix",
-      "date": "2026-01-09T22:31:13-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "e1e395c8d",
-      "message": "fix: Update to pnpm 10.x for Vercel compatibility",
-      "date": "2026-01-09T21:31:47-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "2be85255f",
-      "message": "refactor: Migrate to pnpm + Turborepo monorepo structure",
-      "date": "2026-01-09T20:26:55-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "85f5dd2c8",
-      "message": "feat: Add cross-platform web app foundation and monorepo migration plan",
-      "date": "2026-01-09T11:58:47-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "d7c04a5cb",
-      "message": "fix: Prevent double-trigger of label analysis on note close",
-      "date": "2026-01-09T11:03:07-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "50109bc95",
-      "message": "feat: Add AI image generation quality assessment pipeline",
-      "date": "2026-01-09T08:09:51-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "7125351bd",
-      "message": "feat: Add early access promo page for waitlist and hypothesis validation",
-      "date": "2026-01-08T21:42:38-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "e2a8d8c26",
-      "message": "fix: Use production API for label analysis in dev mode",
-      "date": "2026-01-08T12:12:20-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "fcb9c35aa",
-      "message": "feat: Add beta testers admin page for managing Pro status",
-      "date": "2026-01-08T10:34:09-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "6bc6d9038",
-      "message": "feat: Add beta tester override for cloud sync",
-      "date": "2026-01-08T10:09:40-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "1365a36a2",
-      "message": "docs: Add competitor analysis to onboarding profiling plan",
-      "date": "2026-01-07T16:08:55-08:00",
-      "author": "Sungho Lee"
     }
   ],
-  "generatedAt": "2026-01-20T07:06:43.043Z",
+  "generatedAt": "2026-01-22T11:20:33.570Z",
   "totalCount": 50
 }

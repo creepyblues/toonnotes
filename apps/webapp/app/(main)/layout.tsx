@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { StoreProvider } from '@/components/providers';
+import { NudgeProvider } from '@/components/nudges';
+import { AgentOnboarding } from '@/components/onboarding';
 import { Note, Label, NoteDesign, NoteColor } from '@toonnotes/types';
 
 interface DbNote {
@@ -149,7 +151,10 @@ export default async function MainLayout({
 
   return (
     <StoreProvider initialNotes={notes} initialLabels={labels} initialDesigns={designs}>
-      <AppShell>{children}</AppShell>
+      <NudgeProvider>
+        <AppShell>{children}</AppShell>
+        <AgentOnboarding />
+      </NudgeProvider>
     </StoreProvider>
   );
 }

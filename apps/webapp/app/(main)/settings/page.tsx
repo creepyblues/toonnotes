@@ -1,15 +1,26 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { TopBar } from '@/components/layout';
 import { ReleaseUpdateSection } from '@/components/settings';
-import { useUIStore, useNoteStore } from '@/stores';
-import { Moon, Sun, Archive, Trash, SignOut } from '@phosphor-icons/react';
+import { AgentOnboarding } from '@/components/onboarding';
+import { useUIStore, useNoteStore, useOnboardingStore } from '@/stores';
+import { Moon, Sun, Archive, Trash, SignOut, GraduationCap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const darkMode = useUIStore((state) => state.darkMode);
   const toggleDarkMode = useUIStore((state) => state.toggleDarkMode);
+  const resetAgentOnboarding = useOnboardingStore((state) => state.resetAgentOnboarding);
+  const experiencedAgentsCount = useOnboardingStore((state) => state.getExperiencedAgentsCount);
+
+  // State for re-running onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const handleRerunOnboarding = () => {
+    resetAgentOnboarding();
+    setShowOnboarding(true);
+  };
 
   // Select raw notes array and compute counts with useMemo to avoid infinite loops
   const notes = useNoteStore((state) => state.notes);
@@ -124,6 +135,34 @@ export default function SettingsPage() {
             </div>
           </section>
 
+          {/* Learning Section */}
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Learning
+            </h2>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-200 dark:divide-gray-800">
+              <button
+                onClick={handleRerunOnboarding}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <GraduationCap size={20} className="text-purple-500" weight="fill" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      Meet Your AI Assistants
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Re-run the agent introduction
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-1 rounded-full">
+                  {experiencedAgentsCount()}/4 completed
+                </span>
+              </button>
+            </div>
+          </section>
+
           {/* Account Section */}
           <section>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -159,6 +198,12 @@ export default function SettingsPage() {
           </footer>
         </div>
       </div>
+
+      {/* Agent Onboarding Modal (re-run from settings) */}
+      <AgentOnboarding
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+      />
     </>
   );
 }

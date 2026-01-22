@@ -5,6 +5,7 @@
  */
 
 export { WelcomeCarousel } from './WelcomeCarousel';
+export { AgentOnboarding } from './AgentOnboarding';
 export {
   CoachMarksProvider,
   useCoachMarks,
