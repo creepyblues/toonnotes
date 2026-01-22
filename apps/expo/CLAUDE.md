@@ -13,7 +13,10 @@ ToonNotes is a mobile note-taking app for webtoon/anime fans built with Expo (Re
 - **PRD.md** - Product Requirements Document with full feature specifications
 - **toonnotes-handoff.md** - Developer handoff documentation
 - **toonnotes-design-preview.html** - Visual design preview (open in browser)
-- **docs/** - Additional documentation (quality reports, architecture decisions)
+- **docs/** - Additional documentation:
+  - `AGENT-ONBOARDING.md` - Agent onboarding system architecture
+  - `AUTH-CONFIGURATION.md` - Authentication setup guide
+  - `UX-DOCUMENTATION.md` - User flows and design specifications
 
 ## Development Commands
 
@@ -110,9 +113,16 @@ ToonNotes_Expo/
 │   │   ├── LabelSuggestionSheet.tsx
 │   │   └── LabelSuggestionToast.tsx
 │   ├── onboarding/           # Onboarding system
-│   │   ├── CoachMarksProvider.tsx
-│   │   ├── CoachMarkTooltip.tsx
-│   │   └── WelcomeCarousel.tsx
+│   │   ├── AgentOnboarding/        # Agent introduction flow
+│   │   │   └── index.tsx           # State machine orchestrator
+│   │   ├── AgentDiscoveryStep.tsx  # Agent selection grid
+│   │   ├── GuidedNoteCreation.tsx  # Agent-specific note creation
+│   │   ├── DemoNudgePreview.tsx    # Mock nudge demonstration
+│   │   ├── AgentContinuePrompt.tsx # Continue/finish prompt
+│   │   ├── AgentSelectionGrid.tsx  # Remaining agent selection
+│   │   ├── OnboardingComplete.tsx  # Completion celebration
+│   │   ├── CoachMarksProvider.tsx  # Feature spotlight tour
+│   │   └── WelcomeCarousel.tsx     # Legacy welcome flow
 │   ├── nudges/               # MODE Framework nudge UI
 │   │   ├── NudgeToast.tsx    # Toast-style nudge notifications
 │   │   └── NudgeSheet.tsx    # Bottom sheet nudge interactions
@@ -206,7 +216,13 @@ ToonNotes_Expo/
 │   ├── labelPresets.ts       # Label/note styling presets (30 presets)
 │   ├── fonts.ts              # Font definitions
 │   ├── products.ts           # In-app purchase product definitions
-│   └── onboardingConfig.ts   # Onboarding flow configuration
+│   ├── onboardingConfig.ts   # Onboarding flow configuration
+│   ├── agentOnboardingContent.ts  # Agent onboarding copy/content
+│   └── agentIntroContent.ts  # Agent intro sheet content
+├── hooks/                    # Custom React hooks
+│   ├── useAgentIntroTrigger.ts    # Triggers agent intro on mode detection
+│   ├── useBehaviorTracking.ts     # MODE Framework behavior tracking
+│   └── useCoachMark.ts            # Coach mark spotlight hook
 ├── __tests__/                # Jest unit tests
 │   └── services/
 │       ├── behaviorLearner.test.ts  # Behavior learner tests (16 tests)
@@ -742,8 +758,10 @@ eas build --platform ios --profile development
 - [x] Sentry error monitoring (needs DSN)
 
 ### Onboarding
-- [x] Welcome carousel
-- [x] Coach marks system
+- [x] Agent onboarding flow (hands-on introduction to 4 AI agents)
+- [x] Agent intro sheets (triggered on first mode detection)
+- [x] Coach marks system (feature spotlight tour)
+- [x] Re-run onboarding from Settings
 - [x] Remote config for onboarding
 
 ### MODE Framework (Smart Assistant)
