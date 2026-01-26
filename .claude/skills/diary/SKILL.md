@@ -15,6 +15,64 @@ Automates the creation and management of development diary entries for ToonNotes
 - To review and publish draft entries
 - To check diary status and recent entries
 
+## Automated Daily Generation
+
+The diary is automatically generated **daily at 4:00 AM PST** for the previous day's work.
+
+**How it works:**
+- A macOS LaunchAgent (`com.toonnotes.daily-diary`) runs `scripts/daily-diary.sh`
+- Collects Claude Code history from `~/.claude/history.jsonl`
+- Analyzes git commits from the ToonNotes repo
+- Generates a draft entry in `marketing/development_diary/drafts/`
+
+**Manage the schedule:**
+```bash
+# Check if running
+launchctl list | grep toonnotes
+
+# Stop the scheduled job
+launchctl unload ~/Library/LaunchAgents/com.toonnotes.daily-diary.plist
+
+# Start the scheduled job
+launchctl load ~/Library/LaunchAgents/com.toonnotes.daily-diary.plist
+
+# Run manually for a specific date
+.claude/skills/diary/scripts/daily-diary.sh 2026-01-25
+
+# View logs
+tail -f marketing/development_diary/logs/daily-diary.log
+```
+
+**Files:**
+- Script: `.claude/skills/diary/scripts/daily-diary.sh`
+- LaunchAgent: `~/Library/LaunchAgents/com.toonnotes.daily-diary.plist`
+- Config: `.claude/skills/diary/config.env`
+- Logs: `marketing/development_diary/logs/`
+
+### Slack Notifications
+
+When configured, the daily diary sends a rich Slack notification with:
+- Date and highlight
+- Daily summary
+- Session/commit stats
+- Link to view on web
+
+**Setup:**
+```bash
+# Create config file from example
+cp .claude/skills/diary/config.env.example .claude/skills/diary/config.env
+
+# Edit and add your Slack webhook URL
+# Get one from: https://api.slack.com/messaging/webhooks
+```
+
+The Slack message includes:
+- 📓 Header with date
+- Highlight of the day's work
+- Summary paragraph
+- Stats (sessions, commits, categories)
+- Button link to web view
+
 ## Commands
 
 ### Generate Entry
