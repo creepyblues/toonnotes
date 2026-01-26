@@ -13,3 +13,4 @@ export {
   isLocalUri,
   isStorageUrl,
 } from './imageStorageService';
+export { autoLabelingService } from './autoLabelingService';

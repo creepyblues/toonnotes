@@ -102,6 +102,7 @@ import { Analytics } from '@/services/firebaseAnalytics';
 import { createShareLink } from '@/services/shareService';
 import {
   useEditorContent,
+  useSmartAutoLabeling,
   toggleCheckboxAtLine,
   insertCheckboxAtCursor,
   insertBulletAtCursor,
@@ -200,11 +201,22 @@ export default function NoteEditorScreen() {
   // Agent intro trigger hook - shows first-time agent intro sheet
   const { showIntroFor, markIntroSeen, checkForIntro } = useAgentIntroTrigger(id);
 
+  // Note state for smart labeling (defined early for hook)
+  const [title, setTitle] = useState(note?.title || '');
+  const [content, setContent] = useState(note?.content || '');
+
+  // Smart auto-labeling hook - runs background analysis before exit
+  const smartLabeling = useSmartAutoLabeling({
+    noteId: id,
+    title,
+    content,
+    existingLabels: note?.labels || [],
+    enabled: true,
+  });
+
   // Check if Google Fonts are loaded
   const fontsLoaded = useFontsLoaded();
 
-  const [title, setTitle] = useState(note?.title || '');
-  const [content, setContent] = useState(note?.content || '');
   const [color, setColor] = useState<NoteColor>(note?.color || NoteColor.White);
   const [designId, setDesignId] = useState<string | undefined>(note?.designId);
 
@@ -426,12 +438,10 @@ export default function NoteEditorScreen() {
   }, [id, title, content, color, designId, updateNote]);
 
   // Analyze note content for label suggestions when editor closes
+  // Uses smart labeling service with cached results for instant response
   // Returns true if suggestions popup is shown
   const analyzeForLabels = async (): Promise<boolean> => {
     if (!note || !id) return false;
-
-    // NOTE: We no longer skip if note has labels - we want to suggest ADDITIONAL labels
-    // even for notes created from boards that already have the board's label
 
     // Check if content has changed meaningfully
     const originalTitle = originalContentRef.current.title;
@@ -447,12 +457,12 @@ export default function NoteEditorScreen() {
     setIsAnalyzing(true);
 
     try {
-      const existingLabelNames = labels.map((l) => l.name);
-      const result = await analyzeNoteContent({
-        noteTitle: title,
-        noteContent: content,
-        existingLabels: existingLabelNames,
-      });
+      // Use smart labeling - gets cached result if available (instant!)
+      const result = await smartLabeling.getResultForExit();
+
+      if (!result) {
+        return false;
+      }
 
       // Check for API error and show error toast
       if (result.error) {

@@ -16,6 +16,7 @@ ToonNotes is a mobile note-taking app for webtoon/anime fans built with Expo (Re
 - **docs/** - Additional documentation:
   - `AGENT-ONBOARDING.md` - Agent onboarding system architecture
   - `AUTH-CONFIGURATION.md` - Authentication setup guide
+  - `AUTO-SAVE-LABELING.md` - Auto-save and smart auto-labeling system
   - `UX-DOCUMENTATION.md` - User flows and design specifications
 
 ## Development Commands
@@ -380,6 +381,41 @@ await Promise.all([
 - On sign-in (full sync)
 - After every local change (fire-and-forget upload)
 - Real-time subscription for changes from other devices
+
+### Auto-Save & Smart Labeling
+
+The note editor uses a hybrid auto-save strategy with smart background labeling.
+
+**Auto-Save (Hybrid Debounce + Throttle):**
+```typescript
+import { useAutoSave } from '@/hooks/editor';
+
+// Debounce: 500ms after typing stops
+// Throttle: Max 5s between saves during continuous typing
+const { saveImmediately } = useAutoSave(noteId, { title, content, color, designId });
+```
+
+**Smart Auto-Labeling:**
+- Runs label analysis in background BEFORE user exits (no waiting)
+- Triggers on: idle (3s), content stability (5s), significant change (+50 chars)
+- Results cached by content hash for instant retrieval
+- 30s cooldown between analyses to control API costs
+
+```typescript
+import { useSmartAutoLabeling } from '@/hooks/editor';
+
+const smartLabeling = useSmartAutoLabeling({
+  noteId: id,
+  title,
+  content,
+  existingLabels: note?.labels || [],
+});
+
+// In beforeRemove - uses cached result (instant!)
+const result = await smartLabeling.getResultForExit();
+```
+
+See `docs/AUTO-SAVE-LABELING.md` for full architecture details.
 
 ### Theme System (Single Source of Truth)
 

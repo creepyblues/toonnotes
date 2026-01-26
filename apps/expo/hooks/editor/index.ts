@@ -15,6 +15,9 @@ export { useCheckboxPositions, calculateApproximatePositions } from './useCheckb
 export type { CheckboxPosition, TextLayoutLine } from './useCheckboxPositions';
 
 export { useAutoSave } from './useAutoSave';
+export type { AutoSaveData, ContentSnapshot } from './useAutoSave';
+
+export { useSmartAutoLabeling } from './useSmartAutoLabeling';
 
 export { useHashtagDetection } from './useHashtagDetection';
 export type { HashtagDetectionResult } from './useHashtagDetection';
