@@ -199,16 +199,27 @@ else
     log "Skipping Slack notification (SLACK_WEBHOOK_URL not set)"
 fi
 
-# Step 6: Summary
+# Step 6: Auto-publish draft
+log "Step 6: Publishing draft..."
+PUBLISH_YEAR=$(echo "$TARGET_DATE" | cut -d'-' -f1)
+PUBLISH_MONTH=$(echo "$TARGET_DATE" | cut -d'-' -f2)
+PUBLISH_DIR="$DIARY_ROOT/published/$PUBLISH_YEAR/$PUBLISH_MONTH"
+mkdir -p "$PUBLISH_DIR"
+sed 's/^status: draft$/status: published/' "$OUTPUT_FILE" > "$PUBLISH_DIR/$TARGET_DATE.md"
+rm -f "$OUTPUT_FILE"
+log "Published to $PUBLISH_DIR/$TARGET_DATE.md"
+
+# Step 7: Summary
 log "=========================================="
 log "Diary generation complete!"
-log "Output: $OUTPUT_FILE"
+PUBLISHED_FILE="$PUBLISH_DIR/$TARGET_DATE.md"
+log "Output: $PUBLISHED_FILE"
 log "=========================================="
 
 # Print entry preview (first 20 lines)
 echo ""
 echo "=== Entry Preview ==="
-head -20 "$OUTPUT_FILE"
+head -20 "$PUBLISHED_FILE"
 echo "..."
 echo ""
-echo "Full entry at: $OUTPUT_FILE"
+echo "Full entry at: $PUBLISHED_FILE"
