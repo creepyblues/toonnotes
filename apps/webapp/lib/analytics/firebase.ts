@@ -41,6 +41,12 @@ export async function initFirebaseAnalytics(): Promise<Analytics | null> {
     return null;
   }
 
+  // Guard: skip init if Firebase config is missing
+  if (!firebaseConfig.apiKey) {
+    console.warn('[Analytics] Firebase API key not configured — skipping init');
+    return null;
+  }
+
   // Check if analytics is supported in this environment
   analyticsSupported = await isSupported();
   if (!analyticsSupported) {
