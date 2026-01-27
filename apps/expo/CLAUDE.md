@@ -18,6 +18,7 @@ ToonNotes is a mobile note-taking app for webtoon/anime fans built with Expo (Re
   - `AUTH-CONFIGURATION.md` - Authentication setup guide
   - `AUTO-SAVE-LABELING.md` - Auto-save and smart auto-labeling system
   - `UX-DOCUMENTATION.md` - User flows and design specifications
+  - `NUDGE-ACTIONS-IMPLEMENTATION.md` - MODE Framework nudge phases + AI Goal-Agent system
 
 ## Development Commands
 
@@ -127,6 +128,9 @@ ToonNotes_Expo/
 │   ├── nudges/               # MODE Framework nudge UI
 │   │   ├── NudgeToast.tsx    # Toast-style nudge notifications
 │   │   └── NudgeSheet.tsx    # Bottom sheet nudge interactions
+│   ├── goals/                # AI Goal-Agent UI
+│   │   ├── GoalProgressCard.tsx  # In-note goal progress + step checklist
+│   │   └── FeedbackSheet.tsx     # Beta feedback bottom sheet
 │   ├── mode/                 # MODE Framework UI
 │   │   ├── ModeSelector.tsx  # Board mode selection
 │   │   └── UsefulnessIndicator.tsx # Note usefulness score display
@@ -165,6 +169,7 @@ ToonNotes_Expo/
 │   ├── labelSuggestionStore.ts # AI label suggestion queue
 │   ├── behaviorStore.ts      # MODE Framework: note behavior tracking
 │   ├── nudgeStore.ts         # MODE Framework: nudge queue management
+│   ├── goalStore.ts          # AI Goal-Agent: NoteGoal state, step tracking
 │   ├── debouncedStorage.ts   # Batched AsyncStorage writes
 │   └── index.ts              # Export all stores
 ├── services/                 # External services
@@ -199,7 +204,10 @@ ToonNotes_Expo/
 │   ├── behaviorLearner.ts    # User pattern detection & skill confidence
 │   ├── triggerEngine.ts      # Skill trigger evaluation
 │   ├── nudgeDeliveryService.ts # Proactive nudge delivery
-│   └── modeDetectionService.ts # Note/board mode detection
+│   ├── modeDetectionService.ts # Note/board mode detection
+│   ├── goalAnalysisService.ts  # AI goal inference + debounced analysis
+│   ├── goalNudgeScheduler.ts   # Active goal nudge cadence + back-off
+│   └── customHandlers.ts       # Custom action handlers for nudge buttons
 ├── utils/
 │   ├── validation/
 │   │   └── apiResponse.ts    # Zod schemas for API responses
@@ -249,6 +257,8 @@ All AI features are powered by Vercel edge functions that call Google Gemini API
 | `/api/analyze-note-content` | NLP analysis for labels | noteTitle, noteContent |
 | `/api/onboarding-config` | Remote onboarding config | (none) |
 | `/api/remove-background` | Background removal (unified) | imageData, type |
+| `/api/analyze-note-goal` | AI goal inference + engagement level | noteTitle, noteContent, mode, agentId |
+| `/api/send-goal-feedback` | Beta feedback to Slack + email | noteId, goalId, feedbackText |
 
 **Note**: The app calls these via `services/geminiService.ts` and `services/labelingEngine.ts`. The base URL is `https://toonnotes-api.vercel.app`.
 
@@ -809,6 +819,19 @@ eas build --platform ios --profile development
 - [x] Skill confidence tracking & suppression
 - [x] Cooldown management per skill
 - [x] Unit tests (47 tests passing)
+
+### AI Goal-Agent System
+- [x] AI-powered goal inference from note content (via Gemini)
+- [x] Three nudge engagement levels: active, passive, none
+- [x] Action step generation (3-7 steps per goal)
+- [x] GoalProgressCard in note editor (progress bar, step checklist)
+- [x] Active goal nudge scheduler (cadence, back-off, quiet hours, channel escalation)
+- [x] Passive goal gentle reminders (on note open after 7 days)
+- [x] Content threshold trigger (title >= 3 chars, content >= 20 chars or 2+ checklist items)
+- [x] Beta transparency toasts with engagement level reasoning
+- [x] Beta feedback system (FeedbackSheet → Slack + email)
+- [x] Goal tips in onboarding coach marks
+- [x] Settings toggle for AI Goal Suggestions
 
 ## Quality Score: 85/100
 

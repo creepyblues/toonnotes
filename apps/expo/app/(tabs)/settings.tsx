@@ -15,13 +15,16 @@ import {
   Cloud,
   UserMinus,
   GraduationCap,
+  Target,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
 
 import { useUserStore, useNoteStore, useDesignStore } from '@/stores';
+import { useGoalStore } from '@/stores/goalStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useNudgeStore, NudgeActions } from '@/stores/nudgeStore';
 import { useTheme } from '@/src/theme';
 import { CoinShop } from '@/components/shop/CoinShop';
 import { SettingsSection, SettingsRow } from '@/components/settings';
@@ -51,6 +54,7 @@ export default function SettingsScreen() {
   const { designs, clearAllDesigns } = useDesignStore();
   const { user: authUser, signOut, isLoading: isAuthLoading } = useAuthStore();
 
+  const { goalSuggestionsEnabled, setGoalSuggestionsEnabled } = useGoalStore();
   const isAuthEnabled = isSupabaseConfigured();
 
   const archivedCount = getArchivedNotes().length;
@@ -224,6 +228,62 @@ export default function SettingsScreen() {
     Alert.alert('Success', 'Added 100 coins!');
   };
 
+  const handleTestNudgeToast = () => {
+    useNudgeStore.getState().addNudge({
+      skillId: 'test-nudge',
+      agentId: 'manager',
+      title: 'When does this need to happen?',
+      body: 'This task doesn\'t have a deadline set yet. Adding one helps you stay on track.',
+      priority: 'high',
+      deliveryChannel: 'toast',
+      options: [
+        {
+          id: 'snooze',
+          label: 'Later',
+          action: NudgeActions.snooze(4),
+          isPrimary: false,
+        },
+        {
+          id: 'set-deadline',
+          label: 'Set deadline',
+          action: NudgeActions.dismiss(),
+          isPrimary: true,
+        },
+      ],
+    });
+  };
+
+  const handleTestNudgeSheet = () => {
+    useNudgeStore.getState().addNudge({
+      skillId: 'test-nudge-sheet',
+      agentId: 'muse',
+      title: 'This idea has potential',
+      body: 'You jotted this down a while ago but haven\'t explored it further. Sometimes ideas need time to marinate. Want to develop it now?',
+      priority: 'medium',
+      deliveryChannel: 'sheet',
+      options: [
+        {
+          id: 'snooze',
+          label: 'Remind me later',
+          action: NudgeActions.snooze(24),
+          isPrimary: false,
+        },
+        {
+          id: 'dismiss',
+          label: 'Let it go',
+          action: NudgeActions.dismiss(),
+          isPrimary: false,
+        },
+        {
+          id: 'expand',
+          label: 'Explore this idea',
+          action: NudgeActions.dismiss(),
+          isPrimary: true,
+        },
+      ],
+    });
+  };
+
   // Render user avatar for profile section
   const renderUserAvatar = () => {
     if (authUser?.user_metadata?.avatar_url) {
@@ -390,6 +450,16 @@ export default function SettingsScreen() {
             subtitle="Re-run the agent introduction"
             onPress={handleMeetAgents}
             accessory="chevron"
+            showSeparator
+          />
+          <SettingsRow
+            icon={<Target size={20} weight="regular" />}
+            iconColor="#4C9C9B"
+            label="AI Goal Suggestions"
+            subtitle="Infer goals and action steps from notes"
+            accessory="switch"
+            switchValue={goalSuggestionsEnabled}
+            onSwitchChange={setGoalSuggestionsEnabled}
           />
         </SettingsSection>
 
@@ -450,6 +520,24 @@ export default function SettingsScreen() {
               value={onboarding.hasCompletedWelcome ? 'Completed' : 'Not started'}
               valueColor={colors.textSecondary}
               onPress={handleResetOnboarding}
+              accessory="chevron"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<Info size={20} weight="regular" />}
+              iconColor="#FF6B6B"
+              label="Test Nudge (Toast)"
+              subtitle="Manager agent toast notification"
+              onPress={handleTestNudgeToast}
+              accessory="chevron"
+              showSeparator
+            />
+            <SettingsRow
+              icon={<Info size={20} weight="regular" />}
+              iconColor="#FFEAA7"
+              label="Test Nudge (Sheet)"
+              subtitle="Muse agent bottom sheet"
+              onPress={handleTestNudgeSheet}
               accessory="chevron"
             />
           </SettingsSection>

@@ -13,6 +13,7 @@ import 'react-native-reanimated';
 import { useUserStore } from '@/stores';
 import { useAuthStore } from '@/stores/authStore';
 import { AgentOnboarding, CoachMarksProvider } from '@/components/onboarding';
+import { NudgeProvider } from '@/components/nudges/NudgeProvider';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { View, ActivityIndicator } from 'react-native';
 import { Redirect, useSegments, useRootNavigationState } from 'expo-router';
@@ -91,6 +92,8 @@ import { initSentry } from '@/services/sentry';
 import { initFirebase, trackScreen } from '@/services/firebaseAnalytics';
 import { usePathname } from 'expo-router';
 import { migrateNotesWithLabelsToDesigns } from '@/services/migrationService';
+import { registerCustomHandlers } from '@/services/customHandlers';
+import { goalNudgeScheduler } from '@/services/goalNudgeScheduler';
 import { LogBox } from 'react-native';
 
 // Ignore RevenueCat errors (no products configured on simulator)
@@ -223,6 +226,27 @@ export default function RootLayout() {
     initFirebase();
   }, []);
 
+  // Register MODE Framework custom handlers for nudge actions
+  useEffect(() => {
+    registerCustomHandlers();
+    goalNudgeScheduler.start();
+
+    // TEMP: Clear skill cooldowns from AsyncStorage directly for testing
+    (async () => {
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.removeItem('nudge-storage');
+        console.log('[RootLayout] Cleared nudge-storage from AsyncStorage');
+      } catch (e) {
+        console.error('[RootLayout] Failed to clear AsyncStorage:', e);
+      }
+    })();
+
+    return () => {
+      goalNudgeScheduler.stop();
+    };
+  }, []);
+
   // Run one-time migration to apply designs to existing notes with labels
   // This fixes notes created before auto-apply was added to addNote()
   useEffect(() => {
@@ -330,54 +354,56 @@ function RootLayoutNav() {
   }
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <NavigationTracker />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <CoachMarksProvider>
-          <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="note/[id]"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-              gestureEnabled: true,
-              fullScreenGestureEnabled: true,
-            }}
-          />
-          <Stack.Screen
-            name="design/create"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="board/[hashtag]"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="archive"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="trash"
-            options={{
-              presentation: 'modal',
-              headerShown: false,
-            }}
-          />
-          </Stack>
-        </CoachMarksProvider>
+        <NudgeProvider disabled={showOnboarding}>
+          <CoachMarksProvider>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="auth" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="note/[id]"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                  gestureEnabled: true,
+                  fullScreenGestureEnabled: true,
+                }}
+              />
+              <Stack.Screen
+                name="design/create"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="board/[hashtag]"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="archive"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="trash"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                }}
+              />
+            </Stack>
+          </CoachMarksProvider>
+        </NudgeProvider>
       </ThemeProvider>
-    </>
+    </View>
   );
 }

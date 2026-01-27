@@ -12,6 +12,81 @@ import { debouncedStorage } from './debouncedStorage';
 import { getPresetForLabel, LabelPresetId } from '@/constants/labelPresets';
 import { Analytics } from '@/services/firebaseAnalytics';
 
+// MODE Framework: Initialize behavior for new notes (must happen BEFORE trigger events)
+const initializeBehaviorForNote = (note: Note): void => {
+  try {
+    const { detectModeForNote } = require('@/services/modeDetectionService');
+    const { useBehaviorStore } = require('./behaviorStore');
+    const detection = detectModeForNote(note);
+
+    useBehaviorStore.getState().initBehavior(
+      note.id,
+      detection.mode,
+      detection.organizeStage
+    );
+
+    console.log(`[NoteStore] Initialized behavior: noteId=${note.id}, mode=${detection.mode}, confidence=${detection.confidence.toFixed(2)}`);
+  } catch (error) {
+    console.error('[NoteStore] Failed to initialize behavior:', error);
+  }
+};
+
+// MODE Framework trigger events (fire and forget, lazy require)
+const emitNoteCreated = (note: Note) => {
+  try {
+    const { onNoteCreated } = require('@/services/triggerEngine');
+    const { useBehaviorStore } = require('./behaviorStore');
+    const behavior = useBehaviorStore.getState().getBehavior(note.id);
+    onNoteCreated(note, behavior);
+  } catch (e) { console.error('[NoteStore] emitNoteCreated failed:', e); }
+};
+
+const emitNoteUpdated = (note: Note) => {
+  try {
+    const { onNoteUpdated } = require('@/services/triggerEngine');
+    const { useBehaviorStore } = require('./behaviorStore');
+    const behavior = useBehaviorStore.getState().getBehavior(note.id);
+    onNoteUpdated(note, behavior);
+  } catch (e) { console.error('[NoteStore] emitNoteUpdated failed:', e); }
+};
+
+const emitNoteDeleted = (note: Note) => {
+  try {
+    const { onNoteDeleted } = require('@/services/triggerEngine');
+    const { useBehaviorStore } = require('./behaviorStore');
+    const behavior = useBehaviorStore.getState().getBehavior(note.id);
+    onNoteDeleted(note, behavior);
+  } catch (e) { console.error('[NoteStore] emitNoteDeleted failed:', e); }
+};
+
+const emitNoteArchived = (note: Note) => {
+  try {
+    const { onNoteArchived } = require('@/services/triggerEngine');
+    const { useBehaviorStore } = require('./behaviorStore');
+    const behavior = useBehaviorStore.getState().getBehavior(note.id);
+    onNoteArchived(note, behavior);
+  } catch (e) { console.error('[NoteStore] emitNoteArchived failed:', e); }
+};
+
+const emitLabelAdded = (note: Note, labelName: string) => {
+  try {
+    const { onLabelAdded } = require('@/services/triggerEngine');
+    const { useBehaviorStore } = require('./behaviorStore');
+    const behavior = useBehaviorStore.getState().getBehavior(note.id);
+    onLabelAdded(note, labelName, behavior);
+  } catch (e) { console.error('[NoteStore] emitLabelAdded failed:', e); }
+};
+
+// AI Goal-Agent: schedule goal analysis on note update (lazy require)
+const scheduleGoalAnalysis = (note: Note) => {
+  try {
+    const { goalAnalysisService } = require('@/services/goalAnalysisService');
+    goalAnalysisService.scheduleAnalysis(note.id, note.title, note.content);
+  } catch {
+    // Silently ignore if module not available
+  }
+};
+
 // Lazy import to avoid circular dependency
 const getAuthUserId = () => {
   // Dynamic import to break circular dependency
@@ -144,6 +219,11 @@ export const useNoteStore = create<NoteState>()(
         // Sync to cloud
         syncToCloud(newNote);
 
+        // MODE Framework: Initialize behavior FIRST, then emit trigger event
+        // This ensures behavior exists when skills are evaluated
+        initializeBehaviorForNote(newNote);
+        emitNoteCreated(newNote);
+
         return newNote;
       },
 
@@ -193,6 +273,10 @@ export const useNoteStore = create<NoteState>()(
         const updatedNote = get().notes.find((n) => n.id === id);
         if (updatedNote) {
           syncToCloud(updatedNote);
+          // Emit MODE Framework trigger event
+          emitNoteUpdated(updatedNote);
+          // AI Goal-Agent: schedule debounced goal analysis
+          scheduleGoalAnalysis(updatedNote);
         }
       },
 
@@ -208,10 +292,18 @@ export const useNoteStore = create<NoteState>()(
         // Track note deletion (soft delete)
         Analytics.noteDeleted(id);
 
+        // Cancel any pending goal analysis for this note
+        try {
+          const { goalAnalysisService } = require('@/services/goalAnalysisService');
+          goalAnalysisService.cleanupForNote(id);
+        } catch {}
+
         // Sync soft delete to cloud
         const deletedNote = get().notes.find((n) => n.id === id);
         if (deletedNote) {
           syncToCloud(deletedNote);
+          // Emit MODE Framework trigger event
+          emitNoteDeleted(deletedNote);
         }
       },
 
@@ -259,6 +351,8 @@ export const useNoteStore = create<NoteState>()(
         const archivedNote = get().notes.find((n) => n.id === id);
         if (archivedNote) {
           syncToCloud(archivedNote);
+          // Emit MODE Framework trigger event
+          emitNoteArchived(archivedNote);
         }
       },
 
@@ -477,6 +571,8 @@ export const useNoteStore = create<NoteState>()(
         const updatedNote = get().notes.find((n) => n.id === noteId);
         if (updatedNote) {
           syncToCloud(updatedNote);
+          // Emit MODE Framework trigger event
+          emitLabelAdded(updatedNote, normalizedName);
         }
       },
 

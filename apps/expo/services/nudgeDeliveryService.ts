@@ -275,6 +275,7 @@ class NudgeDeliveryService {
    * Mark a nudge as shown
    */
   markAsShown(nudgeId: string): void {
+    console.log(`[NudgeDeliveryService] markAsShown called for: ${nudgeId}`, new Error().stack?.split('\n').slice(1, 4).join(' <- '));
     useNudgeStore.getState().markAsShown(nudgeId);
 
     const nudge = this.findNudgeById(nudgeId);
@@ -387,6 +388,14 @@ class NudgeDeliveryService {
           }
         }
         return { success: false, error: 'Note not found' };
+
+      case 'complete_step':
+        // Goal step completion - delegate to custom handler
+        return this.executeCustomHandler('complete_goal_step', {
+          noteId: action.noteId,
+          goalId: action.goalId,
+          stepId: action.stepId,
+        }, nudge);
 
       case 'custom':
         // Custom handlers are registered elsewhere
@@ -531,6 +540,7 @@ class NudgeDeliveryService {
    */
   startQueueProcessing(onNudgeReady: (nudge: Nudge) => void | Promise<void>): () => void {
     this.processingQueue = true;
+    console.log('[NudgeDeliveryService] Starting queue processing');
 
     const processNextNudge = async () => {
       // Prevent concurrent processing (race condition fix)
@@ -538,8 +548,12 @@ class NudgeDeliveryService {
 
       this.isProcessingNudge = true;
       try {
+        const queueState = useNudgeStore.getState();
+        console.log(`[NudgeDeliveryService] Queue check: total=${queueState.queue.length}, queued=${queueState.getQueuedCount()}`);
+
         const nudge = this.getNextNudge();
         if (nudge) {
+          console.log(`[NudgeDeliveryService] Found nudge: ${nudge.id}, calling callback`);
           // Await callback in case it's async
           await onNudgeReady(nudge);
           this.markAsShown(nudge.id);

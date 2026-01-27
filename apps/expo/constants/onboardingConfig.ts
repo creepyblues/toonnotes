@@ -73,6 +73,9 @@ export const COACH_MARK_IDS = {
 
   // Design creation
   DESIGN_CREATE: 'design-create',
+
+  // Goal system
+  GOAL_TIPS: 'goal-tips',
 } as const;
 
 export type CoachMarkId = (typeof COACH_MARK_IDS)[keyof typeof COACH_MARK_IDS];
@@ -175,6 +178,15 @@ export const DEFAULT_COACH_MARKS: CoachMark[] = [
     triggerScreen: 'design-create',
     triggerAction: 'first-visit',
     order: 7,
+  },
+  {
+    id: COACH_MARK_IDS.GOAL_TIPS,
+    title: 'AI reads your notes',
+    description: 'Include dates and action items for smarter nudges and goal tracking',
+    position: 'top',
+    triggerScreen: 'note-editor',
+    triggerAction: 'first-goal-shown',
+    order: 8,
   },
 ];
 

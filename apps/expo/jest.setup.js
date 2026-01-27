@@ -270,6 +270,40 @@ jest.mock('@/services/supabase', () => ({
   isSupabaseConfigured: jest.fn().mockReturnValue(false),
 }));
 
+// Mock MODE Framework services (use dynamic import() in noteStore.ts)
+jest.mock('@/services/triggerEngine', () => ({
+  onNoteCreated: jest.fn(),
+  onNoteUpdated: jest.fn(),
+  onNoteDeleted: jest.fn(),
+  onNoteArchived: jest.fn(),
+  onLabelAdded: jest.fn(),
+}));
+
+jest.mock('@/services/modeDetectionService', () => ({
+  detectModeForNote: jest.fn(() => ({
+    mode: 'manage',
+    confidence: 0.8,
+    organizeStage: undefined,
+  })),
+}));
+
+jest.mock('@/services/goalAnalysisService', () => ({
+  goalAnalysisService: {
+    scheduleAnalysis: jest.fn(),
+    analyzeImmediately: jest.fn(),
+    cancelPending: jest.fn(),
+  },
+}));
+
+jest.mock('./stores/behaviorStore', () => ({
+  useBehaviorStore: {
+    getState: jest.fn(() => ({
+      getBehavior: jest.fn(() => null),
+      initBehavior: jest.fn(),
+    })),
+  },
+}), { virtual: true });
+
 // Suppress console errors during tests
 global.console = {
   ...console,

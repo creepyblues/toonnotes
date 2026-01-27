@@ -73,7 +73,8 @@ export type NudgeActionType =
   | 'move_note'
   | 'dismiss'
   | 'snooze'
-  | 'custom';
+  | 'custom'
+  | 'complete_step';
 
 /**
  * Nudge action
@@ -84,7 +85,8 @@ export type NudgeAction =
   | { type: 'move_note'; noteId: string; targetBoard: string }
   | { type: 'dismiss' }
   | { type: 'snooze'; duration: number }
-  | { type: 'custom'; handler: string; data?: Record<string, unknown> };
+  | { type: 'custom'; handler: string; data?: Record<string, unknown> }
+  | { type: 'complete_step'; noteId: string; goalId: string; stepId: string };
 
 /**
  * Nudge option for user interaction
@@ -441,6 +443,7 @@ export interface Note {
   typographyPosterUri?: string;  // Typographic Poster generated text art image
   characterMascotUri?: string;   // Character Mascot generated character image
   images?: string[];             // Array of image URIs attached to note
+  deadline?: string;             // ISO date string "2024-01-26" (MODE Framework)
   isPinned: boolean;
   isArchived: boolean;
   isDeleted: boolean;
@@ -969,4 +972,89 @@ export interface QualityEvent {
   qualitySignals: QualitySignals;
   fallbackUsed: boolean;
   createdAt: number;
+}
+
+// ============================================
+// AI Goal-Agent System Types
+// ============================================
+
+/**
+ * Nudge engagement level determines how aggressively
+ * the goal system interacts with the user for a given note.
+ *
+ * - active: Proactive scheduled nudges (deadlines, action items)
+ * - passive: Nudge only on note open/update events (creative, exploratory)
+ * - none: No goal generated (bookmarks, reference, archives)
+ */
+export type NudgeEngagement = 'active' | 'passive' | 'none';
+
+/**
+ * Goal lifecycle status
+ */
+export type GoalStatus = 'analyzing' | 'active' | 'paused' | 'achieved' | 'abandoned';
+
+/**
+ * Individual step status within a goal
+ */
+export type ActionStepStatus = 'pending' | 'in_progress' | 'completed' | 'skipped';
+
+/**
+ * A single action step within a goal's plan
+ */
+export interface ActionStep {
+  id: string;
+  order: number;
+  title: string;                // "Book flights"
+  description: string;          // Agent-voice: "Have you looked at flight options?"
+  status: ActionStepStatus;
+  completedAt?: number;
+  nudgeCount: number;
+  lastNudgedAt?: number;
+  /** How this step is verified */
+  actionType: 'prompt_user' | 'auto_detect' | 'manual_check';
+  /** For auto_detect: which note field to check */
+  autoDetectField?: string;
+  autoDetectCondition?: 'exists' | 'gt' | 'contains';
+  autoDetectValue?: string | number;
+}
+
+/**
+ * AI-inferred goal for a note with action plan
+ */
+export interface NoteGoal {
+  id: string;
+  noteId: string;
+  mode: Mode;
+  agentId: AgentId;
+  /** AI-determined nudge engagement level */
+  nudgeEngagement: NudgeEngagement;
+  goalStatement: string;         // "Plan your Japan trip"
+  reasoning: string;             // Why AI inferred this goal
+  engagementReasoning: string;   // Why this engagement level
+  steps: ActionStep[];
+  status: GoalStatus;
+  createdAt: number;
+  updatedAt: number;
+  achievedAt?: number;
+  revision: number;
+  lastAnalyzedContentHash: string;
+  // Active-only scheduling fields
+  nextNudgeAt?: number;
+  nudgeCadenceMs: number;        // Starts 4h, adapts
+  totalNudgesSent: number;
+  consecutiveDismissals: number;
+}
+
+/**
+ * Feedback from beta users about goal quality
+ */
+export interface GoalFeedback {
+  noteId: string;
+  goalId: string;
+  goalStatement: string;
+  engagement: NudgeEngagement;
+  feedbackText: string;
+  timestamp: number;
+  userId?: string;
+  appVersion: string;
 }

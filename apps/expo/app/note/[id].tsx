@@ -130,6 +130,9 @@ import {
 } from '@/components/labels';
 import { AgentIntroSheet } from '@/components/agents';
 import { useAgentIntroTrigger } from '@/hooks/useAgentIntroTrigger';
+import { GoalProgressCard } from '@/components/goals/GoalProgressCard';
+import { FeedbackSheet } from '@/components/goals/FeedbackSheet';
+import { useGoalStore } from '@/stores/goalStore';
 import { composeStyle } from '@/services/designEngine';
 import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { DesignCard } from '@/components/designs/DesignCard';
@@ -200,6 +203,15 @@ export default function NoteEditorScreen() {
 
   // Agent intro trigger hook - shows first-time agent intro sheet
   const { showIntroFor, markIntroSeen, checkForIntro } = useAgentIntroTrigger(id);
+
+  // Goal-Agent system state
+  const [showFeedbackSheet, setShowFeedbackSheet] = useState(false);
+  const [feedbackGoalId, setFeedbackGoalId] = useState<string | null>(null);
+  const goal = useGoalStore((state) => state.goals[id || '']);
+  const handleGoalFeedbackPress = useCallback((goalId: string) => {
+    setFeedbackGoalId(goalId);
+    setShowFeedbackSheet(true);
+  }, []);
 
   // Note state for smart labeling (defined early for hook)
   const [title, setTitle] = useState(note?.title || '');
@@ -372,6 +384,9 @@ export default function NoteEditorScreen() {
 
   // Track if analysis is complete to prevent re-triggering on subsequent navigation
   const analysisCompleteRef = useRef(false);
+
+  // Track if note is being deleted (skip auto-labeling in this case)
+  const isBeingDeletedRef = useRef(false);
 
   // Use the editor content hook for parsing
   const { parsedLines, checkboxLines } = useEditorContent(content);
@@ -762,6 +777,7 @@ export default function NoteEditorScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
+            isBeingDeletedRef.current = true;
             deleteNote(note.id);
             router.back();
           },
@@ -848,6 +864,12 @@ export default function NoteEditorScreen() {
       // Delete empty notes
       if (!latest.title.trim() && !latest.content.trim()) {
         deleteNote(note.id);
+        navigation.dispatch(e.data.action);
+        return;
+      }
+
+      // Skip auto-labeling if note is being deleted
+      if (isBeingDeletedRef.current) {
         navigation.dispatch(e.data.action);
         return;
       }
@@ -1210,6 +1232,16 @@ export default function NoteEditorScreen() {
             accessibilityLabel="Note title"
             accessibilityHint="Enter the title of your note"
           />
+
+          {/* Goal Progress Card (active + passive goals) */}
+          {goal && goal.nudgeEngagement !== 'none' && (
+            <GoalProgressCard
+              noteId={id}
+              noteTitle={title}
+              noteContent={content}
+              onFeedbackPress={handleGoalFeedbackPress}
+            />
+          )}
 
           {/* Content - Mode-based rendering */}
           {editorMode === 'normal' && (
@@ -2071,6 +2103,13 @@ export default function NoteEditorScreen() {
         agentId={showIntroFor}
         visible={showIntroFor !== null}
         onDismiss={markIntroSeen}
+      />
+
+      {/* Goal feedback sheet (beta) */}
+      <FeedbackSheet
+        visible={showFeedbackSheet}
+        goalId={feedbackGoalId}
+        onClose={() => setShowFeedbackSheet(false)}
       />
 
     </SafeAreaView>
