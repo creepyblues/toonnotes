@@ -95,7 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('Analyzing note content for labeling...');
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     // Combine preset labels with user's existing custom labels
     const allLabels = [...PRESET_LABELS, ...existingLabels.filter(l => !PRESET_LABELS.includes(l.toLowerCase()))];
