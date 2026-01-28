@@ -1,0 +1,11 @@
+node_modules
+.turbo
+ToonNotes_Expo
+ToonNotes
+ToonNotes_Native
+ToonNotes_React
+ToonNotes_React_AIStudio
+*.apk
+*.ipa
+.playwright-mcp
+apps/expo/build-*.apk

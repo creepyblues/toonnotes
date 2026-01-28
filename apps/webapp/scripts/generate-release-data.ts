@@ -28,10 +28,15 @@ function generateReleaseData() {
 
   // Get commits from git log
   // Format: hash|||subject|||date|||author
-  const gitLog = execSync(
-    `git log --format='%h|||%s|||%aI|||%an' -${MAX_COMMITS}`,
-    { encoding: 'utf-8', cwd: monorepoRoot }
-  );
+  let gitLog = '';
+  try {
+    gitLog = execSync(
+      `git log --format='%h|||%s|||%aI|||%an' -${MAX_COMMITS}`,
+      { encoding: 'utf-8', cwd: monorepoRoot }
+    );
+  } catch {
+    console.warn('Git not available, generating empty release data');
+  }
 
   const commits: GitCommit[] = gitLog
     .trim()
