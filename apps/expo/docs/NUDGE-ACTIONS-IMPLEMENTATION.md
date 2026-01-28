@@ -341,8 +341,7 @@ Replace rule-based skill nudges with an AI-driven goal system. AI analyzes note 
 | `services/goalNudgeScheduler.ts` | Cadence logic for active goals: scheduling, back-off, escalation |
 | `components/goals/GoalProgressCard.tsx` | In-note UI showing progress bar, step checklist, controls |
 | `components/goals/FeedbackSheet.tsx` | Beta feedback bottom sheet |
-| `api/analyze-note-goal.ts` | Edge function: infers goal, steps, and engagement level via Gemini |
-| `api/send-goal-feedback.ts` | Edge function: sends feedback to Slack + email |
+| `api/goal-agent.ts` | Unified edge function: goal inference + feedback (routes by `action` field) |
 
 ### Modified Files
 

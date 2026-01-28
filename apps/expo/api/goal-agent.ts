@@ -1,15 +1,13 @@
 /**
- * Analyze Note Goal API
+ * Goal Agent API
  *
- * POST /api/analyze-note-goal
+ * POST /api/goal-agent
  *
- * Uses Gemini AI to:
- * 1. Classify note into nudge engagement level (active/passive/none)
- * 2. Infer the user's goal from note content
- * 3. Generate 3-7 action steps with agent-appropriate voice
+ * Unified endpoint for the AI Goal-Agent system.
+ * Routes by `action` field:
  *
- * Input: { noteTitle, noteContent, mode, agentId, completedSteps }
- * Output: { nudgeEngagement, goalStatement, reasoning, engagementReasoning, steps }
+ *   action: "analyze"  → Analyze note content, infer goal + engagement level
+ *   action: "feedback" → Send beta feedback to Slack + email
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -17,6 +15,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { applySecurity } from './_utils/security';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'creepyblues@gmail.com';
 
 // Agent personality descriptions for prompt
 const AGENT_VOICES: Record<string, string> = {
@@ -31,14 +32,26 @@ const AGENT_VOICES: Record<string, string> = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Security check
-  const securityResult = applySecurity(req, res);
-  if (securityResult) return securityResult;
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (!applySecurity(req, res, { allowedMethods: ['POST'] })) {
+    return;
   }
 
+  const { action } = req.body;
+
+  if (action === 'analyze') {
+    return handleAnalyze(req, res);
+  } else if (action === 'feedback') {
+    return handleFeedback(req, res);
+  } else {
+    return res.status(400).json({ error: 'Invalid action. Use "analyze" or "feedback".' });
+  }
+}
+
+// ============================================
+// Action: analyze
+// ============================================
+
+async function handleAnalyze(req: VercelRequest, res: VercelResponse) {
   if (!GEMINI_API_KEY) {
     return res.status(500).json({ error: 'Gemini API key not configured' });
   }
@@ -144,7 +157,125 @@ Respond with ONLY valid JSON, no markdown formatting.`;
       })),
     });
   } catch (error: any) {
-    console.error('[analyze-note-goal] Error:', error.message);
+    console.error('[goal-agent:analyze] Error:', error.message);
     return res.status(500).json({ error: 'Failed to analyze note goal' });
   }
+}
+
+// ============================================
+// Action: feedback
+// ============================================
+
+async function handleFeedback(req: VercelRequest, res: VercelResponse) {
+  const {
+    noteId,
+    goalId,
+    goalStatement,
+    engagement,
+    feedbackText,
+    timestamp,
+    userId,
+    appVersion,
+  } = req.body;
+
+  if (!feedbackText || !goalId) {
+    return res.status(400).json({ error: 'feedbackText and goalId required' });
+  }
+
+  if (feedbackText.length > 2000) {
+    return res.status(400).json({ error: 'Feedback too long' });
+  }
+
+  const results: { slack: boolean; email: boolean } = { slack: false, email: false };
+
+  // 1. Send to Slack
+  if (SLACK_WEBHOOK_URL) {
+    try {
+      const slackPayload = {
+        blocks: [
+          {
+            type: 'header',
+            text: {
+              type: 'plain_text',
+              text: '🎯 Goal Feedback',
+              emoji: true,
+            },
+          },
+          {
+            type: 'section',
+            fields: [
+              { type: 'mrkdwn', text: `*Goal:*\n${goalStatement || 'N/A'}` },
+              { type: 'mrkdwn', text: `*Engagement:*\n${engagement || 'N/A'}` },
+              { type: 'mrkdwn', text: `*App Version:*\n${appVersion || 'N/A'}` },
+              { type: 'mrkdwn', text: `*User:*\n${userId || 'Anonymous'}` },
+            ],
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `*Feedback:*\n> ${feedbackText}`,
+            },
+          },
+          {
+            type: 'context',
+            elements: [
+              {
+                type: 'mrkdwn',
+                text: `Note: ${noteId} | Goal: ${goalId} | ${new Date(timestamp).toISOString()}`,
+              },
+            ],
+          },
+        ],
+      };
+
+      const slackRes = await fetch(SLACK_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slackPayload),
+      });
+
+      results.slack = slackRes.ok;
+    } catch (error) {
+      console.error('[goal-agent:feedback] Slack error:', error);
+    }
+  }
+
+  // 2. Send email via Resend
+  if (RESEND_API_KEY) {
+    try {
+      const emailRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'ToonNotes <feedback@toonnotes.com>',
+          to: [ADMIN_EMAIL],
+          subject: `[Goal Feedback] ${goalStatement || 'No goal'}`,
+          html: `
+            <h2>Goal Feedback</h2>
+            <p><strong>Goal:</strong> ${goalStatement || 'N/A'}</p>
+            <p><strong>Engagement:</strong> ${engagement || 'N/A'}</p>
+            <p><strong>Feedback:</strong></p>
+            <blockquote>${feedbackText}</blockquote>
+            <hr>
+            <p style="color: #666; font-size: 12px;">
+              Note: ${noteId} | Goal: ${goalId} | User: ${userId || 'Anonymous'} | v${appVersion || '?'}
+            </p>
+          `,
+        }),
+      });
+
+      results.email = emailRes.ok;
+    } catch (error) {
+      console.error('[goal-agent:feedback] Email error:', error);
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    delivered: results,
+  });
 }

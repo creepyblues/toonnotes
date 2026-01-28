@@ -293,10 +293,10 @@ class GoalAnalysisService {
     completedSteps: string[];
   }): Promise<AnalysisResult | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/analyze-note-goal`, {
+      const response = await fetch(`${API_BASE_URL}/api/goal-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        body: JSON.stringify({ action: 'analyze', ...params }),
       });
 
       if (!response.ok) {

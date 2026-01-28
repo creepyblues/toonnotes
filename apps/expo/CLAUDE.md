@@ -257,8 +257,7 @@ All AI features are powered by Vercel edge functions that call Google Gemini API
 | `/api/analyze-note-content` | NLP analysis for labels | noteTitle, noteContent |
 | `/api/onboarding-config` | Remote onboarding config | (none) |
 | `/api/remove-background` | Background removal (unified) | imageData, type |
-| `/api/analyze-note-goal` | AI goal inference + engagement level | noteTitle, noteContent, mode, agentId |
-| `/api/send-goal-feedback` | Beta feedback to Slack + email | noteId, goalId, feedbackText |
+| `/api/goal-agent` | AI goal inference + beta feedback (routes by `action` field) | action: "analyze" or "feedback" |
 
 **Note**: The app calls these via `services/geminiService.ts` and `services/labelingEngine.ts`. The base URL is `https://toonnotes-api.vercel.app`.
 

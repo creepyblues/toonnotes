@@ -109,8 +109,7 @@ interface GoalFeedback {
 | `services/customHandlers.ts` | `complete_goal_step` and `open_goal_feedback` nudge action handlers |
 | `components/goals/GoalProgressCard.tsx` | In-editor goal card — progress bar, step checklist, controls |
 | `components/goals/FeedbackSheet.tsx` | Beta feedback modal — text input, sends to Slack + email |
-| `api/analyze-note-goal.ts` | Gemini edge function — infers goal, steps, engagement level |
-| `api/send-goal-feedback.ts` | Edge function — sends feedback to Slack webhook + Resend email |
+| `api/goal-agent.ts` | Unified edge function — routes by `action` field: "analyze" (goal inference) or "feedback" (Slack + email) |
 | `constants/onboardingConfig.ts` | GOAL_TIPS coach mark (order 8) |
 
 ### Integration Points
@@ -152,14 +151,14 @@ scheduleAnalysis(noteId, title, content)
   → analyzeAndGenerateGoal()
       → Get mode/agent from behavior store
       → Extract completed steps from existing goal
-      → POST /api/analyze-note-goal
+      → POST /api/goal-agent (action: "analyze")
       → If engagement = 'none' → markAsNoGoal(), return null
       → Build NoteGoal (preserve completed steps across revisions)
       → For active goals: set nextNudgeAt = now + 1 hour
       → Store in goalStore
 ```
 
-### Edge Function: `/api/analyze-note-goal`
+### Edge Function: `/api/goal-agent` (action: "analyze")
 
 **Input**: `{ noteTitle, noteContent, mode, agentId, completedSteps[] }`
 
@@ -259,7 +258,7 @@ Modal bottom sheet for collecting user feedback on AI-generated goals.
 
 - Text input (multiline, max 500 chars)
 - Shows goal context: statement + engagement level
-- Sends to `/api/send-goal-feedback` → Slack webhook + Resend email
+- Sends to `/api/goal-agent` (action: "feedback") → Slack webhook + Resend email
 - Accessible from GoalProgressCard footer and nudge "Feedback" button
 
 ---
@@ -310,10 +309,10 @@ These tips are rotated in the GoalProgressCard analyzing state:
 | Quiet hours | 10PM–8AM | goalNudgeScheduler.ts |
 | Passive stale threshold | 7 days | goalNudgeScheduler.ts |
 | Back-off trigger | 2 consecutive dismissals | goalStore.ts |
-| Step count range | 3–7 | analyze-note-goal.ts |
-| Title length limit (API) | 500 chars | analyze-note-goal.ts |
-| Content length limit (API) | 10,000 chars | analyze-note-goal.ts |
-| Feedback text limit (API) | 2,000 chars | send-goal-feedback.ts |
+| Step count range | 3–7 | goal-agent.ts |
+| Title length limit (API) | 500 chars | goal-agent.ts |
+| Content length limit (API) | 10,000 chars | goal-agent.ts |
+| Feedback text limit (API) | 2,000 chars | goal-agent.ts |
 | First nudge delay (active) | 1 hour | goalAnalysisService.ts |
 
 ---

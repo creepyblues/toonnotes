@@ -77,10 +77,10 @@ export function FeedbackSheet({ visible, goalId, onClose }: FeedbackSheetProps) 
         appVersion,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/send-goal-feedback`, {
+      const response = await fetch(`${API_BASE_URL}/api/goal-agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ action: 'feedback', ...payload }),
       });
 
       if (response.ok) {
