@@ -3,6 +3,7 @@
  *
  * Displays all boards in a vertical scroll, one board per row.
  * Each board shows actual note content/design previews.
+ * Boards are filtered by MODE type tabs.
  */
 
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
@@ -17,7 +18,10 @@ import {
   computeBoardsFromNotes,
 } from '@/stores';
 import { BoardCard } from '@/components/boards/BoardCard';
-import { BoardData } from '@/types';
+import { ModeTabBar } from '@/components/boards/ModeTabBar';
+import { ModeSelectSheet } from '@/components/boards/ModeSelectSheet';
+import { BoardData, Mode } from '@/types';
+import { ModeTabId, getModeConfig } from '@/constants/modeConfig';
 import { useTheme } from '@/src/theme';
 import { useBoardsTabCoachMark } from '@/hooks/useCoachMark';
 import { CoachMarkTooltip } from '@/components/onboarding';
@@ -25,12 +29,19 @@ import { CoachMarkTooltip } from '@/components/onboarding';
 export default function BoardsScreen() {
   const router = useRouter();
   const { notes } = useNoteStore();
-  const { boards: boardCustomizations } = useBoardStore();
+  const { boards: boardCustomizations, updateBoardMode } = useBoardStore();
   const { colors, isDark } = useTheme();
 
   // Coach mark for first visit
   const { shouldShow: showCoachMark, dismiss: dismissCoachMark } = useBoardsTabCoachMark();
   const [showTooltip, setShowTooltip] = useState(false);
+
+  // MODE tab state
+  const [selectedModeTab, setSelectedModeTab] = useState<ModeTabId>('uncategorized');
+
+  // Mode selection sheet state
+  const [modeSheetVisible, setModeSheetVisible] = useState(false);
+  const [selectedBoardForMode, setSelectedBoardForMode] = useState<string | null>(null);
 
   // Show coach mark after a delay on first visit
   useEffect(() => {
@@ -50,6 +61,48 @@ export default function BoardsScreen() {
     return computeBoardsFromNotes(notes, boardCustomizations);
   }, [notes, boardCustomizations]);
 
+  // Get board mode by hashtag
+  const getBoardMode = useCallback((hashtag: string): Mode | undefined => {
+    const customization = boardCustomizations.find(
+      (b) => b.hashtag.toLowerCase() === hashtag.toLowerCase()
+    );
+    return customization?.mode;
+  }, [boardCustomizations]);
+
+  // Calculate mode counts for tab badges
+  const modeCounts = useMemo((): Record<ModeTabId, number> => {
+    const counts: Record<ModeTabId, number> = {
+      manage: 0,
+      develop: 0,
+      organize: 0,
+      experience: 0,
+      uncategorized: 0,
+    };
+
+    for (const board of allBoards) {
+      const mode = getBoardMode(board.hashtag);
+      if (mode) {
+        counts[mode]++;
+      } else {
+        counts.uncategorized++;
+      }
+    }
+
+    return counts;
+  }, [allBoards, getBoardMode]);
+
+  // Filter boards by selected mode
+  const filteredBoards = useMemo((): BoardData[] => {
+    return allBoards.filter((board) => {
+      const boardMode = getBoardMode(board.hashtag);
+
+      if (selectedModeTab === 'uncategorized') {
+        return !boardMode;
+      }
+      return boardMode === selectedModeTab;
+    });
+  }, [allBoards, getBoardMode, selectedModeTab]);
+
   const handleBoardPress = useCallback((hashtag: string) => {
     router.push(`/board/${encodeURIComponent(hashtag)}`);
   }, [router]);
@@ -57,6 +110,22 @@ export default function BoardsScreen() {
   const handleNotePress = useCallback((noteId: string) => {
     router.push(`/note/${noteId}`);
   }, [router]);
+
+  const handleBoardLongPress = useCallback((hashtag: string) => {
+    setSelectedBoardForMode(hashtag);
+    setModeSheetVisible(true);
+  }, []);
+
+  const handleSelectMode = useCallback((mode: Mode | undefined) => {
+    if (selectedBoardForMode) {
+      updateBoardMode(selectedBoardForMode, mode);
+    }
+  }, [selectedBoardForMode, updateBoardMode]);
+
+  const handleCloseSheet = useCallback(() => {
+    setModeSheetVisible(false);
+    setSelectedBoardForMode(null);
+  }, []);
 
   // Memoized keyExtractor for FlatList
   const keyExtractor = useCallback((item: BoardData) => item.hashtag, []);
@@ -68,22 +137,32 @@ export default function BoardsScreen() {
       isDark={isDark}
       onPress={() => handleBoardPress(item.hashtag)}
       onNotePress={handleNotePress}
+      onLongPress={() => handleBoardLongPress(item.hashtag)}
+      mode={getBoardMode(item.hashtag)}
     />
-  ), [isDark, handleBoardPress, handleNotePress]);
+  ), [isDark, handleBoardPress, handleNotePress, handleBoardLongPress, getBoardMode]);
 
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIcon, { backgroundColor: `${colors.accent}15` }]}>
-        <Tag size={40} color={colors.textSecondary} weight="regular" />
+  const renderEmpty = () => {
+    const modeConfig = getModeConfig(selectedModeTab);
+    const ModeIcon = modeConfig.icon;
+
+    return (
+      <View style={styles.emptyContainer}>
+        <View style={[styles.emptyIcon, { backgroundColor: `${modeConfig.color}15` }]}>
+          <ModeIcon size={40} color={modeConfig.color} weight="regular" />
+        </View>
+        <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+          No boards in {modeConfig.label}
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          Long-press a board to assign it to this mode
+        </Text>
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-        No boards yet
-      </Text>
-      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        Labels are automatically added to organize your notes into boards
-      </Text>
-    </View>
-  );
+    );
+  };
+
+  // Get total count for header subtitle
+  const totalBoardCount = allBoards.length;
 
   return (
     <SafeAreaView
@@ -96,20 +175,27 @@ export default function BoardsScreen() {
           Boards
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {allBoards.length > 0
-            ? `${allBoards.length} ${allBoards.length === 1 ? 'board' : 'boards'}`
+          {totalBoardCount > 0
+            ? `${totalBoardCount} ${totalBoardCount === 1 ? 'board' : 'boards'}`
             : 'Notes organized by labels'}
         </Text>
       </View>
 
+      {/* MODE Tab Bar */}
+      <ModeTabBar
+        selectedMode={selectedModeTab}
+        onSelectMode={setSelectedModeTab}
+        modeCounts={modeCounts}
+      />
+
       {/* Single Column Board List - Optimized with FlatList */}
       <FlatList
-        data={allBoards}
+        data={filteredBoards}
         keyExtractor={keyExtractor}
         renderItem={renderBoard}
         contentContainerStyle={[
           styles.scrollContent,
-          allBoards.length === 0 && styles.emptyListContent,
+          filteredBoards.length === 0 && styles.emptyListContent,
         ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmpty}
@@ -119,6 +205,15 @@ export default function BoardsScreen() {
         updateCellsBatchingPeriod={50}
         windowSize={5}
         initialNumToRender={4}
+      />
+
+      {/* Mode Selection Sheet */}
+      <ModeSelectSheet
+        visible={modeSheetVisible}
+        onClose={handleCloseSheet}
+        currentMode={selectedBoardForMode ? getBoardMode(selectedBoardForMode) : undefined}
+        onSelectMode={handleSelectMode}
+        boardHashtag={selectedBoardForMode || ''}
       />
 
       {/* Coach Mark Tooltip */}

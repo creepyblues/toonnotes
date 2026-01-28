@@ -77,6 +77,24 @@ const emitLabelAdded = (note: Note, labelName: string) => {
   } catch (e) { console.error('[NoteStore] emitLabelAdded failed:', e); }
 };
 
+// Auto-assign board mode when a label is added (if board doesn't have one)
+const autoAssignBoardMode = (labelName: string) => {
+  try {
+    const { useBoardStore } = require('./boardStore');
+    const { inferBoardMode } = require('@/services/modeDetectionService');
+
+    const boardStore = useBoardStore.getState();
+    const existingBoard = boardStore.getBoardByHashtag(labelName);
+
+    // Only auto-assign if board doesn't already have a mode
+    if (!existingBoard?.mode) {
+      const detection = inferBoardMode(labelName);
+      boardStore.updateBoardMode(labelName, detection.mode);
+      console.log(`[NoteStore] Auto-assigned board mode: #${labelName} → ${detection.mode} (confidence: ${detection.confidence.toFixed(2)})`);
+    }
+  } catch (e) { console.error('[NoteStore] autoAssignBoardMode failed:', e); }
+};
+
 // AI Goal-Agent: schedule goal analysis on note update (lazy require)
 const scheduleGoalAnalysis = (note: Note) => {
   try {
@@ -573,6 +591,8 @@ export const useNoteStore = create<NoteState>()(
           syncToCloud(updatedNote);
           // Emit MODE Framework trigger event
           emitLabelAdded(updatedNote, normalizedName);
+          // Auto-assign board mode if not already set
+          autoAssignBoardMode(normalizedName);
         }
       },
 

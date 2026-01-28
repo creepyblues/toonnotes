@@ -11,7 +11,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BoardData } from '@/types';
+import { BoardData, Mode } from '@/types';
+import { getModeConfig } from '@/constants/modeConfig';
 import { getPresetForHashtag } from '@/constants/boardPresets';
 import { useDesignStore } from '@/stores';
 import { NoteCard } from '@/components/notes/NoteCard';
@@ -165,6 +166,8 @@ interface BoardCardProps {
   isDark: boolean;
   onPress: () => void;
   onNotePress?: (noteId: string) => void;
+  onLongPress?: () => void;
+  mode?: Mode;
 }
 
 const CARD_HEIGHT = 260;
@@ -175,6 +178,8 @@ export function BoardCard({
   isDark,
   onPress,
   onNotePress,
+  onLongPress,
+  mode,
 }: BoardCardProps) {
   // Get preset for this board's hashtag
   const preset = getPresetForHashtag(board.hashtag);
@@ -214,12 +219,18 @@ export function BoardCard({
   // Get all preview notes for horizontal scroll
   const previewNotes = board.previewNotes;
 
+  // Get mode config for icon display
+  const modeConfig = mode ? getModeConfig(mode) : null;
+  const ModeIcon = modeConfig?.icon;
+
   return (
     <View style={styles.shadowWrapper}>
       <TouchableOpacity
         onPress={onPress}
+        onLongPress={onLongPress}
         activeOpacity={0.85}
         style={styles.cardTouchable}
+        delayLongPress={400}
       >
         <LinearGradient
           colors={gradientColors}
@@ -240,14 +251,25 @@ export function BoardCard({
 
           {/* Header Row */}
           <View style={styles.header}>
-            <Text style={[
-              styles.hashtag,
-              { color: textColor, fontFamily: getHashtagFont() },
-              // Remove bold weight for custom fonts (Android can't synthesize weights)
-              getHashtagFont() && { fontWeight: 'normal' },
-            ]} numberOfLines={1}>
-              #{board.hashtag}
-            </Text>
+            <View style={styles.headerLeft}>
+              {ModeIcon && modeConfig && (
+                <View style={[styles.modeIconContainer, { backgroundColor: `${modeConfig.color}30` }]}>
+                  <ModeIcon
+                    size={14}
+                    weight="fill"
+                    color={modeConfig.color}
+                  />
+                </View>
+              )}
+              <Text style={[
+                styles.hashtag,
+                { color: textColor, fontFamily: getHashtagFont() },
+                // Remove bold weight for custom fonts (Android can't synthesize weights)
+                getHashtagFont() && { fontWeight: 'normal' },
+              ]} numberOfLines={1}>
+                #{board.hashtag}
+              </Text>
+            </View>
             <View style={[styles.badge, { backgroundColor: badgeBg }]}>
               <Text style={[styles.badgeText, { color: badgeTextColor }]}>
                 {board.noteCount}
@@ -319,6 +341,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  modeIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   hashtag: {
     fontSize: 16,

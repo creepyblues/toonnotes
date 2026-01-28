@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Board, BoardStyle, BoardData, Note, NoteColor } from '@/types';
+import { Board, BoardStyle, BoardData, Note, NoteColor, Mode } from '@/types';
 import { generateUUID } from '@/utils/uuid';
 
 // Lazy getters to avoid circular dependency
@@ -48,6 +48,9 @@ interface BoardState {
   // Board design actions
   applyDesign: (hashtag: string, designId: string) => void;
   clearDesign: (hashtag: string) => void;
+
+  // Board mode actions (MODE Framework)
+  updateBoardMode: (hashtag: string, mode: Mode | undefined) => void;
 }
 
 export const useBoardStore = create<BoardState>()(
@@ -151,6 +154,37 @@ export const useBoardStore = create<BoardState>()(
         }));
         if (updatedBoard) {
           syncToCloud(updatedBoard);
+        }
+      },
+
+      updateBoardMode: (hashtag, mode) => {
+        const existing = get().boards.find(
+          (b) => b.hashtag.toLowerCase() === hashtag.toLowerCase()
+        );
+
+        if (existing) {
+          // Update existing board
+          const updatedBoard = { ...existing, mode, updatedAt: Date.now() };
+          set((state) => ({
+            boards: state.boards.map((b) =>
+              b.hashtag.toLowerCase() === hashtag.toLowerCase()
+                ? updatedBoard
+                : b
+            ),
+          }));
+          syncToCloud(updatedBoard);
+        } else {
+          // Create new board entry with mode
+          const now = Date.now();
+          const newBoard: Board = {
+            id: generateUUID(),
+            hashtag: hashtag.toLowerCase(),
+            mode,
+            createdAt: now,
+            updatedAt: now,
+          };
+          set((state) => ({ boards: [...state.boards, newBoard] }));
+          syncToCloud(newBoard);
         }
       },
     }),
