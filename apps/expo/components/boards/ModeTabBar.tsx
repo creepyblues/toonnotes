@@ -1,10 +1,9 @@
 /**
- * ModeTabBar - Horizontal scrollable tab bar for MODE type filtering
+ * ModeTabBar - Framed tab bar for MODE type filtering
  *
- * Features:
- * - Pill-style tabs with icon + label
- * - Active tab highlighted with mode color background
- * - Badge showing board count per tab
+ * All tabs shown as framed rectangles (like browser tabs).
+ * Active tab: filled tinted background, bold label.
+ * Inactive tabs: outlined frame with muted text/icon.
  */
 
 import React from 'react';
@@ -23,7 +22,7 @@ export function ModeTabBar({
   onSelectMode,
   modeCounts,
 }: ModeTabBarProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -44,12 +43,15 @@ export function ModeTabBar({
               activeOpacity={0.7}
               style={[
                 styles.tab,
-                isSelected && { backgroundColor: config.color },
-                !isSelected && {
-                  backgroundColor: isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : 'rgba(0,0,0,0.05)',
-                },
+                isSelected
+                  ? {
+                      backgroundColor: config.color + '1F',
+                      borderColor: config.color + '60',
+                    }
+                  : {
+                      backgroundColor: 'transparent',
+                      borderColor: colors.textTertiary + '40',
+                    },
               ]}
               accessibilityLabel={`${config.label} tab, ${count} boards`}
               accessibilityRole="tab"
@@ -58,50 +60,31 @@ export function ModeTabBar({
               <IconComponent
                 size={16}
                 weight={isSelected ? 'fill' : 'regular'}
-                color={
-                  isSelected
-                    ? getContrastColor(config.color)
-                    : colors.textSecondary
-                }
+                color={isSelected ? config.color : colors.textTertiary}
               />
               <Text
                 style={[
-                  styles.tabLabel,
+                  styles.label,
                   {
-                    color: isSelected
-                      ? getContrastColor(config.color)
-                      : colors.textSecondary,
+                    color: isSelected ? config.color : colors.textTertiary,
+                    fontWeight: isSelected ? '700' : '500',
                   },
                 ]}
               >
-                {config.label}
+                {isSelected ? config.label : config.shortLabel}
               </Text>
               {count > 0 && (
-                <View
+                <Text
                   style={[
-                    styles.badge,
+                    styles.count,
                     {
-                      backgroundColor: isSelected
-                        ? 'rgba(255,255,255,0.3)'
-                        : isDark
-                          ? 'rgba(255,255,255,0.15)'
-                          : 'rgba(0,0,0,0.1)',
+                      color: isSelected ? config.color : colors.textTertiary,
+                      fontWeight: isSelected ? '700' : '500',
                     },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.badgeText,
-                      {
-                        color: isSelected
-                          ? getContrastColor(config.color)
-                          : colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {count}
-                  </Text>
-                </View>
+                  {count}
+                </Text>
               )}
             </TouchableOpacity>
           );
@@ -111,55 +94,29 @@ export function ModeTabBar({
   );
 }
 
-/**
- * Determine if white or black text has better contrast against a background color
- */
-function getContrastColor(hexColor: string): string {
-  // Remove # if present
-  const hex = hexColor.replace('#', '');
-
-  // Parse RGB
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-
-  // Calculate luminance using sRGB formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  // Return black for light backgrounds, white for dark
-  return luminance > 0.5 ? '#000000' : '#FFFFFF';
-}
-
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 8,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 6,
+    alignItems: 'center',
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
   },
-  tabLabel: {
+  label: {
     fontSize: 13,
-    fontWeight: '600',
   },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
+  count: {
+    fontSize: 12,
   },
 });
 

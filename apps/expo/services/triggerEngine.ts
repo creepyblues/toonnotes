@@ -325,6 +325,8 @@ export class TriggerEngine {
     const results: TriggerEvaluationResult[] = [];
     const skills = skillRegistry.getAll();
 
+    console.log(`[TriggerEngine] Processing event: ${event.event}, skills registered: ${skills.length}`);
+
     // Get recent behavior history for pattern detection
     const allBehaviors = Object.values(useBehaviorStore.getState().behaviors);
     const behaviorHistory = allBehaviors
@@ -355,11 +357,13 @@ export class TriggerEngine {
       // Check cooldown
       if (isOnCooldown(skill.id)) {
         const cooldownEnd = useNudgeStore.getState().skillCooldowns[skill.id];
+        const remainingMs = cooldownEnd - Date.now();
+        console.log(`[TriggerEngine] Skill ${skill.id} on cooldown, ${Math.round(remainingMs / 60000)} min remaining`);
         results.push({
           skill,
           triggered: false,
           reason: 'cooldown',
-          cooldownRemaining: cooldownEnd - Date.now(),
+          cooldownRemaining: remainingMs,
         });
         continue;
       }
@@ -390,6 +394,7 @@ export class TriggerEngine {
 
       // Set cooldown if triggered
       if (triggered) {
+        console.log(`[TriggerEngine] Skill triggered: ${skill.id}`);
         setCooldown(skill.id, skill.cooldownMs);
       }
     }
@@ -539,13 +544,23 @@ export async function emitTriggerEvent(
     metadata: context.metadata,
   };
 
-  return triggerEngine.processEvent(payload, context);
+  const results = await triggerEngine.processEvent(payload, context);
+
+  // Process triggered skills to create nudges (fire and forget)
+  import('./nudgeDeliveryService').then(({ nudgeDeliveryService }) => {
+    nudgeDeliveryService.processTriggeredSkills(results, context).catch((error) => {
+      console.warn('[TriggerEngine] Failed to process triggered skills:', error);
+    });
+  });
+
+  return results;
 }
 
 /**
  * Emit note_created event
  */
 export function onNoteCreated(note: Note, behavior?: NoteBehavior) {
+  console.log(`[TriggerEngine] onNoteCreated: noteId=${note.id}, hasBehavior=${!!behavior}, mode=${behavior?.mode}`);
   return emitTriggerEvent('note_created', { note, behavior });
 }
 
@@ -579,4 +594,25 @@ export function onLabelAdded(note: Note, labelName: string, behavior?: NoteBehav
     behavior,
     metadata: { labelName },
   });
+}
+
+/**
+ * Emit note_archived event
+ */
+export function onNoteArchived(note: Note, behavior?: NoteBehavior) {
+  return emitTriggerEvent('note_archived', { note, behavior });
+}
+
+/**
+ * Emit note_deleted event
+ */
+export function onNoteDeleted(note: Note, behavior?: NoteBehavior) {
+  return emitTriggerEvent('note_deleted', { note, behavior });
+}
+
+/**
+ * Emit app_opened event
+ */
+export function onAppOpened() {
+  return emitTriggerEvent('app_opened', {});
 }

@@ -1,6 +1,102 @@
 {
   "commits": [
     {
+      "hash": "627a72cf2",
+      "message": "docs: Update health-check skill for ToonNotes infrastructure",
+      "date": "2026-01-27T22:38:07-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "dda51d8eb",
+      "message": "fix(api): Update Gemini model from deprecated flash-exp to flash",
+      "date": "2026-01-27T22:31:25-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "7c73b1850",
+      "message": "refactor(api): Consolidate goal endpoints into single goal-agent function",
+      "date": "2026-01-27T22:23:34-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "934e0c4d5",
+      "message": "chore(webapp): update pnpm-lock.yaml after firebase install",
+      "date": "2026-01-27T14:07:37-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "758d38db4",
+      "message": "feat(diary): auto-publish diary drafts after generation",
+      "date": "2026-01-27T14:07:14-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "da4df69be",
+      "message": "fix(webapp): guard Firebase init when API key is not configured",
+      "date": "2026-01-27T13:43:06-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "6b97b61c7",
+      "message": "docs(expo): Add standalone AI Goal-Agent system documentation",
+      "date": "2026-01-27T13:42:24-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "40523ff5d",
+      "message": "feat(expo): Add AI Goal-Agent system with engagement-based nudging",
+      "date": "2026-01-27T11:27:15-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "95e6e50fb",
+      "message": "feat(diary): Add automated daily diary with Slack notifications",
+      "date": "2026-01-26T09:20:48-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "e817af0b8",
+      "message": "feat(expo): Add smart auto-labeling with background analysis",
+      "date": "2026-01-26T07:56:47-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "cba51f34c",
+      "message": "feat(web): Add shared MarketingHeader for consistent navigation",
+      "date": "2026-01-22T07:32:07-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "cb30b199b",
+      "message": "feat: Add MODE Framework agent onboarding and nudge system",
+      "date": "2026-01-22T07:17:38-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "8c7d1c573",
+      "message": "feat(web): Add recipe-tracking and memory-capsule scenario pages",
+      "date": "2026-01-22T07:09:26-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "44cc4780d",
+      "message": "feat(web): Add idea-growth scenario page for Muse Agent",
+      "date": "2026-01-22T07:08:07-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "970e2c819",
+      "message": "feat(expo): Add first-time agent assignment intro sheet UX",
+      "date": "2026-01-22T06:34:03-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "0c37927e6",
+      "message": "docs(expo): Add agent onboarding system documentation",
+      "date": "2026-01-22T06:32:55-08:00",
+      "author": "Sungho Lee"
+    },
+    {
       "hash": "5d75a491b",
       "message": "fix(build): Add pnpm hoisting config for EAS local builds",
       "date": "2026-01-21T13:24:45-08:00",
@@ -203,104 +299,8 @@
       "message": "fix(deps): Add explicit react-native-css-interop dependency for EAS builds",
       "date": "2026-01-15T19:09:50-08:00",
       "author": "Sungho Lee"
-    },
-    {
-      "hash": "62d4bb47f",
-      "message": "fix(settings): Display dynamic version from app.json instead of hardcoded value",
-      "date": "2026-01-15T11:24:56-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "cf7d31ff5",
-      "message": "fix(security): Critical security and code quality fixes from code review",
-      "date": "2026-01-14T23:15:23-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "0220f421b",
-      "message": "fix(editor): Fix checkbox/bullet format toggle and switching",
-      "date": "2026-01-14T22:14:41-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "a05464024",
-      "message": "refactor(settings): Create reusable SettingsRow and SettingsSection components",
-      "date": "2026-01-14T09:23:12-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "145390684",
-      "message": "fix: Move vercel config to apps/expo for API deployment",
-      "date": "2026-01-12T11:27:47-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "d714b700b",
-      "message": "fix: Add vercel.json for API-only deployment",
-      "date": "2026-01-12T11:24:04-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "5e450104e",
-      "message": "feat(webapp): Standardize note format with visual preview markers",
-      "date": "2026-01-11T11:46:54-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "3cd70d437",
-      "message": "feat(webapp): Add release updates section to settings page",
-      "date": "2026-01-11T09:30:47-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "21938e1ff",
-      "message": "feat: Add feature-launcher skill and marketing improvements",
-      "date": "2026-01-11T08:56:26-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "3e84caa74",
-      "message": "fix(webapp): Fix line breaks not rendering in notes",
-      "date": "2026-01-11T08:36:43-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "b0482c03b",
-      "message": "fix(constants): Resolve conflicting CATEGORY_LABELS export",
-      "date": "2026-01-11T00:05:08-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "7203bf304",
-      "message": "docs: Add Vercel deployment guide",
-      "date": "2026-01-10T21:17:59-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "40dd08815",
-      "message": "feat(webapp): Add bidirectional real-time sync with Supabase",
-      "date": "2026-01-10T16:00:01-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "de96684bf",
-      "message": "feat(webapp): Add board styling with preset picker",
-      "date": "2026-01-10T15:59:33-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "bde4956ea",
-      "message": "feat(webapp): Add label presets with auto-apply design",
-      "date": "2026-01-10T15:50:19-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "080755f64",
-      "message": "feat(webapp): Add command palette with search",
-      "date": "2026-01-10T15:01:44-08:00",
-      "author": "Sungho Lee"
     }
   ],
-  "generatedAt": "2026-01-22T11:20:33.570Z",
+  "generatedAt": "2026-01-28T10:06:06.912Z",
   "totalCount": 50
 }

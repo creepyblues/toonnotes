@@ -207,6 +207,7 @@ class SkillRegistry {
   register(skill: Skill, agentId: AgentId): void {
     this.skills.set(skill.id, skill);
     this.skillsByAgent.get(agentId)?.add(skill.id);
+    console.log(`[SkillRegistry] Registered skill: ${skill.id} for agent: ${agentId}`);
   }
 
   /**

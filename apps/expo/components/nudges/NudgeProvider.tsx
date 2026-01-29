@@ -19,8 +19,9 @@ import React, {
   useRef,
   ReactNode,
 } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Animated, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Check } from 'phosphor-react-native';
 import { Nudge, NudgeDeliveryChannel } from '@/types';
 import { useNudgeStore } from '@/stores/nudgeStore';
 import { nudgeDeliveryService } from '@/services/nudgeDeliveryService';
@@ -74,7 +75,31 @@ export function NudgeProvider({
   const router = useRouter();
   const [activeNudge, setActiveNudge] = useState<Nudge | null>(null);
   const [isEnabled, setIsEnabled] = useState(!disabled);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const stopProcessingRef = useRef<(() => void) | null>(null);
+  const successOpacity = useRef(new Animated.Value(0)).current;
+  // Use ref to track activeNudge to avoid stale closure in callbacks
+  const activeNudgeRef = useRef<Nudge | null>(null);
+  activeNudgeRef.current = activeNudge;
+
+  // Show success feedback
+  const showSuccessFeedback = useCallback((message: string) => {
+    setSuccessMessage(message);
+    successOpacity.setValue(0);
+    Animated.sequence([
+      Animated.timing(successOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.delay(1500),
+      Animated.timing(successOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setSuccessMessage(null));
+  }, [successOpacity]);
 
   // Get pending count from store
   const pendingCount = useNudgeStore((state) => state.getQueuedCount());
@@ -110,10 +135,24 @@ export function NudgeProvider({
         router.push(option.action.target as any);
       }
 
+      // Show success feedback for custom actions
+      if (result.success && option?.action.type === 'custom') {
+        const feedbackMessages: Record<string, string> = {
+          'set_deadline_today': 'Deadline set to today',
+          'set_deadline_tomorrow': 'Deadline set to tomorrow',
+          'set_priority_high': 'Priority set to high',
+          'mark_task_complete': 'Task marked complete',
+        };
+        const message = feedbackMessages[option.action.handler] || result.message || 'Done!';
+        showSuccessFeedback(message);
+      } else if (result.success && option?.action.type === 'snooze') {
+        showSuccessFeedback('Reminder set');
+      }
+
       // Clear active nudge
       setActiveNudge(null);
     },
-    [activeNudge, router]
+    [activeNudge, router, showSuccessFeedback]
   );
 
   // Start/stop auto-delivery based on settings
@@ -121,8 +160,10 @@ export function NudgeProvider({
     if (autoDeliver && isEnabled) {
       stopProcessingRef.current = nudgeDeliveryService.startQueueProcessing(
         (nudge) => {
+          // Use ref to get current value (avoids stale closure)
+          const currentActive = activeNudgeRef.current;
           // Only show if we don't already have an active nudge
-          if (!activeNudge) {
+          if (!currentActive) {
             showNudge(nudge);
           }
         }
@@ -135,7 +176,7 @@ export function NudgeProvider({
         stopProcessingRef.current = null;
       }
     };
-  }, [autoDeliver, isEnabled, showNudge, activeNudge]);
+  }, [autoDeliver, isEnabled, showNudge]);
 
   // Listen for nudge ready events
   useEffect(() => {
@@ -199,13 +240,69 @@ export function NudgeProvider({
     }
   };
 
+  // Render success feedback toast
+  const renderSuccessFeedback = () => {
+    if (!successMessage) return null;
+
+    return (
+      <Animated.View
+        style={[
+          styles.successToast,
+          { opacity: successOpacity },
+        ]}
+        pointerEvents="none"
+      >
+        <View style={styles.successContent}>
+          <Check size={16} color="#FFFFFF" weight="bold" />
+          <Text style={styles.successText}>{successMessage}</Text>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
     <NudgeContext.Provider value={contextValue}>
-      {children}
-      {renderNudgeUI()}
+      <View style={{ flex: 1, position: 'relative' }} pointerEvents="box-none">
+        {children}
+        {renderNudgeUI()}
+        {renderSuccessFeedback()}
+      </View>
     </NudgeContext.Provider>
   );
 }
+
+// ============================================
+// Styles
+// ============================================
+
+const styles = StyleSheet.create({
+  successToast: {
+    position: 'absolute',
+    top: 60,
+    alignSelf: 'center',
+    zIndex: 99999,
+    elevation: 999,
+  },
+  successContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    gap: 8,
+  },
+  successText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});
 
 // ============================================
 // Hook

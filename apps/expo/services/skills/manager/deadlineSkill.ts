@@ -19,7 +19,7 @@ const deadlineSkill = new SkillBuilder({
   name: 'Deadline Nudge',
   description: 'Prompts users to add deadlines to tasks',
   agentId: 'manager',
-  cooldownMs: 24 * 60 * 60 * 1000, // 24 hours per note
+  cooldownMs: 60 * 1000, // TEMP: 1 minute for testing (was 24 hours)
 })
   // Trigger when a task is created without a deadline
   .onEvent('note_created')

@@ -214,11 +214,15 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 2,
+    paddingTop: 10,
+    paddingBottom: 2,
     ...Platform.select({
-      ios: {},
+      ios: {
+        paddingTop: 8,
+      },
       android: {
-        paddingVertical: 1,
+        paddingTop: 10,
+        paddingBottom: 0,
       },
     }),
   },

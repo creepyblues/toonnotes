@@ -1,6 +1,6 @@
 ---
 name: dev-start
-description: Starts the ToonNotes Expo development environment with clean state by killing existing processes, starting local API server, launching Expo dev server with iOS simulator, and verifying readiness. This skill should be used when starting development, after port conflicts, or when seeing "API error" messages.
+description: Starts the ToonNotes Expo development environment with clean state by killing existing processes, starting local API server, launching Expo dev server with iOS simulator, and verifying readiness. This skill should be used when starting development, after port conflicts, or when seeing "API error" messages. IMPORTANT - Always kill existing processes on target ports before starting any server.
 ---
 
 # Dev Start
@@ -101,11 +101,39 @@ Starts everything for comprehensive testing:
 4. Starts local API server (background, port 3001)
 5. Starts Expo with iOS simulator (foreground)
 
+## Implementation Guidelines for Claude
+
+### CRITICAL: Always Kill Before Starting
+
+**When starting any dev server for testing, ALWAYS check for and kill existing processes on the target port first.** This ensures a clean state and prevents "address already in use" errors.
+
+```bash
+# ALWAYS run this pattern before starting a server:
+lsof -ti :PORT | xargs kill -9 2>/dev/null || true
+# Then start the server
+```
+
+**Why this matters:**
+- Stale processes may have cached old code
+- Port conflicts cause silent failures
+- Background processes from previous sessions persist
+- Ensures reproducible test environment
+
+**Required sequence for ANY server start:**
+1. Check if port is in use: `lsof -i :PORT`
+2. Kill existing process: `lsof -ti :PORT | xargs kill -9 2>/dev/null || true`
+3. Wait briefly for port release: `sleep 1`
+4. Start the new server
+
+This applies to ALL scenarios: testing, development, debugging, or restarting services.
+
+---
+
 ## Startup Workflow
 
 When `/dev-start` is invoked, execute these steps based on the mode:
 
-### Step 1: Kill Existing Processes
+### Step 1: Kill Existing Processes (MANDATORY)
 
 ```bash
 # Kill by port

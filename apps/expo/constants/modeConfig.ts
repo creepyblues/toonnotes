@@ -26,6 +26,7 @@ export type ModeTabId = Mode | 'uncategorized';
 export interface ModeTabConfig {
   id: ModeTabId;
   label: string;
+  shortLabel: string;
   icon: React.ComponentType<IconProps>;
   color: string;
   description: string;
@@ -38,27 +39,31 @@ export const MODE_TAB_CONFIGS: ModeTabConfig[] = [
   {
     id: 'manage',
     label: 'Manage',
+    shortLabel: 'M',
     icon: ListChecks,
     color: '#FF6B6B', // Red
     description: 'Tasks, action items, deadlines',
   },
   {
-    id: 'develop',
-    label: 'Develop',
-    icon: Lightbulb,
-    color: '#FFEAA7', // Yellow
-    description: 'Ideas, creativity, brainstorming',
-  },
-  {
     id: 'organize',
     label: 'Organize',
+    shortLabel: 'O',
     icon: FolderSimple,
     color: '#00CEC9', // Teal
     description: 'References, filing, information',
   },
   {
+    id: 'develop',
+    label: 'Develop',
+    shortLabel: 'D',
+    icon: Lightbulb,
+    color: '#F59E0B', // Amber-500
+    description: 'Ideas, creativity, brainstorming',
+  },
+  {
     id: 'experience',
     label: 'Experience',
+    shortLabel: 'E',
     icon: BookOpenText,
     color: '#A29BFE', // Purple
     description: 'Journal, memories, reflections',
@@ -66,6 +71,7 @@ export const MODE_TAB_CONFIGS: ModeTabConfig[] = [
   {
     id: 'uncategorized',
     label: 'Uncategorized',
+    shortLabel: '?',
     icon: Question,
     color: '#9CA3AF', // Gray
     description: 'No mode assigned yet',

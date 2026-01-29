@@ -229,10 +229,10 @@ export function NudgeToast({
             >
               {option.action.type === 'snooze' && (
                 <Clock
-                  size={14}
+                  size={12}
                   color={isDark ? '#9CA3AF' : '#6B7280'}
                   weight="bold"
-                  style={{ marginRight: 4 }}
+                  style={{ marginRight: 3 }}
                 />
               )}
               <Text
@@ -255,7 +255,7 @@ export function NudgeToast({
               accessibilityRole="button"
             >
               <Text style={styles.primaryButtonText}>{primaryOption.label}</Text>
-              <CaretRight size={14} color="#FFFFFF" weight="bold" />
+              <CaretRight size={12} color="#FFFFFF" weight="bold" />
             </TouchableOpacity>
           )}
         </View>
@@ -270,12 +270,17 @@ const styles = StyleSheet.create({
     top: 60, // Below status bar
     left: 16,
     right: 16,
-    zIndex: 1000,
+    zIndex: 99999,
+    elevation: 999, // Android needs elevation for proper layering
+    // TEMP: Debug border
+    // borderWidth: 2,
+    // borderColor: 'red',
   },
   toast: {
     borderRadius: 16,
     borderLeftWidth: 4,
-    padding: 14,
+    padding: 16,
+    paddingBottom: 14,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -319,31 +324,32 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
+    rowGap: 8,
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginLeft: 'auto',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginRight: 4,
+    marginRight: 3,
   },
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   secondaryButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
 });
