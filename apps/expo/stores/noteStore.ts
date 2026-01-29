@@ -89,8 +89,12 @@ const autoAssignBoardMode = (labelName: string) => {
     // Only auto-assign if board doesn't already have a mode
     if (!existingBoard?.mode) {
       const detection = inferBoardMode(labelName);
-      boardStore.updateBoardMode(labelName, detection.mode);
-      console.log(`[NoteStore] Auto-assigned board mode: #${labelName} → ${detection.mode} (confidence: ${detection.confidence.toFixed(2)})`);
+      if (detection.confidence >= 0.5) {
+        boardStore.updateBoardMode(labelName, detection.mode);
+        console.log(`[NoteStore] Auto-assigned: #${labelName} → ${detection.mode} (conf: ${detection.confidence.toFixed(2)})`);
+      } else {
+        console.log(`[NoteStore] Skipped auto-assign: #${labelName} (conf: ${detection.confidence.toFixed(2)})`);
+      }
     }
   } catch (e) { console.error('[NoteStore] autoAssignBoardMode failed:', e); }
 };

@@ -69,6 +69,39 @@ export default function BoardsScreen() {
     return customization?.mode;
   }, [boardCustomizations]);
 
+  // Backfill: assign modes to existing boards that don't have one
+  useEffect(() => {
+    if (allBoards.length === 0) return;
+    const { inferBoardMode } = require('@/services/modeDetectionService');
+    const boardState = useBoardStore.getState();
+    let assigned = 0;
+    for (const board of allBoards) {
+      const currentMode = getBoardMode(board.hashtag);
+      if (!currentMode) {
+        const detection = inferBoardMode(board.hashtag);
+        if (detection.confidence >= 0.5) {
+          boardState.updateBoardMode(board.hashtag, detection.mode);
+          assigned++;
+        }
+      }
+    }
+    if (assigned > 0) console.log(`[Boards] Backfill: auto-assigned ${assigned} boards`);
+  }, []); // once on mount
+
+  // Default tab to first mode with boards instead of always 'uncategorized'
+  useEffect(() => {
+    if (allBoards.length === 0) return;
+    const modes: ModeTabId[] = ['manage', 'develop', 'organize', 'experience'];
+    for (const mode of modes) {
+      const hasBoards = allBoards.some((b) => getBoardMode(b.hashtag) === mode);
+      if (hasBoards) {
+        setSelectedModeTab(mode);
+        return;
+      }
+    }
+    // fallback: uncategorized (already default)
+  }, []); // once on mount
+
   // Calculate mode counts for tab badges
   const modeCounts = useMemo((): Record<ModeTabId, number> => {
     const counts: Record<ModeTabId, number> = {
