@@ -363,7 +363,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 setUserId(session.user.id);
                 // Link Supabase user ID to RevenueCat for subscription tracking
                 purchaseService.setUserId(session.user.id);
-                Analytics.login(session.user.app_metadata?.provider as 'google' | 'apple' || 'google');
+                const method = session.user.app_metadata?.provider as 'google' | 'apple' || 'google';
+                const createdAt = new Date(session.user.created_at).getTime();
+                const isNewUser = Date.now() - createdAt < 10000;
+                if (isNewUser) {
+                  Analytics.signUp(method);
+                } else {
+                  Analytics.login(method);
+                }
 
                 // Check if user is a beta tester (grants Pro status if true)
                 checkBetaTesterStatus(session.user.id).then(() => {
