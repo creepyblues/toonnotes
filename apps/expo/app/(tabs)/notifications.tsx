@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, CheckCircle, Info, Warning, X } from 'phosphor-react-native';
+import { Bell, X } from 'phosphor-react-native';
 
 import { useNudgeStore } from '@/stores/nudgeStore';
 import { useTheme } from '@/src/theme';
@@ -144,6 +143,14 @@ export default function NotificationsScreen() {
   const { colors } = useTheme();
   const { queue, history, markAsShown } = useNudgeStore();
   const [toast, setToast] = useState<ToastState>({ visible: false, nudge: null });
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
 
   // Combine queue and history, sorted by creation time (newest first)
   const allNotifications = useMemo(() => {
@@ -154,20 +161,23 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = useCallback(
     (nudge: Nudge) => {
-      if (!nudge.shownAt) {
+      // Only call markAsShown for queue items (store only updates queue)
+      if (!nudge.shownAt && queue.some((n) => n.id === nudge.id)) {
         markAsShown(nudge.id);
       }
       setToast({ visible: true, nudge });
 
-      // Auto-dismiss after 5 seconds
-      setTimeout(() => {
+      // Clear any existing timeout before setting a new one
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
         setToast((prev) => (prev.nudge?.id === nudge.id ? { visible: false, nudge: null } : prev));
       }, 5000);
     },
-    [markAsShown]
+    [markAsShown, queue]
   );
 
   const dismissToast = useCallback(() => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToast({ visible: false, nudge: null });
   }, []);
 
