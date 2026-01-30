@@ -85,7 +85,7 @@ export default function TabLayout() {
         options={{
           title: 'Notes',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={NotePencil} color={color} focused={focused} size={30} />
+            <TabIcon Icon={NotePencil} color={color} focused={focused} />
           ),
         }}
       />

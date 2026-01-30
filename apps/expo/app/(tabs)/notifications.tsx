@@ -128,7 +128,7 @@ function Toast({
   );
 }
 
-function getTimeAgo(timestamp: number): string {
+export function getTimeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return 'Just now';
@@ -144,6 +144,8 @@ export default function NotificationsScreen() {
   const { queue, history, markAsShown } = useNudgeStore();
   const [toast, setToast] = useState<ToastState>({ visible: false, nudge: null });
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queueRef = useRef(queue);
+  queueRef.current = queue;
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -162,7 +164,7 @@ export default function NotificationsScreen() {
   const handleNotificationPress = useCallback(
     (nudge: Nudge) => {
       // Only call markAsShown for queue items (store only updates queue)
-      if (!nudge.shownAt && queue.some((n) => n.id === nudge.id)) {
+      if (!nudge.shownAt && queueRef.current.some((n) => n.id === nudge.id)) {
         markAsShown(nudge.id);
       }
       setToast({ visible: true, nudge });
@@ -173,7 +175,7 @@ export default function NotificationsScreen() {
         setToast((prev) => (prev.nudge?.id === nudge.id ? { visible: false, nudge: null } : prev));
       }, 5000);
     },
-    [markAsShown, queue]
+    [markAsShown]
   );
 
   const dismissToast = useCallback(() => {
@@ -293,7 +295,7 @@ const styles = StyleSheet.create({
   // Toast styles
   toastContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 90,
     left: 16,
     right: 16,
     borderRadius: 12,
