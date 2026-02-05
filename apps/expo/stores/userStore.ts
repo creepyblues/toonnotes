@@ -6,6 +6,7 @@ import { generateUUID } from '@/utils/uuid';
 import { debouncedStorage } from './debouncedStorage';
 import { CoachMarkId } from '@/constants/onboardingConfig';
 import { Analytics, updateUserProperties, getCoinBalanceTier } from '@/services/firebaseAnalytics';
+import { supabase } from '@/services/supabase';
 
 // ============================================================================
 // Onboarding State Types
@@ -261,6 +262,24 @@ export const useUserStore = create<UserState>()(
         // Track onboarding completion
         Analytics.onboardingCompleted();
         updateUserProperties({ onboarding_complete: true });
+
+        // Sync to Supabase profile (fire-and-forget)
+        supabase.auth.getUser().then(({ data }) => {
+          if (data?.user?.id) {
+            supabase
+              .from('profiles')
+              .update({
+                has_completed_welcome: true,
+                onboarding_version: get().onboarding.onboardingVersion,
+              })
+              .eq('id', data.user.id)
+              .then(({ error }) => {
+                if (error) {
+                  console.error('[UserStore] Failed to sync onboarding to Supabase:', error);
+                }
+              });
+          }
+        });
       },
 
       markCoachMarkSeen: (id: CoachMarkId | string) => {

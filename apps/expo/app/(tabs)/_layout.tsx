@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Tabs } from 'expo-router';
-import { NotePencil, SquaresFour, Sparkle, Gear } from 'phosphor-react-native';
+import { NotePencil, SquaresFour, Sparkle, Gear, Bell } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/src/theme';
@@ -12,10 +12,12 @@ function TabIcon({
   Icon,
   color,
   focused,
+  size = 24,
 }: {
   Icon: typeof NotePencil;
   color: string;
   focused: boolean;
+  size?: number;
 }) {
   const weight: IconWeight = focused ? 'fill' : 'regular';
 
@@ -26,7 +28,7 @@ function TabIcon({
         justifyContent: 'center',
       }}
     >
-      <Icon size={24} color={color} weight={weight} />
+      <Icon size={size} color={color} weight={weight} />
     </View>
   );
 }
@@ -61,15 +63,6 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Notes',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={NotePencil} color={color} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="boards"
         options={{
           title: 'Boards',
@@ -84,6 +77,24 @@ export default function TabLayout() {
           title: 'Designs',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon Icon={Sparkle} color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Notes',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon Icon={NotePencil} color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon Icon={Bell} color={color} focused={focused} />
           ),
         }}
       />
