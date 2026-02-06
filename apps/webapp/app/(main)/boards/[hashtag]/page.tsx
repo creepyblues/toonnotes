@@ -1,12 +1,14 @@
 'use client';
 
-import { use, useMemo, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Hash } from '@phosphor-icons/react';
 import { useUIStore, useNoteStore, useBoardStore } from '@/stores';
 import { NoteCard } from '@/components/notes';
-import { BoardStylePicker, BoardStyleButton } from '@/components/boards';
+import { BoardStylePicker, BoardStyleButton, ModeDropdownButton } from '@/components/boards';
+import { getModeConfig } from '@/constants/modeConfig';
 import { cn } from '@/lib/utils';
+import type { Mode } from '@toonnotes/types';
 
 interface BoardDetailPageProps {
   params: Promise<{ hashtag: string }>;
@@ -19,13 +21,34 @@ export default function BoardDetailPage({ params }: BoardDetailPageProps) {
   const viewMode = useUIStore((state) => state.viewMode);
   const getNotesByLabel = useNoteStore((state) => state.getNotesByLabel);
   const getPresetForBoard = useBoardStore((state) => state.getPresetForBoard);
+  const getBoardMode = useBoardStore((state) => state.getBoardMode);
+  const updateBoardMode = useBoardStore((state) => state.updateBoardMode);
 
   const [showStylePicker, setShowStylePicker] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Wait for Zustand persist middleware to finish rehydrating from localStorage
+  useEffect(() => {
+    if (useBoardStore.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    const unsub = useBoardStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+    return unsub;
+  }, []);
 
   const notes = useMemo(() => getNotesByLabel(hashtag), [hashtag, getNotesByLabel]);
   const preset = getPresetForBoard(hashtag);
+  const mode = hydrated ? getBoardMode(hashtag) : undefined;
+  const modeConfig = mode ? getModeConfig(mode) : undefined;
 
   const isGrid = viewMode === 'grid';
+
+  const handleModeChange = (newMode: Mode | undefined) => {
+    updateBoardMode(hashtag, newMode);
+  };
 
   return (
     <>
@@ -64,12 +87,23 @@ export default function BoardDetailPage({ params }: BoardDetailPageProps) {
               <Hash size={20} style={{ color: preset.colors.bg }} weight="bold" />
             </div>
             <div>
-              <h1
-                className="text-xl font-bold"
-                style={{ color: preset.colors.labelText }}
-              >
-                {hashtag}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1
+                  className="text-xl font-bold"
+                  style={{ color: preset.colors.labelText }}
+                >
+                  {hashtag}
+                </h1>
+                {modeConfig && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                    style={{ backgroundColor: modeConfig.color }}
+                  >
+                    <modeConfig.icon size={12} weight="fill" />
+                    {modeConfig.label}
+                  </span>
+                )}
+              </div>
               <p
                 className="text-sm opacity-80"
                 style={{ color: preset.colors.labelText }}
@@ -79,7 +113,8 @@ export default function BoardDetailPage({ params }: BoardDetailPageProps) {
             </div>
           </div>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ModeDropdownButton currentMode={mode} onModeChange={handleModeChange} alwaysVisible />
             <BoardStyleButton hashtag={hashtag} onOpenPicker={() => setShowStylePicker(true)} />
           </div>
         </div>

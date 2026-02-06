@@ -8,11 +8,13 @@ import {
   getPresetForHashtag,
   getBoardPresetById,
 } from '@toonnotes/constants';
+import type { Mode } from '@toonnotes/types';
 
 // Board style assignment - maps hashtag to preset ID
 interface BoardStyleAssignment {
   hashtag: string;
   presetId: string;
+  mode?: Mode;
   customColors?: Partial<{
     bg: string;
     bgSecondary: string;
@@ -36,6 +38,10 @@ interface BoardStore {
     colors: Partial<{ bg: string; bgSecondary: string; accent: string }>
   ) => void;
   clearCustomColors: (hashtag: string) => void;
+
+  // Mode actions
+  updateBoardMode: (hashtag: string, mode: Mode | undefined) => void;
+  getBoardMode: (hashtag: string) => Mode | undefined;
 
   // Sync state
   setLoading: (loading: boolean) => void;
@@ -136,6 +142,33 @@ export const useBoardStore = create<BoardStore>()(
             s.hashtag === normalized ? { ...s, customColors: undefined } : s
           ),
         }));
+      },
+
+      updateBoardMode: (hashtag, mode) => {
+        const normalized = hashtag.toLowerCase().trim();
+        set((state) => {
+          const existing = state.boardStyles.find((s) => s.hashtag === normalized);
+          if (existing) {
+            return {
+              boardStyles: state.boardStyles.map((s) =>
+                s.hashtag === normalized ? { ...s, mode } : s
+              ),
+            };
+          }
+          // Create new assignment with auto-preset and mode
+          const autoPreset = getPresetForHashtag(hashtag);
+          return {
+            boardStyles: [
+              ...state.boardStyles,
+              { hashtag: normalized, presetId: autoPreset.id, mode },
+            ],
+          };
+        });
+      },
+
+      getBoardMode: (hashtag) => {
+        const normalized = hashtag.toLowerCase().trim();
+        return get().boardStyles.find((s) => s.hashtag === normalized)?.mode;
       },
 
       setLoading: (loading) => set({ isLoading: loading }),
