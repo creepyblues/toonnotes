@@ -1,165 +1,23 @@
 /**
- * BoardCard - Full-width board card with note previews
+ * BoardCard - Magazine Cover style board card
  *
  * Features:
- * - Full-width single column layout
- * - Gradient background (bg → bgSecondary) for softer visual feel
- * - Shows actual note content/design previews using NoteCard
- * - Phosphor icons for board decoration
+ * - 3:4 aspect ratio for 2-column grid
+ * - Diagonal gradient background (preset bg → accent blend)
+ * - Label badge (preset name) floating top-left
+ * - Mode badge with icon + shortLabel
+ * - Large centered board title with auto-contrast
+ * - Note-title pills along bottom edge
+ * - Decorative circle + emoji overlays
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BoardData, Mode } from '@/types';
 import { getModeConfig } from '@/constants/modeConfig';
 import { getPresetForHashtag } from '@/constants/boardPresets';
-import { useDesignStore } from '@/stores';
-import { NoteCard } from '@/components/notes/NoteCard';
-import { useFontsLoaded } from '@/app/_layout';
-import { getPresetFonts, PresetFontStyle, SYSTEM_FONT_FALLBACKS } from '@/constants/fonts';
-import { LabelPresetId, getPresetById } from '@/constants/labelPresets';
-import {
-  // Productivity
-  CheckCircle,
-  StarFour,
-  Archive,
-  Crosshair,
-  // Reading
-  Books,
-  FilmSlate,
-  ChatTeardrop,
-  HeartHalf,
-  // Creative
-  LightbulbFilament,
-  Atom,
-  UsersFour,
-  HeartBreak,
-  // Content
-  Feather,
-  FileText,
-  ChatCenteredDots,
-  Flask,
-  // Personal
-  BookBookmark,
-  ImageSquare,
-  Sparkle,
-  PaintBrush,
-  // Auto-generated theme icons
-  ForkKnife,
-  CookingPot,
-  Coffee,
-  Hamburger,
-  BowlFood,
-  Desktop,
-  Code,
-  Cpu,
-  DeviceMobile,
-  CloudArrowUp,
-  Tree,
-  Leaf,
-  Mountains,
-  Compass,
-  Sun,
-  MusicNotes,
-  Palette,
-  Camera,
-  PencilLine,
-  Microphone,
-  Heartbeat,
-  Barbell,
-  PersonSimpleRun,
-  Heart,
-  Bicycle,
-  CurrencyDollar,
-  PiggyBank,
-  ChartLineUp,
-  Wallet,
-  Coins,
-  Users,
-  Gift,
-  Confetti,
-  HandHeart,
-  ChatCircle,
-  GraduationCap,
-  BookOpen,
-  Brain,
-  Student,
-  Notebook,
-  Hash,
-  IconProps,
-} from 'phosphor-react-native';
-
-// Phosphor icon mapping for board cards (large, expressive, duotone)
-const BOARD_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
-  // Productivity
-  CheckCircle,
-  StarFour,
-  Archive,
-  Crosshair,
-  // Reading
-  Books,
-  FilmSlate,
-  ChatTeardrop,
-  HeartHalf,
-  // Creative
-  LightbulbFilament,
-  Atom,
-  UsersFour,
-  HeartBreak,
-  // Content
-  Feather,
-  FileText,
-  ChatCenteredDots,
-  Flask,
-  // Personal
-  BookBookmark,
-  ImageSquare,
-  Sparkle,
-  PaintBrush,
-  // Auto-generated theme icons
-  ForkKnife,
-  CookingPot,
-  Coffee,
-  Hamburger,
-  BowlFood,
-  Desktop,
-  Code,
-  Cpu,
-  DeviceMobile,
-  CloudArrowUp,
-  Tree,
-  Leaf,
-  Mountains,
-  Compass,
-  Sun,
-  MusicNotes,
-  Palette,
-  Camera,
-  PencilLine,
-  Microphone,
-  Heartbeat,
-  Barbell,
-  PersonSimpleRun,
-  Heart,
-  Bicycle,
-  CurrencyDollar,
-  PiggyBank,
-  ChartLineUp,
-  Wallet,
-  Coins,
-  Users,
-  Gift,
-  Confetti,
-  HandHeart,
-  ChatCircle,
-  GraduationCap,
-  BookOpen,
-  Brain,
-  Student,
-  Notebook,
-  Hash,
-};
+import { Hash } from 'phosphor-react-native';
 
 interface BoardCardProps {
   board: BoardData;
@@ -170,8 +28,22 @@ interface BoardCardProps {
   mode?: Mode;
 }
 
-const CARD_HEIGHT = 260;
-const NOTE_SIZE = 150; // Square notes
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getContrastText(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#1a1a2e' : '#ffffff';
+}
+
+const MAX_PILLS = 4;
 
 export function BoardCard({
   board,
@@ -181,47 +53,20 @@ export function BoardCard({
   onLongPress,
   mode,
 }: BoardCardProps) {
-  // Get preset for this board's hashtag
   const preset = getPresetForHashtag(board.hashtag);
-  const { getDesignById } = useDesignStore();
-  const fontsLoaded = useFontsLoaded();
-
-  // Get font for this preset (from label preset which has fontStyle)
-  const getHashtagFont = () => {
-    if (preset) {
-      const labelPreset = getPresetById(preset.id as LabelPresetId);
-      const fontStyle = labelPreset?.fontStyle || 'sans-serif';
-
-      if (fontsLoaded) {
-        const fonts = getPresetFonts(preset.id as LabelPresetId, fontStyle as PresetFontStyle);
-        return fonts.titleFontFamily;
-      }
-      // Return system fallback while fonts load (Android loads fonts async)
-      return SYSTEM_FONT_FALLBACKS[fontStyle as PresetFontStyle] || 'System';
-    }
-    return undefined;
-  };
-
-  // Colors from preset or defaults
-  const bgColor = preset?.colors.bg ?? (isDark ? '#2D3436' : '#F5F5F5');
-  const bgSecondary = preset?.colors.bgSecondary ?? (isDark ? '#4A4A4A' : '#E8E8E8');
-  const textColor = preset?.colors.labelText ?? (isDark ? '#FFFFFF' : '#2D3436');
-  const badgeBg = preset?.colors.badge ?? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)');
-  const badgeTextColor = preset?.colors.badgeText ?? (isDark ? '#FFFFFF' : '#2D3436');
-
-  // Gradient colors: primary at top, lighter secondary at bottom (softens intensity)
-  const gradientColors = [bgColor, bgSecondary] as const;
-
-  // Get board icon component
-  const boardIconName = preset?.boardIcon ?? '';
-  const IconComponent = boardIconName ? BOARD_ICON_MAP[boardIconName] : null;
-
-  // Get all preview notes for horizontal scroll
-  const previewNotes = board.previewNotes;
-
-  // Get mode config for icon display
   const modeConfig = mode ? getModeConfig(mode) : null;
   const ModeIcon = modeConfig?.icon;
+
+  const textColor = getContrastText(preset.colors.bg);
+  const subtleText = hexToRgba(textColor, 0.6);
+
+  const gradientColors = [
+    preset.colors.bg,
+    hexToRgba(preset.colors.bg, 0.8),
+    hexToRgba(preset.colors.accent, 0.3),
+  ] as const;
+
+  const previewNotes = board.previewNotes.slice(0, MAX_PILLS);
 
   return (
     <View style={styles.shadowWrapper}>
@@ -235,74 +80,113 @@ export function BoardCard({
         <LinearGradient
           colors={gradientColors}
           start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 0.7 }}
+          end={{ x: 1, y: 1 }}
           style={styles.card}
         >
-          {/* Background Icon - Phosphor icon with accent color */}
-          {IconComponent && preset ? (
-            <View style={styles.backgroundIcon}>
-              <IconComponent
-                size={80}
-                color={preset.colors.accent}
-                weight={boardIconName === 'HeartBreak' ? 'fill' : 'duotone'}
-              />
-            </View>
-          ) : null}
+          {/* Decorative circle (top-right) */}
+          <View
+            style={[
+              styles.decorativeCircle,
+              { backgroundColor: preset.colors.accent },
+            ]}
+          />
 
-          {/* Header Row */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
+          {/* Decorative emoji (faded) */}
+          {preset.decorations.length > 0 && (
+            <View style={styles.decorativeEmoji}>
+              <Text style={styles.decorativeEmojiText}>
+                {preset.decorations[0]}
+              </Text>
+            </View>
+          )}
+
+          {/* Top row: label badge + mode badge */}
+          <View style={styles.topRow}>
+            <View style={styles.topBadges}>
+              {/* Label (preset name) badge */}
+              <View
+                style={[
+                  styles.labelBadge,
+                  { backgroundColor: hexToRgba(textColor, 0.15) },
+                ]}
+              >
+                <Text
+                  style={[styles.labelBadgeText, { color: textColor }]}
+                  numberOfLines={1}
+                >
+                  {preset.name}
+                </Text>
+              </View>
+
+              {/* Mode badge */}
               {ModeIcon && modeConfig && (
-                <View style={[styles.modeIconContainer, { backgroundColor: `${modeConfig.color}30` }]}>
-                  <ModeIcon
-                    size={14}
-                    weight="fill"
-                    color={modeConfig.color}
-                  />
+                <View
+                  style={[
+                    styles.modeBadge,
+                    { backgroundColor: hexToRgba(modeConfig.color, 0.2) },
+                  ]}
+                >
+                  <ModeIcon size={10} weight="fill" color={modeConfig.color} />
+                  <Text
+                    style={[styles.modeBadgeText, { color: modeConfig.color }]}
+                  >
+                    {modeConfig.shortLabel}
+                  </Text>
                 </View>
               )}
-              <Text style={[
-                styles.hashtag,
-                { color: textColor, fontFamily: getHashtagFont() },
-                // Remove bold weight for custom fonts (Android can't synthesize weights)
-                getHashtagFont() && { fontWeight: 'normal' },
-              ]} numberOfLines={1}>
-                #{board.hashtag}
-              </Text>
-            </View>
-            <View style={[styles.badge, { backgroundColor: badgeBg }]}>
-              <Text style={[styles.badgeText, { color: badgeTextColor }]}>
-                {board.noteCount}
-              </Text>
             </View>
           </View>
 
-          {/* Note Previews - Horizontal Scroll */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.notesScroll}
-            contentContainerStyle={styles.notesScrollContent}
-          >
-            {previewNotes.map((note) => (
-              <View key={note.id} style={styles.noteWrapper}>
-                <NoteCard
-                  note={note}
-                  design={note.designId ? getDesignById(note.designId) : null}
-                  onPress={onNotePress ? () => onNotePress(note.id) : () => {}}
-                  isDark={isDark}
-                  context="grid"
-                  compact
-                />
-              </View>
-            ))}
-            {/* Show placeholder if no notes */}
-            {previewNotes.length === 0 && (
-              <View style={styles.emptySlot}>
-                <Text style={styles.emptyText}>No notes yet</Text>
+          {/* Center: large title + note count */}
+          <View style={styles.centerContent}>
+            <Text
+              style={[styles.title, { color: textColor }]}
+              numberOfLines={2}
+            >
+              {board.hashtag}
+            </Text>
+            <Text style={[styles.noteCount, { color: subtleText }]}>
+              {board.noteCount} {board.noteCount === 1 ? 'note' : 'notes'}
+            </Text>
+          </View>
+
+          {/* Bottom: note-title pills */}
+          <View style={styles.bottomPills}>
+            {previewNotes.length > 0 ? (
+              <>
+                {previewNotes.map((note) => (
+                  <View
+                    key={note.id}
+                    style={[
+                      styles.pill,
+                      { backgroundColor: hexToRgba(textColor, 0.12) },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.pillText, { color: textColor }]}
+                      numberOfLines={1}
+                    >
+                      {note.title || 'Untitled'}
+                    </Text>
+                  </View>
+                ))}
+                {board.noteCount > MAX_PILLS && (
+                  <Text style={[styles.pillOverflow, { color: subtleText }]}>
+                    +{board.noteCount - MAX_PILLS}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <View style={styles.emptyPill}>
+                <Hash size={10} color={preset.colors.accent} />
+                <Text
+                  style={[styles.emptyPillText, { color: subtleText }]}
+                >
+                  No notes yet
+                </Text>
               </View>
             )}
-          </ScrollView>
+          </View>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -311,7 +195,6 @@ export function BoardCard({
 
 const styles = StyleSheet.create({
   shadowWrapper: {
-    // Subtle shadow (light from top-left)
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 3 },
     shadowOpacity: 0.12,
@@ -321,83 +204,111 @@ const styles = StyleSheet.create({
   },
   cardTouchable: {
     borderRadius: 16,
-    overflow: 'hidden', // Clip gradient to rounded corners
+    overflow: 'hidden',
   },
   card: {
-    height: CARD_HEIGHT,
-    paddingTop: 16,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
-  },
-  backgroundIcon: {
-    position: 'absolute',
-    bottom: 8,
-    right: 12,
-    opacity: 0.35,
-    zIndex: 0,
-  },
-  header: {
-    flexDirection: 'row',
+    aspectRatio: 3 / 4,
+    padding: 14,
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
   },
-  headerLeft: {
+  // Decorative elements
+  decorativeCircle: {
+    position: 'absolute',
+    top: -24,
+    right: -24,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    opacity: 0.2,
+  },
+  decorativeEmoji: {
+    position: 'absolute',
+    bottom: 60,
+    right: 8,
+    opacity: 0.1,
+  },
+  decorativeEmojiText: {
+    fontSize: 44,
+  },
+  // Top row
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    zIndex: 10,
+  },
+  topBadges: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
     flex: 1,
-    gap: 8,
   },
-  modeIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hashtag: {
-    fontSize: 16,
-    fontWeight: '700',
-    flex: 1,
-    marginRight: 8,
-  },
-  badge: {
-    paddingHorizontal: 10,
+  labelBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 28,
-    alignItems: 'center',
   },
-  badgeText: {
-    fontSize: 13,
+  labelBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  modeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  modeBadgeText: {
+    fontSize: 9,
     fontWeight: '600',
   },
-  notesScroll: {
-    flex: 1,
-    marginHorizontal: -24, // Extend to card edges
-    paddingHorizontal: 24,
+  // Center content
+  centerContent: {
+    zIndex: 10,
   },
-  notesScrollContent: {
-    gap: 12,
-    paddingRight: 24,
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    lineHeight: 26,
   },
-  noteWrapper: {
-    width: NOTE_SIZE,
-    height: NOTE_SIZE,
-    opacity: 0.9,
+  noteCount: {
+    fontSize: 13,
+    marginTop: 4,
   },
-  emptySlot: {
-    width: NOTE_SIZE,
-    height: NOTE_SIZE,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
+  // Bottom pills
+  bottomPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
     alignItems: 'center',
+    zIndex: 10,
   },
-  emptyText: {
-    fontSize: 12,
-    opacity: 0.5,
-    color: '#FFF',
+  pill: {
+    maxWidth: 120,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  pillText: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  pillOverflow: {
+    fontSize: 10,
+    paddingHorizontal: 4,
+  },
+  emptyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  emptyPillText: {
+    fontSize: 10,
+    fontStyle: 'italic',
   },
 });
 

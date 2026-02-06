@@ -1,8 +1,7 @@
 /**
- * Boards Screen - Single column layout with note previews
+ * Boards Screen - 2-column Magazine Cover grid
  *
- * Displays all boards in a vertical scroll, one board per row.
- * Each board shows actual note content/design previews.
+ * Displays boards in a 2-column grid of tall Magazine Cover cards.
  * Boards are filtered by MODE type tabs.
  */
 
@@ -10,8 +9,6 @@ import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Tag } from 'phosphor-react-native';
-
 import {
   useNoteStore,
   useBoardStore,
@@ -163,16 +160,18 @@ export default function BoardsScreen() {
   // Memoized keyExtractor for FlatList
   const keyExtractor = useCallback((item: BoardData) => item.hashtag, []);
 
-  // Memoized renderItem for FlatList
+  // Memoized renderItem for FlatList (2-column grid)
   const renderBoard = useCallback(({ item }: { item: BoardData }) => (
-    <BoardCard
-      board={item}
-      isDark={isDark}
-      onPress={() => handleBoardPress(item.hashtag)}
-      onNotePress={handleNotePress}
-      onLongPress={() => handleBoardLongPress(item.hashtag)}
-      mode={getBoardMode(item.hashtag)}
-    />
+    <View style={styles.gridItem}>
+      <BoardCard
+        board={item}
+        isDark={isDark}
+        onPress={() => handleBoardPress(item.hashtag)}
+        onNotePress={handleNotePress}
+        onLongPress={() => handleBoardLongPress(item.hashtag)}
+        mode={getBoardMode(item.hashtag)}
+      />
+    </View>
   ), [isDark, handleBoardPress, handleNotePress, handleBoardLongPress, getBoardMode]);
 
   const renderEmpty = () => {
@@ -221,11 +220,13 @@ export default function BoardsScreen() {
         modeCounts={modeCounts}
       />
 
-      {/* Single Column Board List - Optimized with FlatList */}
+      {/* 2-Column Board Grid */}
       <FlatList
         data={filteredBoards}
         keyExtractor={keyExtractor}
         renderItem={renderBoard}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={[
           styles.scrollContent,
           filteredBoards.length === 0 && styles.emptyListContent,
@@ -234,10 +235,10 @@ export default function BoardsScreen() {
         ListEmptyComponent={renderEmpty}
         // Performance optimizations
         removeClippedSubviews={true}
-        maxToRenderPerBatch={5}
+        maxToRenderPerBatch={6}
         updateCellsBatchingPeriod={50}
         windowSize={5}
-        initialNumToRender={4}
+        initialNumToRender={6}
       />
 
       {/* Mode Selection Sheet */}
@@ -278,8 +279,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   scrollContent: {
-    padding: 16,
-    gap: 16,
+    padding: 12,
+    gap: 12,
+  },
+  columnWrapper: {
+    gap: 12,
+  },
+  gridItem: {
+    flex: 1,
   },
   emptyListContent: {
     flex: 1,
