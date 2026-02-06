@@ -166,6 +166,64 @@ describe('BoardStore', () => {
     });
   });
 
+  describe('updateBoardMode', () => {
+    it('should set mode for a board', () => {
+      const store = useBoardStore.getState();
+
+      store.updateBoardMode('todo', 'manage');
+
+      expect(store.getBoardMode('todo')).toBe('manage');
+    });
+
+    it('should normalize hashtag to lowercase', () => {
+      const store = useBoardStore.getState();
+
+      store.updateBoardMode('TODO', 'manage');
+
+      expect(store.getBoardMode('todo')).toBe('manage');
+    });
+
+    it('should update mode for existing assignment', () => {
+      const store = useBoardStore.getState();
+
+      store.setBoardStyle('work', 'todo');
+      store.updateBoardMode('work', 'manage');
+
+      expect(store.getBoardMode('work')).toBe('manage');
+      // Should preserve the preset
+      expect(store.getBoardStyle('work')?.presetId).toBe('todo');
+    });
+
+    it('should create assignment with auto-preset when setting mode for new hashtag', () => {
+      const store = useBoardStore.getState();
+
+      store.updateBoardMode('newboard', 'develop');
+
+      const assignment = store.getBoardStyle('newboard');
+      expect(assignment).toBeDefined();
+      expect(assignment?.mode).toBe('develop');
+      expect(assignment?.presetId).toBeDefined();
+    });
+
+    it('should remove mode when set to undefined', () => {
+      const store = useBoardStore.getState();
+
+      store.updateBoardMode('work', 'manage');
+      expect(store.getBoardMode('work')).toBe('manage');
+
+      store.updateBoardMode('work', undefined);
+      expect(store.getBoardMode('work')).toBeUndefined();
+    });
+
+    it('should return undefined for boards without mode', () => {
+      const store = useBoardStore.getState();
+
+      store.setBoardStyle('work', 'todo');
+
+      expect(store.getBoardMode('work')).toBeUndefined();
+    });
+  });
+
   describe('error handling', () => {
     it('should set and clear loading state', () => {
       const store = useBoardStore.getState();
