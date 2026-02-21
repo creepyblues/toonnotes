@@ -98,13 +98,15 @@ ToonNotes_Expo/
 │   │   ├── StickyNotesRow.tsx
 │   │   └── NotePreview.tsx
 │   ├── editor/
-│   │   ├── ChecklistEditor.tsx  # Google Keep style checklist
-│   │   ├── BulletEditor.tsx     # Bullet list editor
-│   │   ├── CheckboxOverlay.tsx
+│   │   ├── WebViewEditor.tsx    # TipTap editor in WebView (primary editor)
+│   │   ├── FormattingToolbar.tsx # Rich text formatting toolbar
 │   │   ├── HashtagAutocomplete.tsx
 │   │   ├── EditorToolbar.tsx
 │   │   ├── EditorContent.tsx
-│   │   └── index.ts
+│   │   ├── index.ts
+│   │   ├── ChecklistEditor.tsx  # [DEPRECATED] Legacy Google Keep style checklist
+│   │   ├── BulletEditor.tsx     # [DEPRECATED] Legacy bullet list editor
+│   │   └── CheckboxOverlay.tsx  # [DEPRECATED] Legacy checkbox overlay
 │   ├── designs/
 │   │   └── DesignCard.tsx    # Design gallery card
 │   ├── shop/                 # In-app purchase UI
@@ -599,9 +601,11 @@ All interactive components must have accessibility labels:
 >
 ```
 
-### Checklist Editor (Google Keep Style)
+### Checklist Editor (Google Keep Style) — DEPRECATED
 
-The note editor supports checklist mode with a Google Keep-inspired implementation. Key pattern:
+This pattern is no longer the primary editor implementation. The note editor now uses `WebViewEditor.tsx`, which runs TipTap inside a `react-native-webview`. Checklists and bullet lists are handled as TipTap node types within the shared Obsidian-style mixed-content editor, not as separate mode-specific React Native components.
+
+The legacy `ChecklistEditor.tsx` implementation below is kept for reference only:
 
 ```typescript
 // IMPORTANT: Use stable UUIDs, NOT array indices
@@ -622,11 +626,7 @@ const focusItem = (itemId: string) => {
 };
 ```
 
-**Why this pattern?** React Native TextInput has cursor/focus issues when:
-- Using array indices as keys (refs shift on insert/delete)
-- Calling focus() immediately after setState (render not complete)
-
-See `components/editor/ChecklistEditor.tsx` for full implementation.
+**Why this pattern was used:** React Native TextInput has cursor/focus issues when using array indices as keys (refs shift on insert/delete) or calling focus() immediately after setState. This is no longer relevant for the WebView-based editor.
 
 ### Styling Guidelines (IMPORTANT)
 
@@ -774,8 +774,7 @@ eas build --platform ios --profile development
 - [x] Error boundary with recovery
 - [x] Accessibility support
 - [x] Performance optimized lists
-- [x] Checklist mode (Google Keep style with visual checkboxes)
-- [x] Bullet list mode
+- [x] Checklist and bullet list editing (via shared TipTap editor in WebViewEditor)
 - [x] Board/hashtag organization system
 
 ### Authentication & Cloud

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ToonNotes Editor</title>
+  <style>
+    :root {
+      --editor-bg: #FFFFFF;
+      --editor-text: #1a1a1a;
+      --editor-placeholder: #9CA3AF;
+      --editor-accent: #7C3AED;
+      --editor-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      background-color: var(--editor-bg);
+      font-family: var(--editor-font);
+      -webkit-text-size-adjust: 100%;
+      overflow: hidden;
+    }
+
+    #editor {
+      min-height: 100%;
+      padding: 0;
+    }
+  </style>
+  <link rel="stylesheet" href="../config/styles.css" />
+</head>
+<body>
+  <div id="editor"></div>
+  <script type="module" src="./editor.ts"></script>
+</body>
+</html>

@@ -103,22 +103,14 @@ import { createShareLink } from '@/services/shareService';
 import {
   useEditorContent,
   useSmartAutoLabeling,
-  toggleCheckboxAtLine,
-  insertCheckboxAtCursor,
-  insertBulletAtCursor,
-  stripCheckboxPrefixes,
-  stripBulletPrefixes,
 } from '@/hooks/editor';
 import {
-  CheckboxEditor,
-  BulletEditor,
-  ChecklistEditor,
-  parseChecklistFromContent,
-  checklistToContent,
-  type ChecklistItem,
+  WebViewEditor,
+  FormattingToolbar,
 } from '@/components/editor';
+import type { EditorBridgeAPI } from '@toonnotes/editor-web/hooks';
 import { useTheme } from '@/src/theme';
-import { NoteColor, NoteDesign, EditorMode } from '@/types';
+import { NoteColor, NoteDesign } from '@/types';
 import {
   analyzeNoteContent,
   LabelAnalysisResponse,
@@ -138,8 +130,6 @@ import { BackgroundLayer } from '@/components/BackgroundLayer';
 import { DesignCard } from '@/components/designs/DesignCard';
 import { useFontsLoaded } from '@/app/_layout';
 import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
-import { generateUUID } from '@/utils/uuid';
-import { detectEditorMode } from '@toonnotes/editor-core';
 
 // Note color options for the color picker
 const NOTE_COLORS = [
@@ -283,49 +273,33 @@ export default function NoteEditorScreen() {
   const [analyzedSuggestions, setAnalyzedSuggestions] = useState<string[]>([]);
   const [isAnalyzingForAutocomplete, setIsAnalyzingForAutocomplete] = useState(false);
 
-  // Format menu state (checkbox, bullet, image)
-  const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [images, setImages] = useState<string[]>(note?.images || []);
 
-  // Editor mode state — uses canonical EditorMode from @toonnotes/types
-  const [editorMode, setEditorMode] = useState<EditorMode>('plain');
+  // WebView TipTap editor bridge reference
+  const editorBridgeRef = useRef<EditorBridgeAPI | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
+  const [editorFocused, setEditorFocused] = useState(false);
 
-  // Checklist items state (only used in checklist mode)
-  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  // Handle content changes from WebView editor
+  const handleWebViewContentChange = useCallback((plainText: string, _html: string, cursorOffset: number) => {
+    setContent(plainText);
+
+    // Hashtag detection using cursorOffset
+    const textBeforeCursor = plainText.slice(0, cursorOffset);
+    const match = textBeforeCursor.match(/#(\w*)$/);
+
+    if (match) {
+      setHashtagQuery(match[1]);
+      setShowHashtagAutocomplete(true);
+    } else if (showHashtagAutocomplete) {
+      setShowHashtagAutocomplete(false);
+      setHashtagQuery('');
+      setAnalyzedSuggestions([]);
+    }
+  }, [showHashtagAutocomplete]);
 
   // Keyboard height tracking for button animation
   const keyboardHeight = useRef(new Animated.Value(0)).current;
-
-  // Auto-detect editor mode from existing content (runs on mount and after store hydration)
-  useEffect(() => {
-    // Only run once per note load
-    if (hasInitializedRef.current || !note?.content) return;
-
-    const detected = detectEditorMode(note.content);
-
-    if (detected === 'checklist') {
-      setEditorMode('checklist');
-      setChecklistItems(parseChecklistFromContent(note.content));
-      if (content !== note.content) {
-        setContent(note.content);
-      }
-      hasInitializedRef.current = true;
-    } else if (detected === 'bullet') {
-      setEditorMode('bullet');
-      if (content !== note.content) {
-        setContent(note.content);
-      }
-      hasInitializedRef.current = true;
-    } else if (note.content && content !== note.content) {
-      setContent(note.content);
-      hasInitializedRef.current = true;
-    }
-
-    // Persist detected editorMode if it differs from stored value
-    if (note.id && detected !== note.editorMode) {
-      updateNote(note.id, { editorMode: detected });
-    }
-  }, [note?.content]); // Re-run when note.content changes (e.g., after hydration)
 
   // Animate button row above keyboard
   useEffect(() => {
@@ -356,21 +330,6 @@ export default function NoteEditorScreen() {
       keyboardWillHide.remove();
     };
   }, [keyboardHeight]);
-
-  // Sync checklist items to content when items change
-  const handleChecklistChange = useCallback((newItems: ChecklistItem[]) => {
-    const newContent = checklistToContent(newItems);
-    setChecklistItems(newItems);
-    setContent(newContent);
-
-    // Save immediately using local variable to bypass async state issues
-    // setContent() schedules a re-render but doesn't update state synchronously
-    // If user navigates away before re-render, beforeRemove would have stale data
-    // By saving with the local newContent variable, we ensure the store updates NOW
-    if (note?.id) {
-      updateNote(note.id, { content: newContent });
-    }
-  }, [note?.id, updateNote]);
 
   // Single TextInput cursor management (replaces per-line refs)
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
@@ -632,7 +591,7 @@ export default function NoteEditorScreen() {
   }, [labels, hashtagQuery, hashtagInputValue, note?.labels]);
 
   // Handle content change with hashtag detection
-  // Note: Auto-continue for bullets/checkboxes removed - use format menu (+) instead
+  // Note: Auto-continue for bullets/checkboxes removed - use FormattingToolbar instead
   const handleContentChange = (text: string) => {
     // Detect if user pressed Enter or Space while autocomplete is showing
     // This creates the hashtag automatically
@@ -915,69 +874,7 @@ export default function NoteEditorScreen() {
     setShowDesignPicker(false);
   };
 
-  // Note: Checkbox toggling is now handled by the useEditorContent hook
-  // The toggleCheckboxAtLine function is imported and can be used if needed
-
-  // Format menu handlers - toggle editor mode
-  const handleAddCheckbox = () => {
-    // Toggle checklist mode
-    if (editorMode === 'checklist') {
-      // EXITING checklist mode - strip checkbox prefixes to return to plain text
-      const serializedContent = checklistToContent(checklistItems);
-      const strippedContent = stripCheckboxPrefixes(serializedContent);
-      setContent(strippedContent);
-      setEditorMode('plain');
-    } else {
-      // ENTERING checklist mode - strip bullet prefixes first
-      const cleanContent = stripBulletPrefixes(content);
-      setEditorMode('checklist');
-      // Initialize checklist items from content or start fresh
-      if (cleanContent.trim()) {
-        const parsedItems = parseChecklistFromContent(cleanContent);
-        setChecklistItems(parsedItems);
-        // Immediately update content to checklist format for consistent persistence
-        const formattedContent = checklistToContent(parsedItems);
-        setContent(formattedContent);
-      } else {
-        const newItems = [{ id: generateUUID(), text: '', checked: false }];
-        setChecklistItems(newItems);
-        setContent(checklistToContent(newItems));
-      }
-    }
-    setShowFormatMenu(false);
-  };
-
-  const handleAddBullet = () => {
-    // Toggle bullet mode
-    if (editorMode === 'bullet') {
-      // EXITING bullet mode - strip bullet prefixes to return to plain text
-      const strippedContent = stripBulletPrefixes(content);
-      setContent(strippedContent);
-      setEditorMode('plain');
-    } else {
-      // ENTERING bullet mode - strip checkbox prefixes first
-      const cleanContent = stripCheckboxPrefixes(content);
-      setEditorMode('bullet');
-      // Format existing content with bullets
-      if (cleanContent.trim()) {
-        const lines = cleanContent.split('\n');
-        const formattedLines = lines.map(line => {
-          // Add bullet if line doesn't already have one
-          if (!line.match(/^[•\-\*]\s/)) {
-            return line.trim() ? `• ${line}` : line;
-          }
-          return line;
-        });
-        setContent(formattedLines.join('\n'));
-      } else {
-        setContent('• ');
-      }
-    }
-    setShowFormatMenu(false);
-  };
-
   const handleAddImage = async () => {
-    setShowFormatMenu(false);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
@@ -1243,53 +1140,19 @@ export default function NoteEditorScreen() {
             />
           )}
 
-          {/* Content - Mode-based rendering */}
-          {editorMode === 'plain' && (
-            <TextInput
-              ref={contentInputRef}
-              style={[
-                {
-                  color: style.bodyColor,
-                  fontFamily: getBodyFont(),
-                  fontSize: 17, // iOS HIG body text standard
-                  padding: 0,
-                  margin: 0,
-                  minHeight: 300,
-                  textAlignVertical: 'top',
-                },
-                style.fontStyle === 'mono' && { fontSize: 15 },
-              ]}
-              placeholder="Your thoughts"
-              placeholderTextColor={activeDesign ? `${style.bodyColor}80` : '#9CA3AF'}
-              value={content}
-              onChangeText={handleContentChange}
-              onSelectionChange={handleSelectionChange}
-              selection={selection}
-              multiline
-              scrollEnabled={false}
-              textAlignVertical="top"
-              accessibilityLabel="Note content"
-              accessibilityHint="Enter your note content"
-            />
-          )}
-
-          {editorMode === 'checklist' && (
-            <ChecklistEditor
-              items={checklistItems}
-              onItemsChange={handleChecklistChange}
-              style={style}
-              isDark={isDark}
-            />
-          )}
-
-          {editorMode === 'bullet' && (
-            <BulletEditor
-              content={content}
-              onContentChange={setContent}
-              style={style}
-              isDark={isDark}
-            />
-          )}
+          {/* Content - WebView TipTap Editor (shared engine with webapp) */}
+          <WebViewEditor
+            initialContent={content}
+            backgroundColor={style.backgroundColor}
+            textColor={style.bodyColor}
+            accentColor={style.accentColor}
+            isDark={isDark}
+            fontFamily={getBodyFont()}
+            onContentChange={handleWebViewContentChange}
+            onEditorReady={() => setEditorReady(true)}
+            onFocusChange={setEditorFocused}
+            bridgeRef={editorBridgeRef}
+          />
         </ScrollView>
 
         {/* Labels Panel - iOS Style */}
@@ -1704,111 +1567,49 @@ export default function NoteEditorScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* + button on right */}
-          <View style={{ position: 'relative', zIndex: 100 }}>
-            <TouchableOpacity
-              onPress={() => setShowFormatMenu(!showFormatMenu)}
-              accessibilityLabel="Format options"
-              accessibilityRole="button"
-              accessibilityHint="Opens menu for checklist, bullet list, or image"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                borderWidth: 1,
-                borderColor: colors.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: colors.surfaceCard,
-                marginLeft: 12,
-              }}
-            >
-              <Plus size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
-
-            {/* Format menu popup */}
-            {showFormatMenu && (
-              <View style={{
-                position: 'absolute',
-                bottom: 48,
-                right: 0,
-                backgroundColor: colors.surfaceCard,
-                borderRadius: 12,
-                paddingVertical: 4,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.12,
-                shadowRadius: 12,
-                elevation: 10,
-                zIndex: 999,
-                minWidth: 160,
-                borderWidth: 0.5,
-                borderColor: colors.separator,
-              }}>
-                <TouchableOpacity
-                  onPress={handleAddCheckbox}
-                  accessibilityLabel={editorMode === 'checklist' ? 'Exit checklist mode' : 'Enable checklist mode'}
-                  accessibilityRole="button"
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    minHeight: 44,
-                    backgroundColor: editorMode === 'checklist' ? colors.backgroundSecondary : 'transparent',
-                  }}
-                >
-                  <CheckSquare size={20} color={editorMode === 'checklist' ? colors.accent : colors.textSecondary} weight={editorMode === 'checklist' ? 'fill' : 'regular'} />
-                  <Text style={{ marginLeft: 12, fontSize: 17, color: editorMode === 'checklist' ? colors.accent : colors.textPrimary }}>
-                    Checklist
-                  </Text>
-                  {editorMode === 'checklist' && (
-                    <Check size={16} color={colors.accent} weight="bold" style={{ marginLeft: 'auto' }} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleAddBullet}
-                  accessibilityLabel={editorMode === 'bullet' ? 'Exit bullet mode' : 'Enable bullet mode'}
-                  accessibilityRole="button"
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    minHeight: 44,
-                    backgroundColor: editorMode === 'bullet' ? colors.backgroundSecondary : 'transparent',
-                  }}
-                >
-                  <ListBullets size={20} color={editorMode === 'bullet' ? colors.accent : colors.textSecondary} weight={editorMode === 'bullet' ? 'fill' : 'regular'} />
-                  <Text style={{ marginLeft: 12, fontSize: 17, color: editorMode === 'bullet' ? colors.accent : colors.textPrimary }}>
-                    Bullet List
-                  </Text>
-                  {editorMode === 'bullet' && (
-                    <Check size={16} color={colors.accent} weight="bold" style={{ marginLeft: 'auto' }} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleAddImage}
-                  accessibilityLabel="Add image"
-                  accessibilityRole="button"
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    minHeight: 44,
-                  }}
-                >
-                  <ImageSquare size={20} color={colors.textSecondary} />
-                  <Text style={{ marginLeft: 12, fontSize: 17, color: colors.textPrimary }}>
-                    Image
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+          {/* + button on right (opens image picker) */}
+          <TouchableOpacity
+            onPress={handleAddImage}
+            accessibilityLabel="Add image"
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surfaceCard,
+              marginLeft: 12,
+            }}
+          >
+            <Plus size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
         </Animated.View>
+
+        {/* Formatting Toolbar - shows above keyboard when editor focused */}
+        {editorFocused && editorBridgeRef.current && (
+          <Animated.View style={{
+            transform: Platform.OS === 'ios'
+              ? [{ translateY: Animated.multiply(keyboardHeight, -1) }]
+              : [],
+          }}>
+            <FormattingToolbar
+              toolbarState={editorBridgeRef.current.toolbarState}
+              onToggleFormat={(format) => editorBridgeRef.current?.toggleFormat(format)}
+              onAddImage={handleAddImage}
+              colors={{
+                background: colors.backgroundSecondary,
+                text: colors.textPrimary,
+                textSecondary: colors.textSecondary,
+                accent: colors.accent,
+                border: colors.separator,
+              }}
+            />
+          </Animated.View>
+        )}
 
         </BackgroundLayer>
       </KeyboardAvoidingView>

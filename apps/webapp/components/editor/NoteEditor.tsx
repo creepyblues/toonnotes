@@ -3,11 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Underline from '@tiptap/extension-underline';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
+import { createEditorExtensions } from '@toonnotes/editor-web';
 import {
   ArrowLeft,
   PushPin,
@@ -22,14 +18,13 @@ import {
   TextStrikethrough,
   ListBullets,
   CheckSquare,
-  TextT,
   Tag,
 } from '@phosphor-icons/react';
 import { LabelPill, LabelPicker, LabelSuggestionToast } from '@/components/labels';
-import { Note, NoteColor, EditorMode } from '@toonnotes/types';
+import { Note, NoteColor } from '@toonnotes/types';
 import { useNoteStore, useLabelSuggestionStore } from '@/stores';
 import { cn } from '@/lib/utils';
-import { textToHtml, htmlToPlainText, detectEditorMode } from '@toonnotes/editor-core';
+import { textToHtml, htmlToPlainText } from '@toonnotes/editor-core';
 import { analyzeNoteContent, filterExistingLabels } from '@toonnotes/label-ai';
 
 interface NoteEditorProps {
@@ -77,9 +72,6 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   const [title, setTitle] = useState(note?.title || '');
   const [color, setColor] = useState<NoteColor>(note?.color || NoteColor.White);
-  const [editorMode, setEditorMode] = useState<EditorMode>(
-    note?.editorMode || detectEditorMode(note?.content || '')
-  );
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
 
@@ -92,35 +84,7 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   const editor = useEditor({
     immediatelyRender: false, // Disable SSR to avoid hydration mismatch
-    extensions: [
-      StarterKit.configure({
-        bulletList: {
-          HTMLAttributes: {
-            class: 'list-disc',
-          },
-        },
-        orderedList: {
-          HTMLAttributes: {
-            class: 'list-decimal',
-          },
-        },
-      }),
-      Placeholder.configure({
-        placeholder: 'Start writing...',
-      }),
-      Underline,
-      TaskList.configure({
-        HTMLAttributes: {
-          class: 'task-list',
-        },
-      }),
-      TaskItem.configure({
-        nested: true,
-        HTMLAttributes: {
-          class: 'task-item',
-        },
-      }),
-    ],
+    extensions: createEditorExtensions(),
     content: initialHtml,
     editorProps: {
       attributes: {
@@ -176,13 +140,6 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
       updateNote(noteId, { color });
     }
   }, [color, noteId, updateNote, note]);
-
-  // Save editor mode changes immediately
-  useEffect(() => {
-    if (note && editorMode !== note.editorMode) {
-      updateNote(noteId, { editorMode });
-    }
-  }, [editorMode, noteId, updateNote, note]);
 
   // Focus title on mount if new note
   useEffect(() => {
@@ -349,28 +306,6 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           >
             <ArrowLeft size={20} className="text-gray-700 dark:text-gray-300" />
           </button>
-        </div>
-
-        {/* Mode selector */}
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          <ModeButton
-            onClick={() => setEditorMode('plain')}
-            active={editorMode === 'plain'}
-            icon={<TextT size={18} />}
-            label="Plain Text"
-          />
-          <ModeButton
-            onClick={() => setEditorMode('checklist')}
-            active={editorMode === 'checklist'}
-            icon={<CheckSquare size={18} />}
-            label="Checklist"
-          />
-          <ModeButton
-            onClick={() => setEditorMode('bullet')}
-            active={editorMode === 'bullet'}
-            icon={<ListBullets size={18} />}
-            label="Bullet List"
-          />
         </div>
 
         {/* Formatting toolbar */}
@@ -588,27 +523,3 @@ function ToolbarButton({ onClick, active, icon, label }: ToolbarButtonProps) {
   );
 }
 
-interface ModeButtonProps {
-  onClick: () => void;
-  active?: boolean;
-  icon: React.ReactNode;
-  label: string;
-}
-
-function ModeButton({ onClick, active, icon, label }: ModeButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'p-1.5 rounded transition-colors flex items-center gap-1',
-        active
-          ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-      )}
-      aria-label={label}
-      title={label}
-    >
-      {icon}
-    </button>
-  );
-}
