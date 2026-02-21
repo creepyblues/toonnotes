@@ -1,6 +1,66 @@
 {
   "commits": [
     {
+      "hash": "2f492446a",
+      "message": "fix: Sync onboarding completion to Supabase profile",
+      "date": "2026-01-30T13:42:45-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "5fdf83cbe",
+      "message": "fix: Distinguish sign_up from login in analytics tracking",
+      "date": "2026-01-30T10:18:31-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "f7c6f93f1",
+      "message": "fix: Address code review issues in notifications branch",
+      "date": "2026-01-29T17:58:45-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "2f11ab204",
+      "message": "chore: Update .gitignore for node_modules and firebase-debug.log",
+      "date": "2026-01-30T00:13:42Z",
+      "author": "Claude"
+    },
+    {
+      "hash": "9cffda84a",
+      "message": "fix: Address review issues and add notification screen tests",
+      "date": "2026-01-30T00:12:40Z",
+      "author": "Claude"
+    },
+    {
+      "hash": "5d424787c",
+      "message": "feat: Add notifications page and reorder bottom tab menu",
+      "date": "2026-01-30T00:00:33Z",
+      "author": "Claude"
+    },
+    {
+      "hash": "038483357",
+      "message": "chore: Commit pending changes across expo and webapp",
+      "date": "2026-01-28T23:50:38-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "d82fcb72e",
+      "message": "feat(boards): Add confidence threshold and backfill for MODE auto-assignment",
+      "date": "2026-01-28T23:48:29-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "8450b14ae",
+      "message": "feat(boards): Add MODE type tabs for organizing boards by cognitive mode",
+      "date": "2026-01-28T08:45:41-08:00",
+      "author": "Sungho Lee"
+    },
+    {
+      "hash": "e69ce745d",
+      "message": "fix(deploy): Handle Vercel force deploy without git repo",
+      "date": "2026-01-28T07:00:28-08:00",
+      "author": "Sungho Lee"
+    },
+    {
       "hash": "627a72cf2",
       "message": "docs: Update health-check skill for ToonNotes infrastructure",
       "date": "2026-01-27T22:38:07-08:00",
@@ -239,68 +299,8 @@
       "message": "feat(analytics): Add Firebase Analytics to marketing site (Phase 3)",
       "date": "2026-01-18T15:03:53-08:00",
       "author": "Sungho Lee"
-    },
-    {
-      "hash": "87931addb",
-      "message": "docs: Consolidate analytics documentation with implementation status",
-      "date": "2026-01-18T14:57:15-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "5cb998b6e",
-      "message": "feat(analytics): Implement comprehensive Firebase GA4 tracking",
-      "date": "2026-01-18T14:53:10-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "7d802701a",
-      "message": "fix(expo): Add Android support for subscription management links",
-      "date": "2026-01-18T14:21:22-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "9887d5427",
-      "message": "feat(api): Add daily health check cron job with Slack alerts",
-      "date": "2026-01-18T13:23:54-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "d7bb7068f",
-      "message": "Merge pull request #1 from creepyblues/claude/plan-firebase-ga4-tracking-Wz4Pa",
-      "date": "2026-01-18T12:14:54-08:00",
-      "author": "creepyblues"
-    },
-    {
-      "hash": "8524201c0",
-      "message": "docs: Add comprehensive Firebase & GA4 tracking implementation plan",
-      "date": "2026-01-18T17:41:37Z",
-      "author": "Claude"
-    },
-    {
-      "hash": "d52f98f58",
-      "message": "feat(expo): UI alignment fixes, cross-platform UUID, and dev tooling",
-      "date": "2026-01-18T09:15:18-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "92b8c6c17",
-      "message": "fix(subscription): Add mutex, expiration check, and comprehensive tests",
-      "date": "2026-01-16T15:37:54-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "95dd8be41",
-      "message": "fix(subscription): Prevent duplicate coin grants on Pro subscription",
-      "date": "2026-01-16T15:30:20-08:00",
-      "author": "Sungho Lee"
-    },
-    {
-      "hash": "42830ffeb",
-      "message": "fix(deps): Add explicit react-native-css-interop dependency for EAS builds",
-      "date": "2026-01-15T19:09:50-08:00",
-      "author": "Sungho Lee"
     }
   ],
-  "generatedAt": "2026-01-28T10:06:06.912Z",
+  "generatedAt": "2026-02-06T15:27:22.636Z",
   "totalCount": 50
 }
