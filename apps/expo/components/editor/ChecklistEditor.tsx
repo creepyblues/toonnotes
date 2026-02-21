@@ -19,6 +19,10 @@ import {
 import { Check } from 'phosphor-react-native';
 import type { ComposedStyle } from '@/types';
 import { generateUUID } from '@/utils/uuid';
+import {
+  parseChecklistFromContent as coreParseChecklist,
+  checklistToContent as coreChecklistToContent,
+} from '@toonnotes/editor-core';
 
 export interface ChecklistItem {
   id: string;
@@ -33,34 +37,17 @@ interface ChecklistEditorProps {
   isDark: boolean;
 }
 
-// Convert markdown content to checklist items
+// Convert markdown content to checklist items (adds UUIDs for React rendering)
 export function parseChecklistFromContent(content: string): ChecklistItem[] {
-  if (!content.trim()) {
-    return [{ id: generateUUID(), text: '', checked: false }];
-  }
-
-  const lines = content.split('\n');
-  return lines.map(line => {
-    const isChecked = /\[x\]/i.test(line);
-    // Strip checkbox prefix first
-    let text = line.replace(/^-?\s*\[[ xX]\]\s*/, '');
-    // If no checkbox was stripped, strip bullet prefix
-    if (text === line) {
-      text = line.replace(/^[•\-\*]\s+/, '');
-    }
-    return {
-      id: generateUUID(),
-      text,
-      checked: isChecked,
-    };
-  });
+  return coreParseChecklist(content).map((item) => ({
+    ...item,
+    id: generateUUID(),
+  }));
 }
 
-// Convert checklist items back to markdown
+// Convert checklist items back to markdown (delegates to editor-core)
 export function checklistToContent(items: ChecklistItem[]): string {
-  return items
-    .map(item => `- [${item.checked ? 'x' : ' '}] ${item.text}`)
-    .join('\n');
+  return coreChecklistToContent(items);
 }
 
 export function ChecklistEditor({

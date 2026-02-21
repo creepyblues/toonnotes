@@ -28,7 +28,8 @@ import {
 import { LabelPill, LabelPicker, LabelSuggestionToast } from '@/components/labels';
 import { Note, NoteColor, EditorMode } from '@toonnotes/types';
 import { useNoteStore, useLabelSuggestionStore } from '@/stores';
-import { cn, textToHtml, htmlToPlainText } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { textToHtml, htmlToPlainText, detectEditorMode } from '@toonnotes/editor-core';
 import { analyzeNoteContent, filterExistingLabels } from '@toonnotes/label-ai';
 
 interface NoteEditorProps {
@@ -76,7 +77,9 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   const [title, setTitle] = useState(note?.title || '');
   const [color, setColor] = useState<NoteColor>(note?.color || NoteColor.White);
-  const [editorMode, setEditorMode] = useState<EditorMode>(note?.editorMode || 'plain');
+  const [editorMode, setEditorMode] = useState<EditorMode>(
+    note?.editorMode || detectEditorMode(note?.content || '')
+  );
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
 

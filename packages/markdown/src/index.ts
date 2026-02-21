@@ -1,4 +1,5 @@
 import matter from 'gray-matter';
+import { normalizeContent } from '@toonnotes/editor-core';
 import type { Note } from '@toonnotes/types';
 import type { SerializeOptions, ParsedNote, NoteFrontmatter } from './types';
 
@@ -49,7 +50,7 @@ export function noteToMarkdown(note: Note, options?: SerializeOptions): string {
     };
   }
 
-  return matter.stringify(note.content, frontmatter);
+  return matter.stringify(normalizeContent(note.content), frontmatter);
 }
 
 /**

@@ -30,7 +30,9 @@ The AI agent ecosystem is converging on MCP (Model Context Protocol) as the stan
 ```
 Phase 1: Markdown Layer (no dependencies)
     |
-Phase 2: Public API (depends on Phase 1 for markdown responses)
+Phase 1.5: Editor Core (depends on Phase 1 for consistent serialization)
+    |
+Phase 2: Public API (depends on Phase 1.5 for canonical content format)
     |
 Phase 3: MCP Server (depends on Phase 2 for API client)
     |
@@ -113,6 +115,41 @@ export interface ParsedNote {
 - Unit test: `noteToMarkdown` -> `markdownToNote` round-trip preserves all fields
 - Unit test: Checklist content `- [x]` preserved correctly
 - Unit test: Frontmatter includes all metadata fields
+
+---
+
+## Phase 1.5: Editor Core — Shared Parsing & Serialization
+
+**Goal**: Single source of truth for content parsing/serialization across Expo and Webapp, eliminating format drift before the Public API.
+
+**Problem**: Web (TipTap) and mobile (custom TextInput) editors had duplicate parsing/serialization logic with no shared source of truth. Expo inferred `editorMode` from content on every load and never persisted it. This must be fixed before Phase 2 because the API needs a canonical content format.
+
+### Package: `@toonnotes/editor-core`
+
+| Module | Exports | Purpose |
+|--------|---------|---------|
+| `parser.ts` | `parseLineType()`, `parseContent()` | Canonical line type detection (checkbox, bullet, text) |
+| `serializer.ts` | `checklistToContent()`, `bulletToContent()`, `parseChecklistFromContent()`, `parseBulletFromContent()`, `normalizeContent()`, strip functions | Content serialization/deserialization |
+| `mode-detection.ts` | `detectEditorMode()` | Unified EditorMode detection from content |
+| `html-bridge.ts` | `textToHtml()`, `htmlToPlainText()` | TipTap HTML ↔ plain text bridge (webapp) |
+| `auto-continue.ts` | `getAutoContinuePrefix()`, `shouldRemoveEmptyLine()` | Enter-key list continuation logic |
+| `types.ts` | `LineType`, `ParsedLine`, `ChecklistItem`, `BulletItem` | Shared type definitions |
+
+### Adoption
+
+| App/Package | Change |
+|-------------|--------|
+| `apps/expo` | `useEditorContent` hook, `ChecklistEditor`, `BulletEditor`, `note/[id].tsx` all import from editor-core. EditorMode persisted to store. |
+| `apps/webapp` | `NoteEditor` imports `textToHtml`, `htmlToPlainText`, `detectEditorMode` from editor-core. Removed duplicates from `lib/utils.ts`. |
+| `packages/markdown` | `noteToMarkdown()` calls `normalizeContent()` before serializing. |
+
+### Verification
+
+```bash
+cd packages/editor-core && pnpm test    # 83 tests
+cd apps/webapp && npm run build          # Webapp builds cleanly
+cd packages/markdown && pnpm test        # Markdown round-trips
+```
 
 ---
 
@@ -517,6 +554,7 @@ Add pgvector extension to Supabase for semantic note search:
 | Phase | New Files | Modified Files |
 |-------|-----------|----------------|
 | 1 | `packages/markdown/src/index.ts`, `types.ts`, `package.json` | `packages/types/src/index.ts` (minor) |
+| 1.5 | `packages/editor-core/` (full package: parser, serializer, mode-detection, html-bridge, auto-continue, types, tests) | `apps/expo/hooks/editor/useEditorContent.ts`, `apps/expo/components/editor/ChecklistEditor.tsx`, `apps/expo/components/editor/BulletEditor.tsx`, `apps/expo/app/note/[id].tsx`, `apps/expo/types/index.ts`, `apps/webapp/lib/utils.ts`, `apps/webapp/components/editor/NoteEditor.tsx`, `packages/markdown/src/index.ts` |
 | 2 | `api/notes-api.ts`, `api/labels-api.ts`, `api/boards-api.ts`, `api/mode-api.ts`, `api/_utils/apiKeyAuth.ts`, migration SQL | `api/_utils/security.ts`, `vercel.json` |
 | 3 | `packages/mcp-server/` (full package) | None |
 | 4 | `openclaw-toonnotes-skill/` (separate repo) | None |
@@ -529,8 +567,9 @@ Add pgvector extension to Supabase for semantic note search:
 - **Sync service**: `apps/expo/services/syncService.ts` (cloud note CRUD patterns, `mapCloudToLocal`/`mapLocalToCloud`)
 - **Share system**: `apps/expo/supabase/migrations/20260103_create_shared_notes.sql` (token generation pattern)
 - **Type definitions**: `packages/types/src/index.ts` (Note, Label, Board interfaces)
-- **Checklist parsing**: `apps/expo/components/editor/ChecklistEditor.tsx` (`parseChecklistFromContent`)
-- **Mode detection**: `apps/expo/services/modeDetectionService.ts` (mode inference logic)
+- **Editor core**: `packages/editor-core/` (canonical parsing, serialization, mode detection, HTML bridge)
+- **Mode detection**: `packages/editor-core/src/mode-detection.ts` (`detectEditorMode`)
+- **Checklist parsing**: `packages/editor-core/src/serializer.ts` (`parseChecklistFromContent`)
 
 ---
 

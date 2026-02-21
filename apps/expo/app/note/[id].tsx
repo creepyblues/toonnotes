@@ -118,7 +118,7 @@ import {
   type ChecklistItem,
 } from '@/components/editor';
 import { useTheme } from '@/src/theme';
-import { NoteColor, NoteDesign } from '@/types';
+import { NoteColor, NoteDesign, EditorMode } from '@/types';
 import {
   analyzeNoteContent,
   LabelAnalysisResponse,
@@ -139,6 +139,7 @@ import { DesignCard } from '@/components/designs/DesignCard';
 import { useFontsLoaded } from '@/app/_layout';
 import { SYSTEM_FONT_FALLBACKS, PresetFontStyle } from '@/constants/fonts';
 import { generateUUID } from '@/utils/uuid';
+import { detectEditorMode } from '@toonnotes/editor-core';
 
 // Note color options for the color picker
 const NOTE_COLORS = [
@@ -286,9 +287,8 @@ export default function NoteEditorScreen() {
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [images, setImages] = useState<string[]>(note?.images || []);
 
-  // Editor mode state (normal, checklist, bullet)
-  type EditorMode = 'normal' | 'checklist' | 'bullet';
-  const [editorMode, setEditorMode] = useState<EditorMode>('normal');
+  // Editor mode state — uses canonical EditorMode from @toonnotes/types
+  const [editorMode, setEditorMode] = useState<EditorMode>('plain');
 
   // Checklist items state (only used in checklist mode)
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
@@ -301,29 +301,29 @@ export default function NoteEditorScreen() {
     // Only run once per note load
     if (hasInitializedRef.current || !note?.content) return;
 
-    const lines = note.content.split('\n');
-    const hasCheckboxes = lines.some(l => l.match(/^-?\s*\[[ xX]\]/));
-    const hasBullets = lines.some(l => l.match(/^[•\-\*]\s/));
+    const detected = detectEditorMode(note.content);
 
-    if (hasCheckboxes) {
+    if (detected === 'checklist') {
       setEditorMode('checklist');
       setChecklistItems(parseChecklistFromContent(note.content));
-      // Ensure content state is synced with note content
       if (content !== note.content) {
         setContent(note.content);
       }
       hasInitializedRef.current = true;
-    } else if (hasBullets) {
+    } else if (detected === 'bullet') {
       setEditorMode('bullet');
-      // Ensure content state is synced with note content
       if (content !== note.content) {
         setContent(note.content);
       }
       hasInitializedRef.current = true;
     } else if (note.content && content !== note.content) {
-      // Sync content state if it differs (handles store hydration)
       setContent(note.content);
       hasInitializedRef.current = true;
+    }
+
+    // Persist detected editorMode if it differs from stored value
+    if (note.id && detected !== note.editorMode) {
+      updateNote(note.id, { editorMode: detected });
     }
   }, [note?.content]); // Re-run when note.content changes (e.g., after hydration)
 
@@ -926,7 +926,7 @@ export default function NoteEditorScreen() {
       const serializedContent = checklistToContent(checklistItems);
       const strippedContent = stripCheckboxPrefixes(serializedContent);
       setContent(strippedContent);
-      setEditorMode('normal');
+      setEditorMode('plain');
     } else {
       // ENTERING checklist mode - strip bullet prefixes first
       const cleanContent = stripBulletPrefixes(content);
@@ -953,7 +953,7 @@ export default function NoteEditorScreen() {
       // EXITING bullet mode - strip bullet prefixes to return to plain text
       const strippedContent = stripBulletPrefixes(content);
       setContent(strippedContent);
-      setEditorMode('normal');
+      setEditorMode('plain');
     } else {
       // ENTERING bullet mode - strip checkbox prefixes first
       const cleanContent = stripCheckboxPrefixes(content);
@@ -1244,7 +1244,7 @@ export default function NoteEditorScreen() {
           )}
 
           {/* Content - Mode-based rendering */}
-          {editorMode === 'normal' && (
+          {editorMode === 'plain' && (
             <TextInput
               ref={contentInputRef}
               style={[
