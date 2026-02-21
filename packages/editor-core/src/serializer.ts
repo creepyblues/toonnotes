@@ -106,7 +106,7 @@ export function stripAllFormatting(content: string): string {
  *   "[ ] text"     → "- [ ] text"
  */
 export function normalizeContent(content: string): string {
-  if (!content) return content;
+  if (!content) return '';
 
   return content
     .split('\n')

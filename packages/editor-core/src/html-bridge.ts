@@ -36,7 +36,10 @@ function decodeHtmlEntities(text: string): string {
 export function textToHtml(content: string): string {
   if (!content) return '';
 
-  // If already HTML (contains tags), return as-is
+  // If already HTML (contains tags), return as-is.
+  // TipTap's ProseMirror schema handles sanitization (drops unknown nodes/attributes).
+  // In normal flow, stored content is plain text (saved via htmlToPlainText),
+  // so this branch only fires when re-loading TipTap's own HTML output.
   if (/<[a-z][\s\S]*>/i.test(content)) {
     return content;
   }
