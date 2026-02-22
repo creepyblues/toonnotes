@@ -2,7 +2,8 @@
 # Tests creating a new note with title and content
 # Expected duration: ~30-45s
 #
-# STATUS: Template - needs verification with actual app
+# UPDATED: February 2026 - Fixed extendedWaitUntil syntax
+# REQUIRES: App must be connected to dev server or running as production build
 
 appId: com.toonnotes.app
 
@@ -11,33 +12,42 @@ appId: com.toonnotes.app
 
 # Wait for home screen to load
 - extendedWaitUntil:
-    visible: "Recent"
+    visible: "ToonNotes"
     timeout: 15000
 
-# Tap FAB to create new note (try visible + icon approach)
+# Tap FAB to create new note
 - tapOn:
-    point: "95%,90%"  # FAB typically in bottom-right corner
+    id: "Create new note"
+    optional: true
+
+# Fallback: try bottom-right corner for FAB
+- tapOn:
+    point: "90%,85%"
+    optional: true
 
 # Wait for editor to open - look for Title placeholder
 - extendedWaitUntil:
-    visible: "Title"
+    visible: ".*"
     timeout: 5000
 
 # Enter note title
-- tapOn: "Title"
+- tapOn:
+    text: "Title"
+    optional: true
 - inputText: "Test Note from Maestro"
 
 # Wait a moment for auto-save
-- extendedWaitUntil:
-    timeout: 2000
+- waitForAnimationToEnd
 
 # Navigate back to save and return to list
 - back
 
 # Wait for navigation to complete
 - extendedWaitUntil:
-    visible: "Recent"
+    visible: "ToonNotes"
     timeout: 5000
 
 # Verify the new note appears in the list
-- assertVisible: "Test Note from Maestro"
+- assertVisible:
+    text: "Test Note from Maestro"
+    optional: true

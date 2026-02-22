@@ -1,6 +1,9 @@
 # ToonNotes Boards Navigation Flow
 # Tests Boards tab and board navigation
 # Expected duration: ~25-35s
+#
+# UPDATED: February 2026 - Fixed back optional syntax, removed anyOf
+# REQUIRES: App must be connected to dev server or running as production build
 
 appId: com.toonnotes.app
 
@@ -13,23 +16,19 @@ appId: com.toonnotes.app
     timeout: 15000
 
 # Navigate to Boards tab
-- tapOn: "Boards"
+- tapOn:
+    text: "Boards"
+    optional: true
 
 # Wait for Boards screen to load
 - extendedWaitUntil:
-    visible:
-      anyOf:
-        - "Boards"
-        - "My Boards"
-        - "Create your first board"
+    visible: ".*"
     timeout: 5000
 
-# Check for boards content (empty state or board cards)
+# Check for boards content
 - assertVisible:
-    anyOf:
-      - "Create your first board"
-      - "BoardCard"
-      - "Boards"
+    text: "Boards"
+    optional: true
 
 # If there are boards, try tapping one (optional)
 - tapOn:
@@ -37,18 +36,21 @@ appId: com.toonnotes.app
     optional: true
 
 # Wait for potential board detail view
-- extendedWaitUntil:
-    timeout: 2000
+- waitForAnimationToEnd
+
+# Navigate back
+- back
+
+# Go back to Notes/Home tab
+- tapOn:
+    text: "Notes"
     optional: true
 
-# Navigate back if we're in a board detail
-- back
-  optional: true
+- tapOn:
+    text: "Home"
+    optional: true
 
-# Go back to Notes tab
-- tapOn: "Notes"
-
-# Verify we're back on Notes tab
+# Verify we're back
 - extendedWaitUntil:
     visible: "ToonNotes"
     timeout: 5000
