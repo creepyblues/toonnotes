@@ -39,6 +39,7 @@
     "@toonnotes/constants": "workspace:*",
     "@toonnotes/design-engine": "workspace:*",
     "@toonnotes/editor-core": "workspace:*",
+    "@toonnotes/editor-web": "workspace:*",
     "@toonnotes/label-ai": "workspace:*",
     "@toonnotes/supabase": "workspace:*",
     "@toonnotes/types": "workspace:*",

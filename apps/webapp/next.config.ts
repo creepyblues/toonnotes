@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@toonnotes/editor-web'],
   // Allow images from Supabase storage
   images: {
     remotePatterns: [

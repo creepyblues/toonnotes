@@ -36,20 +36,23 @@ Stored in `note.content` as a string. YAML frontmatter via `@toonnotes/markdown`
 | **Auto-save** | 500ms debounce |
 | **State** | Zustand + Supabase real-time sync |
 
-### Mobile Editor (apps/expo)
+### Mobile Editor (apps/expo) — WebView TipTap (Path A Implemented)
 
 | Aspect | Detail |
 |--------|--------|
-| **Engine** | Custom React Native `TextInput` (no 3rd-party editor) |
-| **Screen** | `app/note/[id].tsx` (~2,100 lines) |
-| **Formatting** | None (no bold/italic/underline) |
-| **Lists** | Checkboxes, Bullets (dedicated components: `ChecklistEditor`, `BulletEditor`) |
+| **Engine** | TipTap v3 via `react-native-webview` (same engine as webapp) |
+| **Screen** | `app/note/[id].tsx` |
+| **Components** | `WebViewEditor.tsx` (WebView wrapper), `FormattingToolbar.tsx` (native toolbar) |
+| **Formatting** | Bold, Italic, Underline, Strikethrough (via shared TipTap extensions) |
+| **Lists** | Checkboxes, Bullets (TipTap TaskList/BulletList, same as web) |
+| **Bridge** | `@toonnotes/editor-web` bridge protocol (RN ↔ WebView message passing) |
 | **Headings** | None |
 | **Links** | None |
-| **Images** | Separate `note.images[]` URI array, not inline |
-| **Auto-continue** | Enter key adds new list item, backspace on empty removes |
-| **Hashtag labels** | Inline `#tag` detection with label picker panel |
+| **Images** | Separate `note.images[]` URI array, not inline (native ImagePicker) |
+| **Hashtag labels** | Cursor offset from bridge enables `#tag` detection |
 | **State** | Zustand + AsyncStorage + optional Supabase sync |
+
+> **Legacy**: The previous `ChecklistEditor`, `BulletEditor`, `CheckboxEditor`, `EditorContent`, and `CheckboxOverlay` components are deprecated but still exported for backward compatibility.
 
 ### Shared Layer (`@toonnotes/editor-core`)
 
@@ -64,6 +67,18 @@ Stored in `note.content` as a string. YAML frontmatter via `@toonnotes/markdown`
 - `stripCheckboxPrefixes()` / `stripBulletPrefixes()` / `stripAllFormatting()` — format stripping
 - Cross-platform parity test: `htmlToPlainText(textToHtml(x)) === normalizeContent(x)`
 
+### Shared TipTap Layer (`@toonnotes/editor-web`)
+
+New package providing shared TipTap configuration and WebView bundle:
+
+- `createEditorExtensions()` — single source of truth for TipTap extensions (StarterKit, Placeholder, Underline, TaskList, TaskItem)
+- `config/styles.css` — shared ProseMirror CSS with CSS custom properties for theming
+- Bridge protocol types (`RNToWebViewMessage`, `WebViewToRNMessage`) for WebView ↔ RN communication
+- `bridge/handler.ts` — WebView-side bridge (runs inside WebView, dispatches editor events to RN)
+- `hooks/useEditorBridge.ts` — React Native hook (message queuing, state tracking, clean API)
+- `webview/` — Vite-built self-contained HTML bundle (~357KB, all JS/CSS inlined via `vite-plugin-singlefile`)
+- `dist/editor-html.js` — exports the HTML bundle as a string constant for `WebView source={{ html }}`
+
 ### Export Layer (`@toonnotes/markdown`)
 
 - `noteToMarkdown()` — serialize Note to markdown string with YAML frontmatter
@@ -72,12 +87,12 @@ Stored in `note.content` as a string. YAML frontmatter via `@toonnotes/markdown`
 
 ---
 
-## Feature Parity Gap
+## Feature Parity (After Path A Implementation)
 
-| Feature | Web | Mobile | Gap |
-|---------|-----|--------|-----|
-| Bold/Italic/Underline | Yes | **No** | Mobile missing |
-| Strikethrough | Yes | **No** | Mobile missing |
+| Feature | Web | Mobile | Status |
+|---------|-----|--------|--------|
+| Bold/Italic/Underline | Yes | **Yes** | **Parity** (shared TipTap) |
+| Strikethrough | Yes | **Yes** | **Parity** (shared TipTap) |
 | Headings | No | No | Both missing |
 | Links | No | No | Both missing |
 | Inline images | No | No | Both missing (mobile has separate image array) |
@@ -85,10 +100,10 @@ Stored in `note.content` as a string. YAML frontmatter via `@toonnotes/markdown`
 | Tables | No | No | Both missing |
 | Checkboxes | Yes | Yes | Parity |
 | Bullets | Yes | Yes | Parity |
-| Auto-continue lists | Utility exists, not wired | Yes | Web missing |
+| Auto-continue lists | Utility exists, not wired | TipTap handles | TipTap default behavior |
 | Hashtag labels | No | Yes | Web missing |
 
-**Core issue**: The web editor supports inline formatting (bold/italic) that has no representation in the shared content format and cannot survive a round-trip to mobile.
+**Resolved**: Both platforms now use the same TipTap v3 engine with shared extensions. Bold/italic formatting survives cross-platform round-trips.
 
 ---
 
@@ -131,11 +146,14 @@ The shared format (`editor-core`) is the **lowest common denominator** — it on
 
 ### Three Strategic Paths Forward
 
-#### Path A: Obsidian-style — Single WebView Editor (Maximum Consistency)
+#### Path A: Obsidian-style — Single WebView Editor (Maximum Consistency) **← IMPLEMENTED**
 
-Use TipTap (or CodeMirror 6) inside a React Native WebView on mobile.
+TipTap v3 runs inside a `react-native-webview` on mobile, using the same `createEditorExtensions()` as the webapp.
 
 - Same editor code, same extensions, same rendering on both platforms
+- `@toonnotes/editor-web` package contains shared config, bridge protocol, WebView HTML bundle, and React Native hook
+- Native `FormattingToolbar` provides format buttons above the keyboard
+- Title input, image picker, labels, and color/design picker remain native
 - **Pros**: True feature parity, single codebase for editor logic
 - **Cons**: WebView performance on mobile, keyboard handling complexity, less "native" feel
 
@@ -159,4 +177,4 @@ Keep current architecture but add missing features to both sides.
 
 ---
 
-*This is a research/analysis document — no code changes proposed. The strategic direction depends on product priorities (feature richness vs. simplicity vs. development cost).*
+*Path A has been implemented. The legacy native editors (ChecklistEditor, BulletEditor, etc.) are retained for backward compatibility but deprecated.*
