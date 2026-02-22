@@ -12,6 +12,7 @@
  * Each mode has a dedicated AI Agent with specialized skills
  */
 export type Mode = 'manage' | 'develop' | 'organize' | 'experience';
+export type EditorMode = 'plain' | 'checklist' | 'bullet';
 
 /**
  * Sub-stages for ORGANIZE mode
@@ -442,6 +443,7 @@ export interface Note {
   backgroundOverride?: BackgroundOverride;  // Per-note background customization
   typographyPosterUri?: string;  // Typographic Poster generated text art image
   characterMascotUri?: string;   // Character Mascot generated character image
+  editorMode?: EditorMode;       // Editor mode: plain, checklist, or bullet
   images?: string[];             // Array of image URIs attached to note
   deadline?: string;             // ISO date string "2024-01-26" (MODE Framework)
   isPinned: boolean;

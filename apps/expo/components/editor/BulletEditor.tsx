@@ -18,6 +18,10 @@ import {
 } from 'react-native';
 import type { ComposedStyle } from '@/types';
 import { generateUUID } from '@/utils/uuid';
+import {
+  parseBulletFromContent as coreParseBullet,
+  bulletToContent as coreBulletToContent,
+} from '@toonnotes/editor-core';
 
 export interface BulletItem {
   id: string;
@@ -31,28 +35,22 @@ interface BulletEditorProps {
   isDark: boolean;
 }
 
-// Parse line to extract bullet text
+// Parse line to extract bullet text (used internally for content sync)
 const parseBulletText = (line: string): string => {
-  // Remove bullet prefix if present
   return line.replace(/^[•\-\*]\s*/, '');
 };
 
-// Convert markdown content to bullet items
+// Convert markdown content to bullet items (adds UUIDs for React rendering)
 export function parseBulletFromContent(content: string): BulletItem[] {
-  if (!content.trim()) {
-    return [{ id: generateUUID(), text: '' }];
-  }
-
-  const lines = content.split('\n');
-  return lines.map(line => ({
+  return coreParseBullet(content).map((item) => ({
+    ...item,
     id: generateUUID(),
-    text: parseBulletText(line),
   }));
 }
 
-// Convert bullet items back to markdown
+// Convert bullet items back to markdown (delegates to editor-core)
 export function bulletToContent(items: BulletItem[]): string {
-  return items.map(item => `• ${item.text}`).join('\n');
+  return coreBulletToContent(items);
 }
 
 export function BulletEditor({

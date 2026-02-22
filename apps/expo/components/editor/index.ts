@@ -10,3 +10,8 @@ export {
   checklistToContent,
   type ChecklistItem,
 } from './ChecklistEditor';
+
+// WebView-based TipTap editor (shared engine with webapp)
+export { WebViewEditor } from './WebViewEditor';
+export type { WebViewEditorProps } from './WebViewEditor';
+export { FormattingToolbar } from './FormattingToolbar';
