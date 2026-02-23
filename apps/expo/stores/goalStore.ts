@@ -15,12 +15,30 @@ import {
   ActionStep,
   ActionStepStatus,
   GoalStatus,
-  NudgeEngagement,
 } from '@/types';
+import { trackEvent } from '@/services/firebaseAnalytics';
 
 // ============================================
 // Types
 // ============================================
+
+interface GoalMetrics {
+  totalGoalsCreated: number;
+  totalGoalsAchieved: number;
+  totalGoalsAbandoned: number;
+  totalGoalsPaused: number;
+  totalGoalsRegenerated: number;
+  totalStepsCompleted: number;
+  totalStepsPending: number;
+  averageConfidence: number;
+  engagementDistribution: { active: number; passive: number; none: number };
+}
+
+interface AccuracyReport {
+  completionRate: number;
+  stepCompletionRate: number;
+  averageConfidence: number;
+}
 
 interface GoalStoreState {
   /** All goals keyed by noteId */
@@ -31,6 +49,9 @@ interface GoalStoreState {
 
   /** Whether AI goal suggestions are enabled */
   goalSuggestionsEnabled: boolean;
+
+  /** Aggregate accuracy metrics */
+  goalMetrics: GoalMetrics;
 }
 
 interface GoalStoreActions {
@@ -63,6 +84,9 @@ interface GoalStoreActions {
   resetNudgeCadence: (noteId: string) => void;
   updateNextNudgeAt: (noteId: string, timestamp: number) => void;
 
+  // Confidence tracking
+  updateConfidence: (noteId: string, delta: number, reason: string) => void;
+
   // Settings
   setGoalSuggestionsEnabled: (enabled: boolean) => void;
 
@@ -72,6 +96,7 @@ interface GoalStoreActions {
   getCompletedStepCount: (noteId: string) => number;
   getTotalStepCount: (noteId: string) => number;
   getCurrentStep: (noteId: string) => ActionStep | undefined;
+  getAccuracyReport: () => AccuracyReport;
 }
 
 // ============================================
@@ -92,17 +117,46 @@ export const useGoalStore = create<GoalStoreState & GoalStoreActions>()(
       goals: {},
       noGoalNotes: {},
       goalSuggestionsEnabled: true,
+      goalMetrics: {
+        totalGoalsCreated: 0,
+        totalGoalsAchieved: 0,
+        totalGoalsAbandoned: 0,
+        totalGoalsPaused: 0,
+        totalGoalsRegenerated: 0,
+        totalStepsCompleted: 0,
+        totalStepsPending: 0,
+        averageConfidence: 50,
+        engagementDistribution: { active: 0, passive: 0, none: 0 },
+      },
 
       // CRUD
       setGoal: (goal) => {
-        set((state) => ({
-          goals: { ...state.goals, [goal.noteId]: goal },
-          // Clear no-goal flag if it existed
-          noGoalNotes: (() => {
-            const { [goal.noteId]: _, ...rest } = state.noGoalNotes;
-            return rest;
-          })(),
-        }));
+        set((state) => {
+          const isNew = !state.goals[goal.noteId];
+          const isRegeneration = !isNew && state.goals[goal.noteId].revision < goal.revision;
+          const metrics = { ...state.goalMetrics };
+
+          if (isNew) {
+            metrics.totalGoalsCreated++;
+            metrics.totalStepsPending += goal.steps.filter((s) => s.status !== 'completed').length;
+            if (goal.nudgeEngagement === 'active') metrics.engagementDistribution.active++;
+            else if (goal.nudgeEngagement === 'passive') metrics.engagementDistribution.passive++;
+            else metrics.engagementDistribution.none++;
+          }
+          if (isRegeneration) {
+            metrics.totalGoalsRegenerated++;
+          }
+
+          return {
+            goals: { ...state.goals, [goal.noteId]: goal },
+            goalMetrics: metrics,
+            // Clear no-goal flag if it existed
+            noGoalNotes: (() => {
+              const { [goal.noteId]: _, ...rest } = state.noGoalNotes;
+              return rest;
+            })(),
+          };
+        });
       },
 
       removeGoal: (noteId) => {
@@ -184,6 +238,16 @@ export const useGoalStore = create<GoalStoreState & GoalStoreActions>()(
 
       completeStep: (noteId, stepId) => {
         get().updateStepStatus(noteId, stepId, 'completed');
+        get().updateConfidence(noteId, 10, 'step_completed');
+
+        // Update metrics
+        set((state) => ({
+          goalMetrics: {
+            ...state.goalMetrics,
+            totalStepsCompleted: state.goalMetrics.totalStepsCompleted + 1,
+            totalStepsPending: Math.max(0, state.goalMetrics.totalStepsPending - 1),
+          },
+        }));
 
         // Check if all steps are complete
         const goal = get().goals[noteId];
@@ -221,10 +285,31 @@ export const useGoalStore = create<GoalStoreState & GoalStoreActions>()(
         });
       },
 
-      pauseGoal: (noteId) => get().updateGoalStatus(noteId, 'paused'),
-      resumeGoal: (noteId) => get().updateGoalStatus(noteId, 'active'),
-      achieveGoal: (noteId) => get().updateGoalStatus(noteId, 'achieved'),
-      abandonGoal: (noteId) => get().updateGoalStatus(noteId, 'abandoned'),
+      pauseGoal: (noteId) => {
+        get().updateGoalStatus(noteId, 'paused');
+        get().updateConfidence(noteId, -10, 'goal_paused');
+        set((state) => ({
+          goalMetrics: { ...state.goalMetrics, totalGoalsPaused: state.goalMetrics.totalGoalsPaused + 1 },
+        }));
+      },
+      resumeGoal: (noteId) => {
+        get().updateGoalStatus(noteId, 'active');
+        get().updateConfidence(noteId, 5, 'goal_resumed');
+      },
+      achieveGoal: (noteId) => {
+        get().updateGoalStatus(noteId, 'achieved');
+        get().updateConfidence(noteId, 20, 'goal_achieved');
+        set((state) => ({
+          goalMetrics: { ...state.goalMetrics, totalGoalsAchieved: state.goalMetrics.totalGoalsAchieved + 1 },
+        }));
+      },
+      abandonGoal: (noteId) => {
+        get().updateGoalStatus(noteId, 'abandoned');
+        get().updateConfidence(noteId, -30, 'goal_abandoned');
+        set((state) => ({
+          goalMetrics: { ...state.goalMetrics, totalGoalsAbandoned: state.goalMetrics.totalGoalsAbandoned + 1 },
+        }));
+      },
 
       // Nudge tracking
       recordNudgeSent: (noteId) => {
@@ -269,6 +354,12 @@ export const useGoalStore = create<GoalStoreState & GoalStoreActions>()(
             },
           };
         });
+
+        // Confidence penalty for 3+ consecutive dismissals
+        const goal = get().goals[noteId];
+        if (goal && goal.consecutiveDismissals >= 3) {
+          get().updateConfidence(noteId, -5, 'consecutive_dismissals');
+        }
       },
 
       resetNudgeCadence: (noteId) => {
@@ -300,6 +391,41 @@ export const useGoalStore = create<GoalStoreState & GoalStoreActions>()(
               ...state.goals,
               [noteId]: { ...goal, nextNudgeAt: timestamp },
             },
+          };
+        });
+      },
+
+      // Confidence tracking
+      updateConfidence: (noteId, delta, reason) => {
+        set((state) => {
+          const goal = state.goals[noteId];
+          if (!goal) return state;
+
+          const oldScore = goal.confidenceScore ?? 50;
+          const newScore = Math.max(0, Math.min(100, oldScore + delta));
+
+          trackEvent('goal_confidence_changed', {
+            note_id: noteId,
+            old_score: oldScore,
+            new_score: newScore,
+            reason,
+          });
+
+          // Recompute average confidence across active goals
+          const allGoals = Object.values(state.goals);
+          const activeGoals = allGoals.filter((g) => g.status === 'active');
+          const totalConfidence = activeGoals.reduce(
+            (sum, g) => sum + (g.noteId === noteId ? newScore : (g.confidenceScore ?? 50)),
+            0
+          );
+          const avgConfidence = activeGoals.length > 0 ? Math.round(totalConfidence / activeGoals.length) : 50;
+
+          return {
+            goals: {
+              ...state.goals,
+              [noteId]: { ...goal, confidenceScore: newScore, updatedAt: Date.now() },
+            },
+            goalMetrics: { ...state.goalMetrics, averageConfidence: avgConfidence },
           };
         });
       },
@@ -340,6 +466,25 @@ export const useGoalStore = create<GoalStoreState & GoalStoreActions>()(
         return goal.steps.find(
           (s) => s.status === 'pending' || s.status === 'in_progress'
         );
+      },
+
+      getAccuracyReport: () => {
+        const { goalMetrics } = get();
+        const achieved = goalMetrics.totalGoalsAchieved;
+        const abandoned = goalMetrics.totalGoalsAbandoned;
+        const completionRate = (achieved + abandoned) > 0 ? achieved / (achieved + abandoned) : 0;
+
+        const stepsCompleted = goalMetrics.totalStepsCompleted;
+        const stepsPending = goalMetrics.totalStepsPending;
+        const stepCompletionRate = (stepsCompleted + stepsPending) > 0
+          ? stepsCompleted / (stepsCompleted + stepsPending)
+          : 0;
+
+        return {
+          completionRate,
+          stepCompletionRate,
+          averageConfidence: goalMetrics.averageConfidence,
+        };
       },
     }),
     {

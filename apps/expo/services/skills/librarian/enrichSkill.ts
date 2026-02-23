@@ -39,7 +39,7 @@ const enrichSkill = new SkillBuilder({
   name: 'Auto-Enrich',
   description: 'Fetches additional information for URLs in notes',
   agentId: 'librarian',
-  cooldownMs: 0, // No cooldown - enrich immediately
+  cooldownMs: 4 * 60 * 60 * 1000, // 4 hours
 })
   // Trigger on note creation
   .onEvent('note_created')

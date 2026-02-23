@@ -136,7 +136,7 @@ const categorizeSkill = new SkillBuilder({
   name: 'Auto-Categorize',
   description: 'Suggests categories based on content patterns',
   agentId: 'librarian',
-  cooldownMs: 0, // No cooldown
+  cooldownMs: 12 * 60 * 60 * 1000, // 12 hours
 })
   // Trigger on note creation or update
   .onEvent('note_created')

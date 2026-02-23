@@ -59,7 +59,7 @@ const celebrateSkill = new SkillBuilder({
   name: 'Completion Celebration',
   description: 'Celebrates task completions with positive reinforcement',
   agentId: 'manager',
-  cooldownMs: 0, // No cooldown - celebrate every completion!
+  cooldownMs: 4 * 60 * 60 * 1000, // 4 hours
 })
   // Trigger on task completion
   .onEvent('task_completed')

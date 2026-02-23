@@ -1,22 +1,44 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  SectionList,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, X } from 'phosphor-react-native';
+import { Bell, CaretRight } from 'phosphor-react-native';
+import { useRouter } from 'expo-router';
 
 import { useNudgeStore } from '@/stores/nudgeStore';
+import { useNoteStore } from '@/stores/noteStore';
 import { useTheme } from '@/src/theme';
 import type { Nudge } from '@/types';
 
-// Toast state
-interface ToastState {
-  visible: boolean;
-  nudge: Nudge | null;
+function groupNotificationsByDate(notifications: Nudge[]): { title: string; data: Nudge[] }[] {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
+  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
+
+  const today: Nudge[] = [];
+  const yesterday: Nudge[] = [];
+  const thisWeek: Nudge[] = [];
+  const older: Nudge[] = [];
+
+  for (const n of notifications) {
+    if (n.createdAt >= todayStart) today.push(n);
+    else if (n.createdAt >= yesterdayStart) yesterday.push(n);
+    else if (n.createdAt >= weekStart) thisWeek.push(n);
+    else older.push(n);
+  }
+
+  const sections: { title: string; data: Nudge[] }[] = [];
+  if (today.length > 0) sections.push({ title: 'Today', data: today });
+  if (yesterday.length > 0) sections.push({ title: 'Yesterday', data: yesterday });
+  if (thisWeek.length > 0) sections.push({ title: 'This Week', data: thisWeek });
+  if (older.length > 0) sections.push({ title: 'Older', data: older });
+  return sections;
 }
 
 function NotificationItem({
@@ -28,6 +50,8 @@ function NotificationItem({
   colors: ReturnType<typeof useTheme>['colors'];
   onPress: (nudge: Nudge) => void;
 }) {
+  const getNoteById = useNoteStore((s) => s.getNoteById);
+  const noteTitle = nudge.noteId ? getNoteById(nudge.noteId)?.title : undefined;
   const isRead = !!nudge.shownAt;
   const timeAgo = getTimeAgo(nudge.createdAt);
 
@@ -82,49 +106,19 @@ function NotificationItem({
         <Text style={[styles.time, { color: colors.textTertiary }]}>
           {timeAgo}
         </Text>
+        {noteTitle ? (
+          <Text style={[styles.noteSource, { color: colors.textTertiary }]} numberOfLines={1}>
+            From: {noteTitle}
+          </Text>
+        ) : null}
       </View>
-      {!isRead && (
-        <View style={[styles.unreadDot, { backgroundColor: colors.accent }]} />
-      )}
-    </TouchableOpacity>
-  );
-}
-
-function Toast({
-  toast,
-  colors,
-  onDismiss,
-}: {
-  toast: ToastState;
-  colors: ReturnType<typeof useTheme>['colors'];
-  onDismiss: () => void;
-}) {
-  if (!toast.visible || !toast.nudge) return null;
-
-  return (
-    <View style={[styles.toastContainer, { backgroundColor: colors.backgroundSecondary }]}>
-      <View style={[styles.toastAccent, { backgroundColor: colors.accent }]} />
-      <View style={styles.toastContent}>
-        <Text style={[styles.toastTitle, { color: colors.textPrimary }]}>
-          {toast.nudge.title}
-        </Text>
-        <Text style={[styles.toastBody, { color: colors.textSecondary }]}>
-          {toast.nudge.body}
-        </Text>
-        {toast.nudge.options && toast.nudge.options.length > 0 && (
-          <View style={styles.toastOptions}>
-            {toast.nudge.options.map((opt, i) => (
-              <Text key={i} style={[styles.toastOption, { color: colors.accent }]}>
-                • {opt.label}
-              </Text>
-            ))}
-          </View>
+      <View style={styles.rightSection}>
+        {!isRead && (
+          <View style={[styles.unreadDot, { backgroundColor: colors.accent }]} />
         )}
+        <CaretRight size={16} color={colors.textTertiary} weight="regular" />
       </View>
-      <TouchableOpacity onPress={onDismiss} style={styles.toastDismiss}>
-        <X size={18} color={colors.textSecondary} />
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -141,18 +135,10 @@ export function getTimeAgo(timestamp: number): string {
 
 export default function NotificationsScreen() {
   const { colors } = useTheme();
-  const { queue, history, markAsShown } = useNudgeStore();
-  const [toast, setToast] = useState<ToastState>({ visible: false, nudge: null });
-  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const queueRef = useRef(queue);
+  const router = useRouter();
+  const { queue, history, markAsShown, dismissNudge } = useNudgeStore();
+  const queueRef = React.useRef(queue);
   queueRef.current = queue;
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    };
-  }, []);
 
   // Combine queue and history, sorted by creation time (newest first)
   const allNotifications = useMemo(() => {
@@ -161,33 +147,51 @@ export default function NotificationsScreen() {
     return combined;
   }, [queue, history]);
 
+  const sections = useMemo(
+    () => groupNotificationsByDate(allNotifications),
+    [allNotifications]
+  );
+
   const handleNotificationPress = useCallback(
     (nudge: Nudge) => {
-      // Only call markAsShown for queue items (store only updates queue)
+      // Mark as shown for queue items
       if (!nudge.shownAt && queueRef.current.some((n) => n.id === nudge.id)) {
         markAsShown(nudge.id);
       }
-      setToast({ visible: true, nudge });
-
-      // Clear any existing timeout before setting a new one
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => {
-        setToast((prev) => (prev.nudge?.id === nudge.id ? { visible: false, nudge: null } : prev));
-      }, 5000);
+      // Navigate to source note if available
+      if (nudge.noteId) {
+        router.push(`/note/${nudge.noteId}`);
+      }
     },
-    [markAsShown]
+    [markAsShown, router]
   );
 
-  const dismissToast = useCallback(() => {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    setToast({ visible: false, nudge: null });
-  }, []);
+  const handleClearAll = useCallback(() => {
+    // Dismiss all queue items (moves them to history with 'dismissed' outcome)
+    const currentQueue = useNudgeStore.getState().queue;
+    for (const nudge of currentQueue) {
+      dismissNudge(nudge.id);
+    }
+    // Clear the history
+    useNudgeStore.setState({ history: [] });
+  }, [dismissNudge]);
 
   const renderItem = useCallback(
     ({ item }: { item: Nudge }) => (
       <NotificationItem nudge={item} colors={colors} onPress={handleNotificationPress} />
     ),
     [colors, handleNotificationPress]
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: { title: string } }) => (
+      <View style={[styles.sectionHeader, { backgroundColor: colors.backgroundPrimary }]}>
+        <Text style={[styles.sectionHeaderText, { color: colors.textSecondary }]}>
+          {section.title}
+        </Text>
+      </View>
+    ),
+    [colors]
   );
 
   const keyExtractor = useCallback((item: Nudge) => item.id, []);
@@ -198,6 +202,13 @@ export default function NotificationsScreen() {
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
           Notifications
         </Text>
+        {allNotifications.length > 0 && (
+          <TouchableOpacity onPress={handleClearAll} activeOpacity={0.7}>
+            <Text style={[styles.clearButton, { color: colors.accent }]}>
+              Clear
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {allNotifications.length === 0 ? (
@@ -211,16 +222,16 @@ export default function NotificationsScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={allNotifications}
+        <SectionList
+          sections={sections}
           renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
         />
       )}
-
-      <Toast toast={toast} colors={colors} onDismiss={dismissToast} />
     </SafeAreaView>
   );
 }
@@ -230,6 +241,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 0.5,
@@ -238,8 +252,23 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
   },
+  clearButton: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
   listContent: {
     paddingBottom: 20,
+  },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   notificationItem: {
     flexDirection: 'row',
@@ -271,11 +300,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 4,
   },
+  noteSource: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+    gap: 6,
+  },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginLeft: 8,
   },
   emptyContainer: {
     flex: 1,
@@ -291,48 +329,5 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     marginTop: 4,
-  },
-  // Toast styles
-  toastContainer: {
-    position: 'absolute',
-    bottom: 90,
-    left: 16,
-    right: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  toastAccent: {
-    width: 4,
-  },
-  toastContent: {
-    flex: 1,
-    padding: 14,
-  },
-  toastTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  toastBody: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  toastOptions: {
-    marginTop: 8,
-  },
-  toastOption: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  toastDismiss: {
-    padding: 14,
-    alignSelf: 'flex-start',
   },
 });

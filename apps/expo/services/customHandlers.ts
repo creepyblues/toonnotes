@@ -39,20 +39,6 @@ export function registerCustomHandlers(): void {
 
   console.log('[CustomHandlers] Registering custom handlers...');
 
-  // TEMP: Clear skill cooldowns for testing
-  try {
-    const { useNudgeStore } = require('@/stores/nudgeStore');
-    const cooldowns = useNudgeStore.getState().skillCooldowns;
-    console.log('[CustomHandlers] Current cooldowns:', Object.keys(cooldowns));
-    // Clear all cooldowns
-    Object.keys(cooldowns).forEach((skillId) => {
-      useNudgeStore.getState().clearSkillCooldown(skillId);
-    });
-    console.log('[CustomHandlers] Cleared all skill cooldowns');
-  } catch (e) {
-    console.log('[CustomHandlers] Could not clear cooldowns:', e);
-  }
-
   // ============================================
   // Manager Agent Handlers
   // ============================================

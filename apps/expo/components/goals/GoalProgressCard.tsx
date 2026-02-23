@@ -12,7 +12,7 @@
  * Rendered inside note/[id].tsx for active and passive goals.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,12 +31,13 @@ import {
   Pause,
   ArrowsClockwise,
   ChatCircleText,
+  Sparkle,
 } from 'phosphor-react-native';
 
 import { useGoalStore } from '@/stores/goalStore';
 import { goalAnalysisService } from '@/services/goalAnalysisService';
 import { useTheme } from '@/src/theme';
-import { NoteGoal, ActionStep, GoalStatus } from '@/types';
+import { ActionStep } from '@/types';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -91,8 +92,24 @@ export function GoalProgressCard({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [tip] = useState(getRandomTip);
+  const [completedStepId, setCompletedStepId] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState<string | null>(null);
 
   const isAnalyzing = goalAnalysisService.isAnalyzing(noteId);
+
+  // Clear completedStepId after 2 seconds
+  useEffect(() => {
+    if (!completedStepId) return;
+    const timer = setTimeout(() => setCompletedStepId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [completedStepId]);
+
+  // Clear progress message after 3 seconds
+  useEffect(() => {
+    if (!progressMessage) return;
+    const timer = setTimeout(() => setProgressMessage(null), 3000);
+    return () => clearTimeout(timer);
+  }, [progressMessage]);
 
   // Don't render if disabled or no goal
   if (!enabled) return null;
@@ -145,6 +162,12 @@ export function GoalProgressCard({
   const handleCompleteStep = (stepId: string) => {
     completeStep(noteId, stepId);
     resetNudgeCadence(noteId);
+    setCompletedStepId(stepId);
+
+    // Show progress summary
+    const newCompleted = goal!.steps.filter((s) => s.status === 'completed').length + 1;
+    const total = goal!.steps.length;
+    setProgressMessage(`${newCompleted}/${total} steps — nice progress!`);
   };
 
   const handlePauseResume = () => {
@@ -182,6 +205,13 @@ export function GoalProgressCard({
         )}
       </TouchableOpacity>
 
+      {/* Confidence indicator */}
+      <ConfidenceBadge
+        score={goal.confidenceScore ?? 50}
+        onRegeneratePress={handleRegenerate}
+        colors={colors}
+      />
+
       {/* Progress bar */}
       <View style={[styles.progressBar, { backgroundColor: isDark ? '#2C2C2E' : '#E5E5EA' }]}>
         <View
@@ -198,6 +228,11 @@ export function GoalProgressCard({
         {completedCount}/{totalCount} steps
         {goal.status === 'paused' && ' · Paused'}
       </Text>
+      {progressMessage && (
+        <Text style={[styles.progressMessage, { color: colors.accent }]}>
+          {progressMessage}
+        </Text>
+      )}
 
       {/* Steps list (collapsible) */}
       {!isCollapsed && (
@@ -207,6 +242,7 @@ export function GoalProgressCard({
               <StepRow
                 key={step.id}
                 step={step}
+                isJustCompleted={step.id === completedStepId}
                 onComplete={() => handleCompleteStep(step.id)}
                 colors={colors}
                 isDark={isDark}
@@ -259,11 +295,12 @@ export function GoalProgressCard({
 
 function StepRow({
   step,
+  isJustCompleted,
   onComplete,
   colors,
-  isDark,
 }: {
   step: ActionStep;
+  isJustCompleted?: boolean;
   onComplete: () => void;
   colors: any;
   isDark: boolean;
@@ -279,8 +316,8 @@ function StepRow({
         style={[
           styles.stepCheckbox,
           {
-            borderColor: isCompleted ? colors.accent : colors.textSecondary,
-            backgroundColor: isCompleted ? colors.accent : 'transparent',
+            borderColor: isCompleted ? (isJustCompleted ? '#16A34A' : colors.accent) : colors.textSecondary,
+            backgroundColor: isCompleted ? (isJustCompleted ? '#16A34A' : colors.accent) : 'transparent',
           },
         ]}
       >
@@ -301,16 +338,60 @@ function StepRow({
         {step.title}
       </Text>
 
-      {/* Done button for current/pending steps */}
-      {isCurrent && (
+      {/* Show "Done!" feedback for just-completed step, or Done button for current steps */}
+      {isJustCompleted ? (
+        <View style={[styles.doneButton, { backgroundColor: '#16A34A20' }]}>
+          <Check size={12} color="#16A34A" weight="bold" />
+          <Text style={[styles.doneText, { color: '#16A34A', marginLeft: 2 }]}>Done!</Text>
+        </View>
+      ) : isCurrent ? (
         <TouchableOpacity
           onPress={onComplete}
           style={[styles.doneButton, { backgroundColor: `${colors.accent}20` }]}
         >
           <Text style={[styles.doneText, { color: colors.accent }]}>Done</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
+  );
+}
+
+// ============================================
+// Confidence Badge
+// ============================================
+
+function ConfidenceBadge({
+  score,
+  onRegeneratePress,
+  colors,
+}: {
+  score: number;
+  onRegeneratePress: () => void;
+  colors: any;
+}) {
+  // Score >= 70: No indicator (confident, don't clutter UI)
+  if (score >= 70) return null;
+
+  // Score 40-69: Subtle "AI suggestion" badge
+  if (score >= 40) {
+    return (
+      <View style={styles.confidenceBadge}>
+        <Sparkle size={10} color={colors.textTertiary} />
+        <Text style={[styles.confidenceText, { color: colors.textTertiary }]}>
+          AI suggestion
+        </Text>
+      </View>
+    );
+  }
+
+  // Score < 40: "AI suggestion — tap to adjust" with emphasis
+  return (
+    <TouchableOpacity onPress={onRegeneratePress} style={styles.confidenceBadge}>
+      <Sparkle size={10} color={colors.accent} />
+      <Text style={[styles.confidenceText, { color: colors.accent }]}>
+        AI suggestion — tap to adjust
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -420,6 +501,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   doneButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -427,6 +510,20 @@ const styles = StyleSheet.create({
   doneText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  progressMessage: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  confidenceBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    marginTop: 4,
+  },
+  confidenceText: {
+    fontSize: 11,
   },
   actionsRow: {
     flexDirection: 'row',

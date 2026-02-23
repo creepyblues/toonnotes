@@ -26,6 +26,7 @@ import { useTheme } from '@/src/theme';
 import { BottomSheet } from '@/src/components/sheets/BottomSheet';
 import { Nudge, NudgeOption, AgentId } from '@/types';
 import { AGENT_CONFIGS } from '@/services/agents/Agent';
+import { useNoteStore } from '@/stores/noteStore';
 
 interface NudgeSheetProps {
   nudge: Nudge | null;
@@ -81,6 +82,9 @@ function OptionIcon({
 
 export function NudgeSheet({ nudge, visible, onAction, onDismiss }: NudgeSheetProps) {
   const { colors, isDark } = useTheme();
+  const noteTitle = useNoteStore((s) =>
+    nudge?.noteId ? s.getNoteById(nudge.noteId)?.title : undefined
+  );
 
   const handleAction = useCallback(
     (optionId: string) => {
@@ -218,7 +222,7 @@ export function NudgeSheet({ nudge, visible, onAction, onDismiss }: NudgeSheetPr
               style={[styles.contextValue, { color: colors.textSecondary }]}
               numberOfLines={1}
             >
-              {nudge.noteId}
+              {noteTitle || nudge.noteId}
             </Text>
           </View>
         )}
