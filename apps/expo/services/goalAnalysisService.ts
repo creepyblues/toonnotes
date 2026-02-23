@@ -240,6 +240,7 @@ class GoalAnalysisService {
         nudgeCadenceMs: DEFAULT_NUDGE_CADENCE_MS,
         totalNudgesSent: existingGoal?.totalNudgesSent || 0,
         consecutiveDismissals: existingGoal?.consecutiveDismissals || 0,
+        confidenceScore: existingGoal?.confidenceScore ?? 50,
       };
 
       // Preserve completed steps from previous revision
@@ -271,6 +272,17 @@ class GoalAnalysisService {
         engagement: result.nudgeEngagement,
         step_count: goal.steps.length,
         revision: goal.revision,
+      });
+
+      // Log aggregate accuracy report for monitoring
+      const report = goalStore.getAccuracyReport();
+      trackEvent('goal_accuracy_report', {
+        completion_rate: Math.round(report.completionRate * 100),
+        step_completion_rate: Math.round(report.stepCompletionRate * 100),
+        average_confidence: report.averageConfidence,
+        total_created: goalStore.goalMetrics.totalGoalsCreated,
+        total_achieved: goalStore.goalMetrics.totalGoalsAchieved,
+        total_abandoned: goalStore.goalMetrics.totalGoalsAbandoned,
       });
 
       return goal;

@@ -33,6 +33,9 @@ import {
 const MAX_QUEUE_SIZE = 50;
 const MAX_HISTORY_SIZE = 100;
 const DEFAULT_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_NUDGES_PER_DAY = 10;
+const QUIET_HOUR_START = 22; // 10 PM
+const QUIET_HOUR_END = 8;   // 8 AM
 
 // Priority weights for sorting
 const PRIORITY_WEIGHTS: Record<NudgePriority, number> = {
@@ -64,10 +67,17 @@ const isExpired = (nudge: Nudge): boolean => {
   return Date.now() > nudge.expiresAt;
 };
 
+const isQuietHours = (): boolean => {
+  const hour = new Date().getHours();
+  return hour >= QUIET_HOUR_START || hour < QUIET_HOUR_END;
+};
+
 const isReadyToShow = (nudge: Nudge): boolean => {
   if (nudge.shownAt) return false; // Already shown
   if (isExpired(nudge)) return false;
   if (nudge.showAt && Date.now() < nudge.showAt) return false; // Scheduled for later
+  // Quiet hours: block non-urgent nudges between 10 PM and 8 AM
+  if (isQuietHours() && nudge.priority !== 'urgent') return false;
   return true;
 };
 
@@ -86,6 +96,7 @@ interface NudgeState {
   addNudge: (params: CreateNudgeParams) => Nudge;
   removeNudge: (nudgeId: string) => void;
   clearQueue: () => void;
+  clearHistory: () => void;
   clearExpired: () => void;
 
   // Actions - Delivery
@@ -119,6 +130,7 @@ interface CreateNudgeParams {
   options: NudgeOption[];
   noteId?: string;
   boardId?: string;
+  source?: 'goal' | 'skill' | 'label';
   priority?: NudgePriority;
   deliveryChannel?: NudgeDeliveryChannel;
   showAt?: number;
@@ -149,6 +161,44 @@ export const useNudgeStore = create<NudgeState>()(
 
       // Queue management
       addNudge: (params) => {
+        // Apply source-based priority defaults
+        let priority = params.priority ?? 'medium';
+        if (params.source === 'goal' && !params.priority) {
+          priority = 'low'; // Goal nudges are gentle reminders
+        }
+
+        // Daily cap: count today's nudges from queue + history
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayMs = todayStart.getTime();
+        const { queue, history } = get();
+        const todayCount = [...queue, ...history].filter(
+          (n) => n.createdAt >= todayMs
+        ).length;
+
+        if (todayCount >= MAX_NUDGES_PER_DAY && priority !== 'urgent' && priority !== 'high') {
+          // Drop low/medium nudges when daily cap is reached
+          // Return a placeholder nudge to satisfy the return type
+          console.log(`[NudgeStore] Daily cap reached (${todayCount}/${MAX_NUDGES_PER_DAY}), dropping ${priority} nudge`);
+          const droppedNudge: Nudge = {
+            id: generateNudgeId(),
+            skillId: params.skillId,
+            agentId: params.agentId,
+            title: params.title,
+            body: params.body,
+            options: params.options,
+            noteId: params.noteId,
+            boardId: params.boardId,
+            source: params.source,
+            priority,
+            deliveryChannel: params.deliveryChannel ?? 'toast',
+            createdAt: Date.now(),
+            expiresAt: Date.now(), // Immediately expired
+            outcome: 'expired',
+          };
+          return droppedNudge;
+        }
+
         const nudge: Nudge = {
           id: generateNudgeId(),
           skillId: params.skillId,
@@ -158,7 +208,8 @@ export const useNudgeStore = create<NudgeState>()(
           options: params.options,
           noteId: params.noteId,
           boardId: params.boardId,
-          priority: params.priority ?? 'medium',
+          source: params.source,
+          priority,
           deliveryChannel: params.deliveryChannel ?? 'toast',
           createdAt: Date.now(),
           showAt: params.showAt,
@@ -186,6 +237,10 @@ export const useNudgeStore = create<NudgeState>()(
 
       clearQueue: () => {
         set({ queue: [], activeNudge: null });
+      },
+
+      clearHistory: () => {
+        set({ history: [] });
       },
 
       clearExpired: () => {
@@ -405,6 +460,11 @@ export class NudgeBuilder {
 
   forBoard(boardId: string): this {
     this.params.boardId = boardId;
+    return this;
+  }
+
+  fromSource(source: 'goal' | 'skill' | 'label'): this {
+    this.params.source = source;
     return this;
   }
 

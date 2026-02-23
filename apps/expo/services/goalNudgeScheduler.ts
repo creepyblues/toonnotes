@@ -12,6 +12,7 @@
  */
 
 import { useGoalStore } from '@/stores/goalStore';
+import { useNoteStore } from '@/stores/noteStore';
 import { useNudgeStore, NudgeActions } from '@/stores/nudgeStore';
 import { NoteGoal, ActionStep, NudgeDeliveryChannel } from '@/types';
 import { trackEvent } from './firebaseAnalytics';
@@ -157,51 +158,49 @@ class GoalNudgeScheduler {
   }
 
   /**
-   * Send a nudge for a specific goal step
+   * Send a nudge for a specific goal step.
+   * Nudge = "go to your note" reminder, not a mini-action UI.
    */
   private sendGoalNudge(goal: NoteGoal, step: ActionStep): void {
     const channel = getDeliveryChannel(goal);
     const completedCount = goal.steps.filter((s) => s.status === 'completed').length;
     const totalCount = goal.steps.length;
 
+    // Look up note title for contextual nudge body
+    const note = useNoteStore.getState().getNoteById(goal.noteId);
+    const noteTitle = note?.title || 'your note';
+
+    // Build body with note context
+    let body = `${noteTitle} — ${step.description}`;
+    // Append back-off hint if user has been dismissing
+    if (goal.consecutiveDismissals >= 2) {
+      body += '\n(Checking in less often.)';
+    }
+
     useNudgeStore.getState().addNudge({
       skillId: `goal-step-${goal.id}`,
       agentId: goal.agentId,
       noteId: goal.noteId,
-      title: step.title,
-      body: step.description,
+      source: 'goal',
+      title: `Step: ${step.title}`,
+      body,
       priority: goal.nudgeEngagement === 'active' ? 'medium' : 'low',
       deliveryChannel: channel,
       options: [
         {
-          id: 'complete-step',
-          label: 'Done',
-          action: {
-            type: 'complete_step',
-            noteId: goal.noteId,
-            goalId: goal.id,
-            stepId: step.id,
-          },
+          id: 'open-note',
+          label: 'Open Note',
+          action: NudgeActions.navigate(`/note/${goal.noteId}`),
           isPrimary: true,
         },
         ...(goal.nudgeEngagement === 'active'
           ? [{
               id: 'snooze',
-              label: 'Later',
+              label: 'Snooze (4h)',
               action: NudgeActions.snooze(4),
               isPrimary: false,
             }]
           : []),
-        {
-          id: 'feedback',
-          label: 'Feedback',
-          action: {
-            type: 'custom' as const,
-            handler: 'open_goal_feedback',
-            data: { noteId: goal.noteId, goalId: goal.id },
-          },
-          isPrimary: false,
-        },
       ],
     });
 

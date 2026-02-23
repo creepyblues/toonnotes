@@ -16,7 +16,7 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import { X, Check, Clock, CaretRight } from 'phosphor-react-native';
+import { X, Check, Clock, CaretRight, Target } from 'phosphor-react-native';
 import { useTheme } from '@/src/theme';
 import { Nudge, NudgeOption, AgentId } from '@/types';
 import { AGENT_CONFIGS } from '@/services/agents/Agent';
@@ -178,11 +178,22 @@ export function NudgeToast({
           },
         ]}
       >
-        {/* Header with agent emoji and dismiss */}
+        {/* Header with agent emoji/source icon and dismiss */}
         <View style={styles.header}>
           <View style={styles.agentInfo}>
-            <Text style={styles.agentEmoji}>{getAgentEmoji(nudge.agentId)}</Text>
+            {nudge.source === 'goal' ? (
+              <View style={[styles.sourceIconContainer, { backgroundColor: agentColor + '20' }]}>
+                <Target size={16} color={agentColor} weight="fill" />
+              </View>
+            ) : (
+              <Text style={styles.agentEmoji}>{getAgentEmoji(nudge.agentId)}</Text>
+            )}
             <View style={styles.titleContainer}>
+              {nudge.source === 'goal' && (
+                <Text style={[styles.sourceSubtitle, { color: agentColor }]}>
+                  Goal reminder
+                </Text>
+              )}
               <Text
                 style={[styles.title, { color: isDark ? '#FFFFFF' : '#1F2937' }]}
                 numberOfLines={1}
@@ -300,6 +311,21 @@ const styles = StyleSheet.create({
   agentEmoji: {
     fontSize: 20,
     marginRight: 10,
+  },
+  sourceIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  sourceSubtitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 1,
   },
   titleContainer: {
     flex: 1,

@@ -154,6 +154,7 @@ class NudgeDeliveryService {
       const nudge = createNudge(skill.id, agentId)
         .title(params.title)
         .body(params.body)
+        .fromSource('skill')
         .priority(params.priority ?? 'medium')
         .channel(params.deliveryChannel ?? 'toast');
 

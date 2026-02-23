@@ -132,6 +132,9 @@ export interface Nudge {
   noteId?: string;
   boardId?: string;
 
+  // Source separation
+  source?: 'goal' | 'skill' | 'label';
+
   // Delivery
   priority: NudgePriority;
   deliveryChannel: NudgeDeliveryChannel;
@@ -1045,6 +1048,8 @@ export interface NoteGoal {
   nudgeCadenceMs: number;        // Starts 4h, adapts
   totalNudgesSent: number;
   consecutiveDismissals: number;
+  /** Confidence score (0-100) tracking AI goal inference accuracy */
+  confidenceScore: number;
 }
 
 /**
