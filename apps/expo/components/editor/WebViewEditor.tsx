@@ -66,13 +66,17 @@ export function WebViewEditor({
   const [webViewHeight, setWebViewHeight] = useState(300);
   const hasSetInitialContent = useRef(false);
 
+  // Track latest initialContent to avoid stale closure in onEditorReady
+  const initialContentRef = useRef(initialContent);
+  initialContentRef.current = initialContent;
+
   const bridge = useEditorBridge({
     onContentChange,
     onEditorReady: useCallback(() => {
       // Set initial content once editor is ready
-      if (!hasSetInitialContent.current) {
+      if (!hasSetInitialContent.current && initialContentRef.current) {
         hasSetInitialContent.current = true;
-        const html = textToHtml(initialContent);
+        const html = textToHtml(initialContentRef.current);
         bridge.setContent(html);
 
         // Apply initial theme
@@ -93,6 +97,23 @@ export function WebViewEditor({
       setWebViewHeight(Math.max(300, height + 20));
     }, []),
   });
+
+  // Sync initial content when it arrives after editor is already ready
+  // (handles Zustand store hydration race condition on Android)
+  useEffect(() => {
+    if (bridge.isReady && initialContent && !hasSetInitialContent.current) {
+      hasSetInitialContent.current = true;
+      const html = textToHtml(initialContent);
+      bridge.setContent(html);
+      bridge.setTheme({
+        backgroundColor,
+        textColor,
+        placeholderColor: isDark ? '#6B7280' : '#9CA3AF',
+        accentColor,
+        fontFamily,
+      });
+    }
+  }, [initialContent, bridge.isReady]);
 
   // Expose bridge to parent
   useEffect(() => {
@@ -141,8 +162,6 @@ export function WebViewEditor({
         overScrollMode="never"
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
-        // Prevent WebView from stealing scroll on iOS
-        {...(Platform.OS === 'ios' ? { scrollEnabled: false } : {})}
         // Android-specific props
         {...(Platform.OS === 'android' ? {
           androidLayerType: 'hardware',
