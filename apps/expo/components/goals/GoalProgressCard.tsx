@@ -386,7 +386,12 @@ function ConfidenceBadge({
 
   // Score < 40: "AI suggestion — tap to adjust" with emphasis
   return (
-    <TouchableOpacity onPress={onRegeneratePress} style={styles.confidenceBadge}>
+    <TouchableOpacity
+      onPress={onRegeneratePress}
+      style={styles.confidenceBadge}
+      accessibilityLabel="AI suggestion — tap to adjust goal"
+      accessibilityRole="button"
+    >
       <Sparkle size={10} color={colors.accent} />
       <Text style={[styles.confidenceText, { color: colors.accent }]}>
         AI suggestion — tap to adjust

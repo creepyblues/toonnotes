@@ -172,8 +172,8 @@ export default function NotificationsScreen() {
     for (const nudge of currentQueue) {
       dismissNudge(nudge.id);
     }
-    // Clear the history
-    useNudgeStore.setState({ history: [] });
+    // Clear the history via store action (goes through persist middleware)
+    useNudgeStore.getState().clearHistory();
   }, [dismissNudge]);
 
   const renderItem = useCallback(
@@ -203,7 +203,12 @@ export default function NotificationsScreen() {
           Notifications
         </Text>
         {allNotifications.length > 0 && (
-          <TouchableOpacity onPress={handleClearAll} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={handleClearAll}
+            activeOpacity={0.7}
+            accessibilityLabel="Clear all notifications"
+            accessibilityRole="button"
+          >
             <Text style={[styles.clearButton, { color: colors.accent }]}>
               Clear
             </Text>

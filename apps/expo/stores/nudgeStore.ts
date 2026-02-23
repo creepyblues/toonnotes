@@ -96,6 +96,7 @@ interface NudgeState {
   addNudge: (params: CreateNudgeParams) => Nudge;
   removeNudge: (nudgeId: string) => void;
   clearQueue: () => void;
+  clearHistory: () => void;
   clearExpired: () => void;
 
   // Actions - Delivery
@@ -236,6 +237,10 @@ export const useNudgeStore = create<NudgeState>()(
 
       clearQueue: () => {
         set({ queue: [], activeNudge: null });
+      },
+
+      clearHistory: () => {
+        set({ history: [] });
       },
 
       clearExpired: () => {
