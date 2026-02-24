@@ -1107,6 +1107,7 @@ export default function NoteEditorScreen() {
         {/* Editor */}
         <ScrollView
           style={{ flex: 1, paddingHorizontal: 16 }}
+          contentContainerStyle={{ paddingBottom: 200 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Title */}
