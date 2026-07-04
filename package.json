@@ -6,6 +6,8 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "ci": "turbo lint typecheck test",
     "dev:expo": "turbo dev --filter=@toonnotes/expo",
     "dev:web": "turbo dev --filter=@toonnotes/web",
     "dev:webapp": "turbo dev --filter=@toonnotes/webapp",

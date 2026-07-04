@@ -31,6 +31,11 @@ jest.mock('react-native', () => ({
     parallel: jest.fn(() => ({ start: jest.fn() })),
     sequence: jest.fn(() => ({ start: jest.fn() })),
   },
+  Appearance: {
+    getColorScheme: jest.fn(() => 'light'),
+    addChangeListener: jest.fn(() => ({ remove: jest.fn() })),
+    removeChangeListener: jest.fn(),
+  },
   NativeModules: {},
   NativeEventEmitter: jest.fn(() => ({
     addListener: jest.fn(),
@@ -244,6 +249,34 @@ jest.mock('react-native-purchases', () => ({
 }));
 
 // Mock Supabase to prevent auto-refresh timer issues
+// Mock phosphor-react-native icons — they pull in react-native-svg's
+// SvgTouchableMixin, which destructures Touchable.Mixin (undefined in the jest
+// RN environment). Return a trivial component for any named icon import.
+jest.mock('phosphor-react-native', () => {
+  const Icon = () => null;
+  return new Proxy(
+    { __esModule: true },
+    {
+      get: (target, prop) => (prop in target ? target[prop] : Icon),
+    }
+  );
+});
+
+// Mock react-native-safe-area-context (its untransformed ESM source otherwise
+// breaks jest, since it is not in transformIgnorePatterns).
+jest.mock('react-native-safe-area-context', () => {
+  const insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  const { View } = require('react-native');
+  return {
+    SafeAreaProvider: ({ children }) => children,
+    SafeAreaView: View,
+    SafeAreaConsumer: ({ children }) => children(insets),
+    useSafeAreaInsets: () => insets,
+    useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
+    initialWindowMetrics: { insets, frame: { x: 0, y: 0, width: 390, height: 844 } },
+  };
+});
+
 jest.mock('@/services/supabase', () => ({
   supabase: {
     from: jest.fn(() => ({
@@ -257,6 +290,7 @@ jest.mock('@/services/supabase', () => ({
     })),
     auth: {
       getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
       onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
       signInWithOAuth: jest.fn(),
       signOut: jest.fn().mockResolvedValue({ error: null }),
