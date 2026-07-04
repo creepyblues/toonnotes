@@ -88,7 +88,6 @@ import {
 import { useColorScheme } from '@/components/useColorScheme';
 import { purchaseService } from '@/services/purchaseService';
 import { subscriptionService } from '@/services/subscriptionService';
-import { initSentry } from '@/services/sentry';
 import { initFirebase, trackScreen } from '@/services/firebaseAnalytics';
 import { usePathname } from 'expo-router';
 import { migrateNotesWithLabelsToDesigns } from '@/services/migrationService';
@@ -104,8 +103,6 @@ LogBox.ignoreLogs([
   'RevenueCat.OfferingsManager.Error',
 ]);
 
-// Initialize Sentry for error monitoring (kept as fallback)
-initSentry();
 
 // Custom error boundary with ToonNotes styling
 export { ErrorBoundary } from '@/components/ErrorBoundary';
