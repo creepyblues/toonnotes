@@ -37,9 +37,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Debug: log the pathname
-  console.log('[Middleware] Checking auth for:', pathname);
-
   // Create response to potentially modify cookies
   let response = NextResponse.next({
     request: { headers: request.headers },

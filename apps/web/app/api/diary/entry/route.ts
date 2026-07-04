@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDiaryEntry, type DiaryStatus } from '@/lib/marketing/diary';
+import { requireAdmin } from '@/lib/marketing/auth';
 
 export async function GET(request: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   const searchParams = request.nextUrl.searchParams;
   const date = searchParams.get('date');
   const status = searchParams.get('status') as DiaryStatus | null;
