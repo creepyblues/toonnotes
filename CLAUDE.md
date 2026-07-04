@@ -4,36 +4,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Structure
 
-This is a **monorepo** containing multiple ToonNotes app implementations. Each subdirectory is a standalone app project targeting different platforms or frameworks.
+This is a **pnpm + Turborepo monorepo** (`pnpm-workspace.yaml` globs `apps/*` and `packages/*`).
 
-### Project Directory Overview
+### Apps
 
 | Directory | Status | Description |
 |-----------|--------|-------------|
-| `ToonNotes_Expo/` | **Active** | React Native/Expo app (iOS & Android). Primary development focus. |
-| `ToonNotes/` | Legacy | Original Swift/SwiftUI iOS/macOS app |
-| `ToonNotes_Native/` | Legacy | Native app experiment |
-| `ToonNotes_React/` | Legacy | React web app with Capacitor |
-| `ToonNotes_React_AIStudio/` | Legacy | React web app for Google AI Studio |
+| `apps/expo/` | **Active** | React Native/Expo app (iOS & Android). Primary development focus. See `apps/expo/CLAUDE.md`. |
+| `apps/webapp/` | Active | Next.js 15 web app (toonnotes.app). See `apps/webapp/CLAUDE.md`. |
+| `apps/web/` | Active | Next.js 16 marketing site + admin dashboard (toonnotes.com). See `apps/web/CLAUDE.md`. |
 
-### Active Development
+### Shared packages
 
-**ToonNotes_Expo** is the current active project. See `ToonNotes_Expo/CLAUDE.md` for development guidance.
+`packages/`: `types`, `constants`, `editor-core`, `editor-web` (TipTap-in-WebView bundle), `design-engine`, `label-ai` (typed client for the AI API), `markdown`, `supabase`, `mcp-analytics` (standalone GA4 MCP server, deployed independently — not part of the app build graph).
 
-### Adding New Projects
+> Note: `apps/expo` currently keeps local copies of the domain model (`types/`, `constants/`, `utils/`, stores) rather than importing the shared packages that `apps/webapp` uses. Consolidating these is planned (see the audit remediation plan) — until then, changes to the domain model may need to be mirrored in both places.
 
-This monorepo structure supports adding new platform-specific apps:
-- iOS native (Swift/SwiftUI): Create `ToonNotes_iOS/`
-- Android native (Kotlin): Create `ToonNotes_Android/`
-- Other frameworks: Follow naming convention `ToonNotes_<Platform>/`
+### Backend
 
-Each new project should include its own `CLAUDE.md` with project-specific guidance.
+- **AI API**: Vercel serverless functions in `apps/expo/api/*` (deployed as the separate `toonnotes-api` Vercel project). Server-side Gemini calls; shared middleware in `api/_utils/security.ts` (CORS + durable rate limiting). There are **no** Supabase edge functions despite some older skill docs implying otherwise.
+- **Supabase**: Postgres + Auth + Storage, accessed with the anon key + RLS. Schema and migrations in `apps/expo/supabase/`.
+
+### Commands
+
+```bash
+pnpm dev            # turbo dev (all)
+pnpm build          # turbo build
+pnpm lint           # turbo lint
+pnpm typecheck      # turbo typecheck
+pnpm test           # turbo test
+pnpm ci             # lint + typecheck + test
+```
+
+Enable the pre-commit secret scan once per clone: `git config core.hooksPath .githooks`.
 
 ---
 
 ## Legacy: Swift/SwiftUI Version (Reference Only)
 
-The documentation below describes the original iOS/macOS Swift implementation (`ToonNotes/`) for reference purposes.
+> Historical reference only — the original iOS/macOS Swift app (`ToonNotes/`) and the other early experiments (`ToonNotes_Native/`, `ToonNotes_React/`, `ToonNotes_React_AIStudio/`) are **no longer present** in the repo. The section below is kept for design context.
 
 ## Project Overview
 
@@ -167,3 +176,31 @@ View-ready styling output from DesignEngine containing:
 ### Design Tiers
 - `basic`: 1 Spark cost, standard texture access
 - `premium`: 3 Sparks cost, access to premium textures (watercolor, canvas, screentone)
+
+# ToonNotes — Claude Code Instructions
+
+## gstack
+Always use the gstack skills for workflow. Never use mcp__claude-in-chrome__* tools for browsing.
+
+Available skills:
+- /plan-ceo-review — Start here for any new feature. "Brian Chesky mode" — find the 10-star product hiding in the request. Do NOT skip this.
+- /plan-eng-review — Architecture, data flow, edge cases, diagrams. Run after CEO review.
+- /review — Paranoid staff engineer mode. Find bugs before production does.
+- /ship — Sync main, run tests, push branch, open PR.
+- /qa — Auto-detects changed routes from git diff, tests them in browser.
+- /browse — Manual browser automation and inspection.
+- /setup-browser-cookies — Import real browser session for authenticated QA.
+- /retro — Weekly retrospective with metrics.
+
+If gstack skills aren't working: cd .claude/skills/gstack && ./setup
+
+## Project Context
+- Mobile note-taking app for manga/anime/webtoon fans
+- AI-powered custom themes from user-uploaded images ("Design Decomposition Engine")
+- Token-based monetization
+- Stack: Supabase, Vercel, JavaScript
+- Sungho IS the target user — build for yourself first
+
+## Workflow Rule
+Every new feature: /plan-ceo-review FIRST. No exceptions.
+EOF
