@@ -114,6 +114,7 @@ export interface Note {
   isArchived: boolean;
   isDeleted: boolean;
   deletedAt?: number;         // For 30-day trash
+  deadline?: string;          // ISO date string "2024-01-26" (MODE Framework)
   createdAt: number;
   updatedAt: number;
 }
@@ -310,6 +311,9 @@ export interface Board {
   hashtag: string;           // Links to notes via labels
   customStyle?: BoardStyle;  // Optional custom styling override
   boardDesignId?: string;    // Reference to BoardDesign
+  mode?: Mode;               // Cognitive mode for this board (MODE Framework)
+  organizeStage?: OrganizeStage;  // Only for ORGANIZE mode boards
+  modeConfig?: BoardModeConfig;   // Full mode configuration
   createdAt: number;
   updatedAt: number;
 }
@@ -705,18 +709,20 @@ export type NudgeActionType =
   | 'move_note'
   | 'dismiss'
   | 'snooze'
-  | 'custom';
+  | 'custom'
+  | 'complete_step';
 
 /**
  * Nudge action
  */
 export type NudgeAction =
   | { type: 'navigate'; target: string }
-  | { type: 'update_note'; noteId: string; changes: Record<string, unknown> }
+  | { type: 'update_note'; noteId: string; changes: Partial<Note> }
   | { type: 'move_note'; noteId: string; targetBoard: string }
   | { type: 'dismiss' }
   | { type: 'snooze'; duration: number }
-  | { type: 'custom'; handler: string; data?: Record<string, unknown> };
+  | { type: 'custom'; handler: string; data?: Record<string, unknown> }
+  | { type: 'complete_step'; noteId: string; goalId: string; stepId: string };
 
 /**
  * Nudge option for user interaction
@@ -774,6 +780,9 @@ export interface Nudge {
   shownAt?: number;
   interactedAt?: number;
   outcome?: NudgeOutcome;
+
+  // Origin of this nudge (MODE Framework / goal-agent)
+  source?: 'goal' | 'skill' | 'label';
 }
 
 // ============================================
@@ -985,4 +994,79 @@ export interface AgentOnboardingState {
   onboardingStartedAt: number | null;
   onboardingCompletedAt: number | null;
   skippedAfterAgent: boolean;
+}
+
+// ============================================
+// AI Goal-Agent Types
+// ============================================
+
+/**
+ * Engagement level the goal system uses for a note.
+ * - active: proactive scheduled nudges
+ * - passive: nudge only on note open/update
+ * - none: no goal generated
+ */
+export type NudgeEngagement = 'active' | 'passive' | 'none';
+
+/** Goal lifecycle status */
+export type GoalStatus = 'analyzing' | 'active' | 'paused' | 'achieved' | 'abandoned';
+
+/** Individual step status within a goal */
+export type ActionStepStatus = 'pending' | 'in_progress' | 'completed' | 'skipped';
+
+/** A single action step within a goal's plan */
+export interface ActionStep {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  status: ActionStepStatus;
+  completedAt?: number;
+  nudgeCount: number;
+  lastNudgedAt?: number;
+  /** How this step is verified */
+  actionType: 'prompt_user' | 'auto_detect' | 'manual_check';
+  /** For auto_detect: which note field to check */
+  autoDetectField?: string;
+  autoDetectCondition?: 'exists' | 'gt' | 'contains';
+  autoDetectValue?: string | number;
+}
+
+/** AI-inferred goal for a note with action plan */
+export interface NoteGoal {
+  id: string;
+  noteId: string;
+  mode: Mode;
+  agentId: AgentId;
+  /** AI-determined nudge engagement level */
+  nudgeEngagement: NudgeEngagement;
+  goalStatement: string;
+  reasoning: string;
+  engagementReasoning: string;
+  steps: ActionStep[];
+  status: GoalStatus;
+  createdAt: number;
+  updatedAt: number;
+  achievedAt?: number;
+  revision: number;
+  lastAnalyzedContentHash: string;
+  // Active-only scheduling fields
+  nextNudgeAt?: number;
+  nudgeCadenceMs: number;
+  totalNudgesSent: number;
+  consecutiveDismissals: number;
+  /** Confidence score (0-100) tracking AI goal inference accuracy */
+  confidenceScore: number;
+}
+
+/** Feedback from beta users about goal quality */
+export interface GoalFeedback {
+  noteId: string;
+  goalId: string;
+  goalStatement: string;
+  engagement: NudgeEngagement;
+  feedbackText: string;
+  timestamp: number;
+  userId?: string;
+  appVersion: string;
 }
