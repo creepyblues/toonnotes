@@ -6,7 +6,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Apply security middleware (CORS, rate limiting, method validation)
-  if (!applySecurity(req, res, { allowedMethods: ['POST'] })) {
+  if (!(await applySecurity(req, res, { allowedMethods: ['POST'] }))) {
     return;
   }
 

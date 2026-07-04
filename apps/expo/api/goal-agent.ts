@@ -32,7 +32,7 @@ const AGENT_VOICES: Record<string, string> = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (!applySecurity(req, res, { allowedMethods: ['POST'] })) {
+  if (!(await applySecurity(req, res, { allowedMethods: ['POST'] }))) {
     return;
   }
 
@@ -186,6 +186,15 @@ async function handleFeedback(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Feedback too long' });
   }
 
+  // Escape user-supplied values before interpolating into the admin email HTML.
+  const esc = (v: unknown): string =>
+    String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const results: { slack: boolean; email: boolean } = { slack: false, email: false };
 
   // 1. Send to Slack
@@ -253,16 +262,16 @@ async function handleFeedback(req: VercelRequest, res: VercelResponse) {
         body: JSON.stringify({
           from: 'ToonNotes <feedback@toonnotes.com>',
           to: [ADMIN_EMAIL],
-          subject: `[Goal Feedback] ${goalStatement || 'No goal'}`,
+          subject: `[Goal Feedback] ${(goalStatement || 'No goal').toString().slice(0, 120)}`,
           html: `
             <h2>Goal Feedback</h2>
-            <p><strong>Goal:</strong> ${goalStatement || 'N/A'}</p>
-            <p><strong>Engagement:</strong> ${engagement || 'N/A'}</p>
+            <p><strong>Goal:</strong> ${esc(goalStatement) || 'N/A'}</p>
+            <p><strong>Engagement:</strong> ${esc(engagement) || 'N/A'}</p>
             <p><strong>Feedback:</strong></p>
-            <blockquote>${feedbackText}</blockquote>
+            <blockquote>${esc(feedbackText)}</blockquote>
             <hr>
             <p style="color: #666; font-size: 12px;">
-              Note: ${noteId} | Goal: ${goalId} | User: ${userId || 'Anonymous'} | v${appVersion || '?'}
+              Note: ${esc(noteId)} | Goal: ${esc(goalId)} | User: ${esc(userId) || 'Anonymous'} | v${esc(appVersion) || '?'}
             </p>
           `,
         }),

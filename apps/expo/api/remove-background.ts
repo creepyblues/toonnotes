@@ -185,7 +185,7 @@ async function convertBackgroundToTransparent(imageBase64: string): Promise<stri
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Apply security middleware (CORS, rate limiting, method validation)
-  if (!applySecurity(req, res, { allowedMethods: ['POST'] })) {
+  if (!(await applySecurity(req, res, { allowedMethods: ['POST'] }))) {
     return;
   }
 

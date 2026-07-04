@@ -199,21 +199,16 @@ function verifyCronAuth(req: VercelRequest): boolean {
     return true;
   }
 
-  // If no CRON_SECRET is set, allow all requests (for initial setup)
+  // Fail closed in production if the secret is not configured — an
+  // unauthenticated health check fans out to the AI endpoint and Slack.
   if (!CRON_SECRET) {
-    console.warn('[Health Check] CRON_SECRET not configured, allowing request');
-    return true;
+    console.error('[Health Check] CRON_SECRET not configured — denying request');
+    return false;
   }
 
-  // Vercel adds Authorization header for cron jobs
+  // Vercel adds the Authorization header for scheduled cron jobs.
   const authHeader = req.headers['authorization'];
-  if (authHeader === `Bearer ${CRON_SECRET}`) {
-    return true;
-  }
-
-  // Also allow direct access for testing (optional - remove in production if needed)
-  // This allows curl testing without the secret
-  return true;
+  return authHeader === `Bearer ${CRON_SECRET}`;
 }
 
 export default async function handler(
@@ -221,7 +216,7 @@ export default async function handler(
   res: VercelResponse
 ) {
   // Apply security middleware (CORS, skip rate limiting for health check)
-  if (!applySecurity(req, res, { allowedMethods: ['GET'], skipRateLimit: true })) {
+  if (!(await applySecurity(req, res, { allowedMethods: ['GET'], skipRateLimit: true }))) {
     return;
   }
 
