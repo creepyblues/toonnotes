@@ -107,6 +107,41 @@ describe('noteStore', () => {
     });
   });
 
+  describe('purgeExpiredTrash', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+
+    it('removes trashed notes older than 30 days but keeps recent ones', () => {
+      const now = Date.now();
+      useNoteStore.setState({
+        notes: [
+          { id: 'old', title: 'old', content: '', color: NoteColor.White, labels: [], isPinned: false, isArchived: false, isDeleted: true, deletedAt: now - 31 * DAY, images: [], createdAt: now, updatedAt: now },
+          { id: 'recent', title: 'recent', content: '', color: NoteColor.White, labels: [], isPinned: false, isArchived: false, isDeleted: true, deletedAt: now - 5 * DAY, images: [], createdAt: now, updatedAt: now },
+          { id: 'active', title: 'active', content: '', color: NoteColor.White, labels: [], isPinned: false, isArchived: false, isDeleted: false, images: [], createdAt: now, updatedAt: now },
+        ] as any,
+        labels: [],
+      });
+
+      const purged = useNoteStore.getState().purgeExpiredTrash();
+
+      expect(purged).toBe(1);
+      const ids = useNoteStore.getState().notes.map((n) => n.id);
+      expect(ids).toEqual(['recent', 'active']);
+    });
+
+    it('never purges notes without a deletedAt timestamp', () => {
+      const now = Date.now();
+      useNoteStore.setState({
+        notes: [
+          { id: 'no-ts', title: 'x', content: '', color: NoteColor.White, labels: [], isPinned: false, isArchived: false, isDeleted: true, images: [], createdAt: now, updatedAt: now },
+        ] as any,
+        labels: [],
+      });
+
+      expect(useNoteStore.getState().purgeExpiredTrash()).toBe(0);
+      expect(useNoteStore.getState().notes).toHaveLength(1);
+    });
+  });
+
   describe('Archive Operations', () => {
     it('should archive a note', () => {
       const store = useNoteStore.getState();

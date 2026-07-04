@@ -10,7 +10,7 @@ import { useEffect, createContext, useContext, useState } from 'react';
 import 'react-native-reanimated';
 
 // Onboarding imports
-import { useUserStore } from '@/stores';
+import { useUserStore, useNoteStore } from '@/stores';
 import { useAuthStore } from '@/stores/authStore';
 import { AgentOnboarding, CoachMarksProvider } from '@/components/onboarding';
 import { NudgeProvider } from '@/components/nudges/NudgeProvider';
@@ -221,6 +221,14 @@ export default function RootLayout() {
   // Initialize Firebase Analytics & Crashlytics
   useEffect(() => {
     initFirebase();
+  }, []);
+
+  // Auto-purge notes that have been in trash longer than 30 days (once on launch)
+  useEffect(() => {
+    const purged = useNoteStore.getState().purgeExpiredTrash();
+    if (purged > 0) {
+      console.log(`[RootLayout] Purged ${purged} expired trashed note(s)`);
+    }
   }, []);
 
   // Register MODE Framework custom handlers for nudge actions
