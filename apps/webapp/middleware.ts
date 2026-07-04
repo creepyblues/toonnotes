@@ -4,8 +4,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow auth routes and test pages
-  if (pathname.startsWith('/auth') || pathname.startsWith('/test-')) {
+  // Allow auth routes
+  if (pathname.startsWith('/auth')) {
     return NextResponse.next();
   }
 
