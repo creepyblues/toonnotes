@@ -18,6 +18,42 @@ const pendingWrites: Map<string, { value: string; timer: ReturnType<typeof setTi
 // Default debounce delay in milliseconds
 const DEFAULT_DEBOUNCE_MS = 500;
 
+// Track consecutive persistence write failures. A single failure can be
+// transient, but a run of them means state is silently not being persisted
+// (e.g. Android's ~6MB AsyncStorage limit hit) — surface that to Crashlytics.
+let consecutiveWriteFailures = 0;
+
+/**
+ * Report a persistence failure to Crashlytics (lazy require avoids pulling
+ * analytics into this low-level module's import graph / test runs).
+ */
+function reportPersistError(error: unknown, name: string, op: string): void {
+  consecutiveWriteFailures += 1;
+  try {
+    const { recordError } = require('@/services/firebaseAnalytics');
+    recordError(error instanceof Error ? error : new Error(String(error)), {
+      source: 'debounced-storage',
+      op,
+      key: name,
+      consecutiveFailures: String(consecutiveWriteFailures),
+    });
+  } catch {
+    // Analytics unavailable (e.g. tests) — swallow.
+  }
+}
+
+function notePersistSuccess(): void {
+  consecutiveWriteFailures = 0;
+}
+
+/**
+ * Number of consecutive persistence write failures observed. Non-zero means
+ * recent state changes may not have been saved to disk.
+ */
+export function getConsecutiveWriteFailures(): number {
+  return consecutiveWriteFailures;
+}
+
 /**
  * Create a debounced storage adapter for Zustand persist middleware
  */
@@ -60,8 +96,10 @@ export function createDebouncedStorage(debounceMs: number = DEFAULT_DEBOUNCE_MS)
         try {
           await AsyncStorage.setItem(name, value);
           pendingWrites.delete(name);
+          notePersistSuccess();
         } catch (error) {
           console.error(`Failed to write to AsyncStorage: ${name}`, error);
+          reportPersistError(error, name, 'setItem');
         }
       }, debounceMs);
 
@@ -103,9 +141,11 @@ export async function flushPendingWrites(): Promise<void> {
       AsyncStorage.setItem(name, value)
         .then(() => {
           pendingWrites.delete(name);
+          notePersistSuccess();
         })
         .catch((error) => {
           console.error(`Failed to flush write to AsyncStorage: ${name}`, error);
+          reportPersistError(error, name, 'flush');
         })
     );
   }

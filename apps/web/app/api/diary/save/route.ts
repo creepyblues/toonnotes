@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveDraft } from '@/lib/marketing/diary';
+import { requireAdmin } from '@/lib/marketing/auth';
 
 export async function POST(request: NextRequest) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
     const body = await request.json();
     const { date, content } = body;

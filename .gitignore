@@ -1,4 +1,23 @@
 .vercel
 node_modules/
-firebase-debug.log
 .mcp.json
+
+# Secrets — never commit
+*service-account*.json
+gen-lang-client-*.json
+*.pem
+*.p8
+*.p12
+.env
+.env.*
+!.env.example
+
+# OS / editor artifacts
+.DS_Store
+
+# Logs & build artifacts
+# NOTE: dist/ is NOT ignored globally — packages/editor-web/dist is intentionally
+# committed (expo loads the prebuilt editor HTML bundle from it).
+*.log
+*.tsbuildinfo
+.turbo/

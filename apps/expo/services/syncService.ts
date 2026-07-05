@@ -151,28 +151,26 @@ export async function syncNotes(
       }
     }
 
-    // Download cloud changes to local store
+    // Download cloud changes to local store.
+    //
+    // IMPORTANT: apply remote changes with setState directly, NOT
+    // noteStore.updateNote(). updateNote() stamps a fresh updatedAt, marks the
+    // note as recently-modified, re-fires syncToCloud (a spurious re-upload),
+    // emits MODE trigger events, and schedules a goal-agent AI call — so a
+    // full sync of N notes would produce N re-uploads + N AI calls and corrupt
+    // the updatedAt used for conflict resolution. This mirrors the realtime
+    // path in authStore, which already applies remote changes via setState.
     if (toDownload.length > 0) {
-      const noteStore = useNoteStore.getState();
-      const newNotes: Note[] = [];
+      const downloadMap = new Map(toDownload.map((n) => [n.id, n]));
 
-      for (const note of toDownload) {
-        // Check if note exists locally
-        const existingNote = noteStore.notes.find((n) => n.id === note.id);
-        if (existingNote) {
-          noteStore.updateNote(note.id, note);
-        } else {
-          // Collect new notes to add
-          newNotes.push(note);
-        }
-      }
-
-      // Add all new notes at once using setState (triggers re-render)
-      if (newNotes.length > 0) {
-        useNoteStore.setState((state) => ({
-          notes: [...newNotes, ...state.notes]
-        }));
-      }
+      useNoteStore.setState((state) => {
+        const existingIds = new Set(state.notes.map((n) => n.id));
+        // Replace notes that already exist locally with the cloud version.
+        const merged = state.notes.map((n) => downloadMap.get(n.id) ?? n);
+        // Prepend notes that only exist in the cloud.
+        const brandNew = toDownload.filter((n) => !existingIds.has(n.id));
+        return { notes: [...brandNew, ...merged] };
+      });
 
       result.downloaded = toDownload.length;
     }
@@ -511,20 +509,16 @@ export async function syncDesigns(
       }
     }
 
-    // Download cloud changes to local store
+    // Download cloud changes to local store.
+    // Apply via setState (not updateDesign, which re-fires syncToCloud → echo).
     if (toDownload.length > 0) {
-      const designStore = useDesignStore.getState();
-
-      for (const design of toDownload) {
-        const existingDesign = designStore.designs.find((d) => d.id === design.id);
-        if (existingDesign) {
-          designStore.updateDesign(design.id, design);
-        } else {
-          useDesignStore.setState((state) => ({
-            designs: [design, ...state.designs],
-          }));
-        }
-      }
+      const downloadMap = new Map(toDownload.map((d) => [d.id, d]));
+      useDesignStore.setState((state) => {
+        const existingIds = new Set(state.designs.map((d) => d.id));
+        const merged = state.designs.map((d) => downloadMap.get(d.id) ?? d);
+        const brandNew = toDownload.filter((d) => !existingIds.has(d.id));
+        return { designs: [...brandNew, ...merged] };
+      });
 
       result.downloaded = toDownload.length;
     }
@@ -965,18 +959,16 @@ export async function syncLabels(
       }
     }
 
-    // Download cloud changes to local store
+    // Download cloud changes to local store.
+    // Apply via setState (not updateLabel, which re-fires syncToCloud → echo).
     if (toDownload.length > 0) {
-      for (const label of toDownload) {
-        const existingLabel = useLabelStore.getState().labels.find((l) => l.id === label.id);
-        if (existingLabel) {
-          useLabelStore.getState().updateLabel(label.id, label);
-        } else {
-          useLabelStore.setState((state) => ({
-            labels: [label, ...state.labels],
-          }));
-        }
-      }
+      const downloadMap = new Map(toDownload.map((l) => [l.id, l]));
+      useLabelStore.setState((state) => {
+        const existingIds = new Set(state.labels.map((l) => l.id));
+        const merged = state.labels.map((l) => downloadMap.get(l.id) ?? l);
+        const brandNew = toDownload.filter((l) => !existingIds.has(l.id));
+        return { labels: [...brandNew, ...merged] };
+      });
 
       result.downloaded = toDownload.length;
     }

@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-commit secret scan.
+# Enable once per clone: git config core.hooksPath .githooks
+
+# Block obvious secret files by name regardless of scanner availability
+blocked=$(git diff --cached --name-only | grep -E '(service-account.*\.json|gen-lang-client-.*\.json|\.pem$|\.p8$|\.p12$|(^|/)\.env(\..*)?$)' | grep -v '\.env\.example$')
+if [ -n "$blocked" ]; then
+  echo "COMMIT BLOCKED: secret-looking files staged:" >&2
+  echo "$blocked" >&2
+  echo "Unstage them (git restore --staged <file>) or rename if this is a false positive." >&2
+  exit 1
+fi
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact -v || {
+    echo "COMMIT BLOCKED: gitleaks found potential secrets in staged changes." >&2
+    exit 1
+  }
+else
+  echo "warning: gitleaks not installed (brew install gitleaks) — filename check only." >&2
+fi

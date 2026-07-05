@@ -42,7 +42,7 @@ npm test -- --testPathPattern="behaviorLearner"  # Run behavior learner tests
 - **State**: Zustand with AsyncStorage persistence (debounced writes)
 - **Icons**: Phosphor Icons (React Native)
 - **Validation**: Zod (API response validation)
-- **Error Monitoring**: Sentry (configured, needs DSN)
+- **Error Monitoring**: Firebase Crashlytics (via `services/firebaseAnalytics.ts`)
 - **Authentication**: Supabase Auth (Google/Apple OAuth)
 - **Database**: Supabase (PostgreSQL) for cloud sync
 - **Analytics**: Firebase Analytics
@@ -54,7 +54,7 @@ npm test -- --testPathPattern="behaviorLearner"  # Run behavior learner tests
 
 ```
 ToonNotes_Expo/
-├── api/                      # Vercel Edge Functions (10 endpoints)
+├── api/                      # Vercel serverless functions (11 handlers + health-check)
 │   ├── generate-theme.ts           # AI note design from image
 │   ├── generate-lucky-theme.ts     # Randomized chaotic design
 │   ├── extract-colors.ts           # Color palette extraction
@@ -187,7 +187,6 @@ ToonNotes_Expo/
 │   ├── labelingEngine.ts     # AI-powered label suggestions
 │   ├── onboardingService.ts  # Onboarding flow management
 │   ├── shareService.ts       # Share as image functionality
-│   ├── sentry.ts             # Error monitoring configuration
 │   ├── index.ts              # Service exports
 │   │
 │   │   # MODE Framework (Smart Assistant)
@@ -580,13 +579,9 @@ const validated = parseThemeResponse(rawData);  // Returns defaults on failure
 // Global error boundary in app/_layout.tsx
 export { ErrorBoundary } from '@/components/ErrorBoundary';
 
-// Manual error capture
-import { captureException } from '@/services/sentry';
-captureException(error, { context: 'design-generation' });
-
-// Firebase error logging
+// Manual error capture — Crashlytics is the single crash reporter.
 import { recordError } from '@/services/firebaseAnalytics';
-recordError(error, 'design_generation_failed');
+recordError(error, { context: 'design-generation' });
 ```
 
 ### Accessibility
@@ -705,8 +700,8 @@ const styles = StyleSheet.create({
 
 ### Configured & Ready
 - [x] Error boundary with styled fallback UI
-- [x] Sentry integration (add DSN to enable)
-- [x] Secure storage (expo-secure-store via Supabase)
+- [x] Crash reporting (Firebase Crashlytics)
+- [x] Secure storage (expo-secure-store via Supabase, chunked for large sessions)
 - [x] API response validation (Zod)
 - [x] Accessibility labels on interactive elements
 - [x] FlatList optimization for lists
@@ -718,27 +713,21 @@ const styles = StyleSheet.create({
 
 ### Environment Variables
 
+App (`.env.local`):
 ```bash
-# .env or app.config.js
-EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn-here
 EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-GEMINI_API_KEY=your-gemini-key  # For Vercel edge functions
 ```
 
-### Sentry Setup
-
-1. Create account at https://sentry.io
-2. Create React Native project
-3. Get DSN from Project Settings > Client Keys
-4. Set `EXPO_PUBLIC_SENTRY_DSN` environment variable
-5. Update `app.json` with your organization:
-   ```json
-   ["@sentry/react-native/expo", {
-     "organization": "your-org",
-     "project": "toonnotes"
-   }]
-   ```
+AI API — set in the `toonnotes-api` Vercel project (NOT the app bundle):
+```bash
+GEMINI_API_KEY=your-gemini-key            # server-side Gemini calls
+CRON_SECRET=...                           # enforced by health-check (fails closed in prod)
+UPSTASH_REDIS_REST_URL=...                # durable rate limiting (else in-memory only)
+UPSTASH_REDIS_REST_TOKEN=...
+SLACK_WEBHOOK_URL=...                      # health-check + goal-agent feedback alerts (optional)
+RESEND_API_KEY=...                        # goal-agent feedback email (optional)
+```
 
 ### Building Native Apps
 
@@ -799,7 +788,7 @@ eas build --platform ios --profile development
 
 ### Analytics & Monitoring
 - [x] Firebase Analytics
-- [x] Sentry error monitoring (needs DSN)
+- [x] Firebase Crashlytics (crash + non-fatal error reporting)
 
 ### Onboarding
 - [x] Agent onboarding flow (hands-on introduction to 4 AI agents)
@@ -848,7 +837,10 @@ Last assessed: January 2025
 
 ## TODO
 
-- [ ] Add Sentry DSN for production monitoring
+- [ ] Set CRON_SECRET + UPSTASH_REDIS_REST_URL/TOKEN in the toonnotes-api Vercel project
+- [ ] Sync conflict resolution: move to server-set updated_at + tombstones (Phase 1.2)
+- [ ] Consolidate label state (noteStore vs labelStore split-brain, Phase 1.3)
+- [ ] Adopt shared packages in expo (types/constants/stores currently duplicated, Phase 3)
 - [ ] Share as image (partially implemented)
 - [ ] Daily rewards system
 - [ ] Offline-first improvements

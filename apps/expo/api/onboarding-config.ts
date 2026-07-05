@@ -182,7 +182,7 @@ export default async function handler(
 ) {
   // Apply security middleware (CORS, rate limiting, method validation)
   // Skip rate limiting for config endpoint (frequently called, read-only)
-  if (!applySecurity(req, res, { allowedMethods: ['GET'], skipRateLimit: true })) {
+  if (!(await applySecurity(req, res, { allowedMethods: ['GET'], skipRateLimit: true }))) {
     return;
   }
 

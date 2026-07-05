@@ -269,6 +269,34 @@ describe('SyncService', () => {
         expect(result.downloaded).toBe(1);
         expect(result.uploaded).toBe(0);
       });
+
+      // Regression: downloading a newer cloud version of an EXISTING note must
+      // apply via setState — never via updateNote(), which would stamp a fresh
+      // updatedAt, re-upload the note (sync echo), and schedule an AI call.
+      it('applies downloaded changes without calling updateNote (no echo)', async () => {
+        const localNote = createLocalNote(baseTime + 1000);
+        const cloudNote = createCloudNote(baseTime + 5000); // cloud newer → download
+
+        mockNoteStoreState.notes = [localNote];
+        mockEq.mockResolvedValue({ data: [cloudNote], error: null });
+
+        const result = await syncNotes(userId);
+
+        expect(result.downloaded).toBe(1);
+        // updateNote must NOT be used for applying remote changes.
+        expect(mockNoteStoreState.updateNote).not.toHaveBeenCalled();
+
+        // The local store now holds the cloud version with the cloud's
+        // timestamp preserved (not overwritten with Date.now()).
+        const stored = mockNoteStoreState.notes.find((n) => n.id === 'shared-note');
+        expect(stored).toBeDefined();
+        expect(stored.title).toBe('Cloud Version');
+        expect(stored.updatedAt).toBe(baseTime + 5000);
+        // No duplication: exactly one copy of the note.
+        expect(
+          mockNoteStoreState.notes.filter((n) => n.id === 'shared-note')
+        ).toHaveLength(1);
+      });
     });
   });
 
