@@ -160,6 +160,7 @@ interface NoteState {
   deleteNote: (id: string) => void;
   restoreNote: (id: string) => void;
   permanentlyDeleteNote: (id: string) => void;
+  purgeExpiredTrash: (maxAgeMs?: number) => number; // auto-delete old trashed notes; returns count purged
   archiveNote: (id: string) => void;
   unarchiveNote: (id: string) => void;
   pinNote: (id: string) => void;
@@ -355,6 +356,28 @@ export const useNoteStore = create<NoteState>()(
         set((state) => ({
           notes: state.notes.filter((note) => note.id !== id),
         }));
+      },
+
+      // Permanently remove notes that have been in trash longer than maxAgeMs
+      // (default 30 days). Intended to run once on app launch. Notes without a
+      // deletedAt timestamp are left alone (defensive).
+      purgeExpiredTrash: (maxAgeMs = 30 * 24 * 60 * 60 * 1000) => {
+        const cutoff = Date.now() - maxAgeMs;
+        const expired = get().notes.filter(
+          (note) =>
+            note.isDeleted &&
+            typeof note.deletedAt === 'number' &&
+            note.deletedAt < cutoff
+        );
+        if (expired.length === 0) return 0;
+
+        // Remove from cloud (best-effort) then drop locally.
+        expired.forEach((note) => deleteFromCloud(note.id));
+        const expiredIds = new Set(expired.map((n) => n.id));
+        set((state) => ({
+          notes: state.notes.filter((note) => !expiredIds.has(note.id)),
+        }));
+        return expired.length;
       },
 
       archiveNote: (id) => {
@@ -768,6 +791,11 @@ export const useNoteStore = create<NoteState>()(
       storage: createJSONStorage(() => debouncedStorage),
       partialize: (state) => ({
         notes: state.notes,
+        // Persist the label registry too — it holds metadata (presetId,
+        // isSystemLabel, lastUsedAt) that can't be reconstructed from the
+        // plain string labels embedded in notes. Previously only `notes` was
+        // persisted, so this metadata was silently lost on every restart.
+        labels: state.labels,
         // Don't persist recentlyModifiedIds - it's a Map that doesn't serialize
         // and it's only needed for temporary local modification tracking
       }),
